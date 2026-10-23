@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,17 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(key1 = Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is LoginUiEvent.NavigateToHome -> onLoginClick()
+                is LoginUiEvent.NavigateToSignUp -> onSignUpClick()
+                is LoginUiEvent.NavigateToForgotPassword -> onForgotPasswordClick()
+                is LoginUiEvent.ContinueWithGoogle -> onGoogleSignInClick()
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
