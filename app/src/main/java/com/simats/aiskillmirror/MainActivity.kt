@@ -33,6 +33,8 @@ import com.simats.aiskillmirror.ui.register.RegisterScreen
 import com.simats.aiskillmirror.ui.register.RegisterViewModel
 import com.simats.aiskillmirror.ui.results.SkillMirrorScreen
 import com.simats.aiskillmirror.ui.results.SkillMirrorViewModel
+import com.simats.aiskillmirror.ui.speech.SpeechStudioScreen
+import com.simats.aiskillmirror.ui.speech.SpeechStudioViewModel
 import com.simats.aiskillmirror.ui.splash.SplashScreen
 import com.simats.aiskillmirror.ui.splash.SplashViewModel
 import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
@@ -48,7 +50,8 @@ enum class AppScreen {
     PROFILE,
     SKILL_SELECTION,
     ASSESSMENT,
-    SKILL_MIRROR
+    SKILL_MIRROR,
+    SPEECH_STUDIO
 }
 
 class MainActivity : ComponentActivity() {
@@ -63,6 +66,7 @@ class MainActivity : ComponentActivity() {
     private val skillSelectionViewModel: SkillSelectionViewModel by viewModels()
     private val assessmentViewModel: AssessmentViewModel by viewModels()
     private val skillMirrorViewModel: SkillMirrorViewModel by viewModels()
+    private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,6 +157,7 @@ class MainActivity : ComponentActivity() {
                                         when (tab) {
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.SPEECH_STUDIO
                                             else -> {}
                                         }
                                     },
@@ -160,13 +165,13 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.SKILL_MIRROR
                                     },
                                     onViewPlanClick = {
-                                        Toast.makeText(this@MainActivity, "Opening Plan...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SPEECH_STUDIO
                                     },
                                     onContinueTrainingClick = {
-                                        currentScreen = AppScreen.ASSESSMENT
+                                        currentScreen = AppScreen.SPEECH_STUDIO
                                     },
                                     onOpenAiCoachClick = {
-                                        Toast.makeText(this@MainActivity, "Opening AI Coach...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SPEECH_STUDIO
                                     }
                                 )
                             }
@@ -177,6 +182,7 @@ class MainActivity : ComponentActivity() {
                                         when (tab) {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.SPEECH_STUDIO
                                             else -> {}
                                         }
                                     },
@@ -195,6 +201,7 @@ class MainActivity : ComponentActivity() {
                                         when (tab) {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.SPEECH_STUDIO
                                             else -> {}
                                         }
                                     },
@@ -213,6 +220,7 @@ class MainActivity : ComponentActivity() {
                                         when (tab) {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.SPEECH_STUDIO
                                             else -> {}
                                         }
                                     },
@@ -235,17 +243,38 @@ class MainActivity : ComponentActivity() {
                                         when (tab) {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.SPEECH_STUDIO
                                             else -> {}
                                         }
                                     },
                                     onViewLearningPlanClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        currentScreen = AppScreen.SPEECH_STUDIO
                                     },
                                     onShareResultsClick = {
                                         Toast.makeText(this@MainActivity, "Sharing Skill Mirror Results...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.SKILL_SELECTION
+                                    }
+                                )
+                            }
+                            AppScreen.SPEECH_STUDIO -> {
+                                SpeechStudioScreen(
+                                    viewModel = speechStudioViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
+                                        }
+                                    },
+                                    onStopClick = {
+                                        Toast.makeText(this@MainActivity, "Recording saved! Feedback ready.", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.DASHBOARD
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.SKILL_MIRROR
                                     }
                                 )
                             }
