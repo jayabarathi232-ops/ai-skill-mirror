@@ -18,6 +18,8 @@ import com.simats.aiskillmirror.ui.login.LoginScreen
 import com.simats.aiskillmirror.ui.login.LoginViewModel
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
+import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
+import com.simats.aiskillmirror.ui.recovery.AccountRecoveryViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
 import com.simats.aiskillmirror.ui.register.RegisterViewModel
 import com.simats.aiskillmirror.ui.splash.SplashScreen
@@ -29,7 +31,8 @@ enum class AppScreen {
     SPLASH,
     ONBOARDING,
     REGISTER,
-    LOGIN
+    LOGIN,
+    RECOVERY
 }
 
 class MainActivity : ComponentActivity() {
@@ -38,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private val onboardingViewModel: OnboardingViewModel by viewModels()
     private val registerViewModel: RegisterViewModel by viewModels()
     private val loginViewModel: LoginViewModel by viewModels()
+    private val recoveryViewModel: AccountRecoveryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,13 +100,24 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Logged in Successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     onForgotPasswordClick = {
-                                        Toast.makeText(this@MainActivity, "Forgot Password Clicked", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.RECOVERY
                                     },
                                     onGoogleSignInClick = {
                                         Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
                                     },
                                     onSignUpClick = {
                                         currentScreen = AppScreen.REGISTER
+                                    }
+                                )
+                            }
+                            AppScreen.RECOVERY -> {
+                                AccountRecoveryScreen(
+                                    viewModel = recoveryViewModel,
+                                    onSendResetLinkClick = {
+                                        Toast.makeText(this@MainActivity, "Reset link sent to your email!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackToLoginClick = {
+                                        currentScreen = AppScreen.LOGIN
                                     }
                                 )
                             }
