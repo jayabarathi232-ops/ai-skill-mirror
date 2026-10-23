@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.simats.aiskillmirror.ui.assess.SkillSelectionScreen
 import com.simats.aiskillmirror.ui.assess.SkillSelectionViewModel
+import com.simats.aiskillmirror.ui.assessment.AssessmentScreen
+import com.simats.aiskillmirror.ui.assessment.AssessmentViewModel
 import com.simats.aiskillmirror.ui.dashboard.DashboardScreen
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.DashboardViewModel
@@ -42,7 +44,8 @@ enum class AppScreen {
     RECOVERY,
     DASHBOARD,
     PROFILE,
-    SKILL_SELECTION
+    SKILL_SELECTION,
+    ASSESSMENT
 }
 
 class MainActivity : ComponentActivity() {
@@ -55,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
     private val skillSelectionViewModel: SkillSelectionViewModel by viewModels()
+    private val assessmentViewModel: AssessmentViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -155,7 +159,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Opening Plan...", Toast.LENGTH_SHORT).show()
                                     },
                                     onContinueTrainingClick = {
-                                        Toast.makeText(this@MainActivity, "Continuing Training...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.ASSESSMENT
                                     },
                                     onOpenAiCoachClick = {
                                         Toast.makeText(this@MainActivity, "Opening AI Coach...", Toast.LENGTH_SHORT).show()
@@ -191,10 +195,32 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onStartAssessmentClick = {
-                                        Toast.makeText(this@MainActivity, "Starting AI Assessment...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.ASSESSMENT
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.PROFILE
+                                        currentScreen = AppScreen.DASHBOARD
+                                    }
+                                )
+                            }
+                            AppScreen.ASSESSMENT -> {
+                                AssessmentScreen(
+                                    viewModel = assessmentViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            else -> {}
+                                        }
+                                    },
+                                    onNextQuestionClick = {
+                                        Toast.makeText(this@MainActivity, "Next Question", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFinishAssessmentClick = {
+                                        Toast.makeText(this@MainActivity, "Assessment Complete!", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.DASHBOARD
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.SKILL_SELECTION
                                     }
                                 )
                             }
