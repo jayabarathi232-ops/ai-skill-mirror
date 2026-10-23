@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
+import com.simats.aiskillmirror.ui.register.RegisterScreen
+import com.simats.aiskillmirror.ui.register.RegisterViewModel
 import com.simats.aiskillmirror.ui.splash.SplashScreen
 import com.simats.aiskillmirror.ui.splash.SplashViewModel
 import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
@@ -23,13 +25,15 @@ import com.simats.aiskillmirror.ui.theme.DarkBackground
 
 enum class AppScreen {
     SPLASH,
-    ONBOARDING
+    ONBOARDING,
+    REGISTER
 }
 
 class MainActivity : ComponentActivity() {
 
     private val splashViewModel: SplashViewModel by viewModels()
     private val onboardingViewModel: OnboardingViewModel by viewModels()
+    private val registerViewModel: RegisterViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +55,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.ONBOARDING
                                     },
                                     onNavigateToLogin = {
-                                        Toast.makeText(this@MainActivity, "Navigating to Login", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.REGISTER
                                     }
                                 )
                             }
@@ -59,10 +63,24 @@ class MainActivity : ComponentActivity() {
                                 OnboardingScreen(
                                     viewModel = onboardingViewModel,
                                     onCreateAccountClick = {
-                                        Toast.makeText(this@MainActivity, "Create Account Clicked", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.REGISTER
                                     },
                                     onSkipClick = {
-                                        Toast.makeText(this@MainActivity, "Skipped Onboarding", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.REGISTER
+                                    }
+                                )
+                            }
+                            AppScreen.REGISTER -> {
+                                RegisterScreen(
+                                    viewModel = registerViewModel,
+                                    onCreateAccountClick = {
+                                        Toast.makeText(this@MainActivity, "Account Created Successfully!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onGoogleSignInClick = {
+                                        Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onLoginClick = {
+                                        Toast.makeText(this@MainActivity, "Navigate to Login", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
