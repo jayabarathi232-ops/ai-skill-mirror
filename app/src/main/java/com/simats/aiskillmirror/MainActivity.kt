@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.simats.aiskillmirror.ui.assess.SkillSelectionScreen
+import com.simats.aiskillmirror.ui.assess.SkillSelectionViewModel
 import com.simats.aiskillmirror.ui.dashboard.DashboardScreen
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.DashboardViewModel
@@ -35,11 +37,12 @@ import com.simats.aiskillmirror.ui.theme.DarkBackground
 enum class AppScreen {
     SPLASH,
     ONBOARDING,
-    REGISTER,
     LOGIN,
+    REGISTER,
     RECOVERY,
     DASHBOARD,
-    PROFILE
+    PROFILE,
+    SKILL_SELECTION
 }
 
 class MainActivity : ComponentActivity() {
@@ -51,6 +54,7 @@ class MainActivity : ComponentActivity() {
     private val recoveryViewModel: AccountRecoveryViewModel by viewModels()
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
+    private val skillSelectionViewModel: SkillSelectionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -138,12 +142,14 @@ class MainActivity : ComponentActivity() {
                                 DashboardScreen(
                                     viewModel = dashboardViewModel,
                                     onTabSelected = { tab ->
-                                        if (tab == DashboardTab.PROFILE) {
-                                            currentScreen = AppScreen.PROFILE
+                                        when (tab) {
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
                                         }
                                     },
                                     onViewSkillMirrorClick = {
-                                        currentScreen = AppScreen.PROFILE
+                                        currentScreen = AppScreen.SKILL_SELECTION
                                     },
                                     onViewPlanClick = {
                                         Toast.makeText(this@MainActivity, "Opening Plan...", Toast.LENGTH_SHORT).show()
@@ -160,15 +166,35 @@ class MainActivity : ComponentActivity() {
                                 ProfileScreen(
                                     viewModel = profileViewModel,
                                     onTabSelected = { tab ->
-                                        if (tab == DashboardTab.HOME) {
-                                            currentScreen = AppScreen.DASHBOARD
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
                                         }
                                     },
                                     onEditPersonalInfoClick = {
                                         Toast.makeText(this@MainActivity, "Edit Personal Info Clicked", Toast.LENGTH_SHORT).show()
                                     },
                                     onNextMilestoneClick = {
-                                        Toast.makeText(this@MainActivity, "Opening Next Milestone...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SKILL_SELECTION
+                                    }
+                                )
+                            }
+                            AppScreen.SKILL_SELECTION -> {
+                                SkillSelectionScreen(
+                                    viewModel = skillSelectionViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            else -> {}
+                                        }
+                                    },
+                                    onStartAssessmentClick = {
+                                        Toast.makeText(this@MainActivity, "Starting AI Assessment...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.PROFILE
                                     }
                                 )
                             }
