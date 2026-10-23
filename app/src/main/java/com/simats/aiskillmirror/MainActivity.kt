@@ -31,6 +31,8 @@ import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
 import com.simats.aiskillmirror.ui.register.RegisterViewModel
+import com.simats.aiskillmirror.ui.results.SkillMirrorScreen
+import com.simats.aiskillmirror.ui.results.SkillMirrorViewModel
 import com.simats.aiskillmirror.ui.splash.SplashScreen
 import com.simats.aiskillmirror.ui.splash.SplashViewModel
 import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
@@ -45,7 +47,8 @@ enum class AppScreen {
     DASHBOARD,
     PROFILE,
     SKILL_SELECTION,
-    ASSESSMENT
+    ASSESSMENT,
+    SKILL_MIRROR
 }
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private val profileViewModel: ProfileViewModel by viewModels()
     private val skillSelectionViewModel: SkillSelectionViewModel by viewModels()
     private val assessmentViewModel: AssessmentViewModel by viewModels()
+    private val skillMirrorViewModel: SkillMirrorViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,7 +157,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onViewSkillMirrorClick = {
-                                        currentScreen = AppScreen.SKILL_SELECTION
+                                        currentScreen = AppScreen.SKILL_MIRROR
                                     },
                                     onViewPlanClick = {
                                         Toast.makeText(this@MainActivity, "Opening Plan...", Toast.LENGTH_SHORT).show()
@@ -217,7 +221,28 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onFinishAssessmentClick = {
                                         Toast.makeText(this@MainActivity, "Assessment Complete!", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SKILL_MIRROR
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.SKILL_SELECTION
+                                    }
+                                )
+                            }
+                            AppScreen.SKILL_MIRROR -> {
+                                SkillMirrorScreen(
+                                    viewModel = skillMirrorViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            else -> {}
+                                        }
+                                    },
+                                    onViewLearningPlanClick = {
                                         currentScreen = AppScreen.DASHBOARD
+                                    },
+                                    onShareResultsClick = {
+                                        Toast.makeText(this@MainActivity, "Sharing Skill Mirror Results...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.SKILL_SELECTION
