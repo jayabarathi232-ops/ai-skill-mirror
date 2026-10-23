@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.simats.aiskillmirror.ui.login.LoginScreen
+import com.simats.aiskillmirror.ui.login.LoginViewModel
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
@@ -26,7 +28,8 @@ import com.simats.aiskillmirror.ui.theme.DarkBackground
 enum class AppScreen {
     SPLASH,
     ONBOARDING,
-    REGISTER
+    REGISTER,
+    LOGIN
 }
 
 class MainActivity : ComponentActivity() {
@@ -34,6 +37,7 @@ class MainActivity : ComponentActivity() {
     private val splashViewModel: SplashViewModel by viewModels()
     private val onboardingViewModel: OnboardingViewModel by viewModels()
     private val registerViewModel: RegisterViewModel by viewModels()
+    private val loginViewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +59,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.ONBOARDING
                                     },
                                     onNavigateToLogin = {
-                                        currentScreen = AppScreen.REGISTER
+                                        currentScreen = AppScreen.LOGIN
                                     }
                                 )
                             }
@@ -75,12 +79,30 @@ class MainActivity : ComponentActivity() {
                                     viewModel = registerViewModel,
                                     onCreateAccountClick = {
                                         Toast.makeText(this@MainActivity, "Account Created Successfully!", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.LOGIN
                                     },
                                     onGoogleSignInClick = {
                                         Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
                                     },
                                     onLoginClick = {
-                                        Toast.makeText(this@MainActivity, "Navigate to Login", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.LOGIN
+                                    }
+                                )
+                            }
+                            AppScreen.LOGIN -> {
+                                LoginScreen(
+                                    viewModel = loginViewModel,
+                                    onLoginClick = {
+                                        Toast.makeText(this@MainActivity, "Logged in Successfully!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onForgotPasswordClick = {
+                                        Toast.makeText(this@MainActivity, "Forgot Password Clicked", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onGoogleSignInClick = {
+                                        Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onSignUpClick = {
+                                        currentScreen = AppScreen.REGISTER
                                     }
                                 )
                             }
