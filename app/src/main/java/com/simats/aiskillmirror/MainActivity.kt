@@ -43,6 +43,8 @@ import com.simats.aiskillmirror.ui.splash.SplashScreen
 import com.simats.aiskillmirror.ui.splash.SplashViewModel
 import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
 import com.simats.aiskillmirror.ui.theme.DarkBackground
+import com.simats.aiskillmirror.ui.training.DailyTrainingScreen
+import com.simats.aiskillmirror.ui.training.DailyTrainingViewModel
 
 enum class AppScreen {
     SPLASH,
@@ -55,9 +57,10 @@ enum class AppScreen {
     SKILL_SELECTION,
     ASSESSMENT,
     SKILL_MIRROR,
+    ROADMAP,
+    DAILY_TRAINING,
     SPEECH_STUDIO,
-    SPEECH_ANALYSIS,
-    ROADMAP
+    SPEECH_ANALYSIS
 }
 
 class MainActivity : ComponentActivity() {
@@ -72,9 +75,10 @@ class MainActivity : ComponentActivity() {
     private val skillSelectionViewModel: SkillSelectionViewModel by viewModels()
     private val assessmentViewModel: AssessmentViewModel by viewModels()
     private val skillMirrorViewModel: SkillMirrorViewModel by viewModels()
+    private val roadmapViewModel: GrowthRoadmapViewModel by viewModels()
+    private val dailyTrainingViewModel: DailyTrainingViewModel by viewModels()
     private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
     private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
-    private val roadmapViewModel: GrowthRoadmapViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -176,7 +180,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.ROADMAP
                                     },
                                     onContinueTrainingClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                        currentScreen = AppScreen.DAILY_TRAINING
                                     },
                                     onOpenAiCoachClick = {
                                         currentScreen = AppScreen.SPEECH_STUDIO
@@ -266,6 +270,50 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            AppScreen.ROADMAP -> {
+                                GrowthRoadmapScreen(
+                                    viewModel = roadmapViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
+                                        }
+                                    },
+                                    onContinueActiveWeekClick = {
+                                        currentScreen = AppScreen.DAILY_TRAINING
+                                    },
+                                    onFilterClick = {
+                                        Toast.makeText(this@MainActivity, "Opening Filter Settings...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.DASHBOARD
+                                    }
+                                )
+                            }
+                            AppScreen.DAILY_TRAINING -> {
+                                DailyTrainingScreen(
+                                    viewModel = dailyTrainingViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
+                                        }
+                                    },
+                                    onStartPracticeClick = {
+                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                    },
+                                    onCalendarClick = {
+                                        Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.ROADMAP
+                                    }
+                                )
+                            }
                             AppScreen.SPEECH_STUDIO -> {
                                 SpeechStudioScreen(
                                     viewModel = speechStudioViewModel,
@@ -282,7 +330,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.SPEECH_ANALYSIS
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.ROADMAP
+                                        currentScreen = AppScreen.DAILY_TRAINING
                                     }
                                 )
                             }
@@ -307,29 +355,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.ROADMAP
-                                    }
-                                )
-                            }
-                            AppScreen.ROADMAP -> {
-                                GrowthRoadmapScreen(
-                                    viewModel = roadmapViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            else -> {}
-                                        }
-                                    },
-                                    onContinueActiveWeekClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
-                                    },
-                                    onFilterClick = {
-                                        Toast.makeText(this@MainActivity, "Opening Filter Settings...", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onBackClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        currentScreen = AppScreen.DAILY_TRAINING
                                     }
                                 )
                             }
