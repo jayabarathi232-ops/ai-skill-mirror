@@ -27,6 +27,8 @@ import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
 import com.simats.aiskillmirror.ui.profile.ProfileScreen
 import com.simats.aiskillmirror.ui.profile.ProfileViewModel
+import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsScreen
+import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsViewModel
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
@@ -60,7 +62,8 @@ enum class AppScreen {
     ROADMAP,
     DAILY_TRAINING,
     SPEECH_STUDIO,
-    SPEECH_ANALYSIS
+    SPEECH_ANALYSIS,
+    PROGRESS_ANALYTICS
 }
 
 class MainActivity : ComponentActivity() {
@@ -79,6 +82,7 @@ class MainActivity : ComponentActivity() {
     private val dailyTrainingViewModel: DailyTrainingViewModel by viewModels()
     private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
     private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
+    private val progressAnalyticsViewModel: ProgressAnalyticsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -170,6 +174,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -195,6 +200,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -214,6 +220,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -233,6 +240,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -256,6 +264,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -278,6 +287,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -300,6 +310,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -322,6 +333,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -342,6 +354,7 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
                                             DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                             else -> {}
                                         }
                                     },
@@ -355,7 +368,30 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DAILY_TRAINING
+                                        currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                    }
+                                )
+                            }
+                            AppScreen.PROGRESS_ANALYTICS -> {
+                                ProgressAnalyticsScreen(
+                                    viewModel = progressAnalyticsViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            else -> {}
+                                        }
+                                    },
+                                    onViewReportClick = {
+                                        Toast.makeText(this@MainActivity, "Opening Full Progress Report...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onCalendarClick = {
+                                        Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.DASHBOARD
                                     }
                                 )
                             }
