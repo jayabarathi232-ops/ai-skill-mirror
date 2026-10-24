@@ -33,6 +33,8 @@ import com.simats.aiskillmirror.ui.register.RegisterScreen
 import com.simats.aiskillmirror.ui.register.RegisterViewModel
 import com.simats.aiskillmirror.ui.results.SkillMirrorScreen
 import com.simats.aiskillmirror.ui.results.SkillMirrorViewModel
+import com.simats.aiskillmirror.ui.speech.SpeechAnalysisScreen
+import com.simats.aiskillmirror.ui.speech.SpeechAnalysisViewModel
 import com.simats.aiskillmirror.ui.speech.SpeechStudioScreen
 import com.simats.aiskillmirror.ui.speech.SpeechStudioViewModel
 import com.simats.aiskillmirror.ui.splash.SplashScreen
@@ -51,7 +53,8 @@ enum class AppScreen {
     SKILL_SELECTION,
     ASSESSMENT,
     SKILL_MIRROR,
-    SPEECH_STUDIO
+    SPEECH_STUDIO,
+    SPEECH_ANALYSIS
 }
 
 class MainActivity : ComponentActivity() {
@@ -67,6 +70,7 @@ class MainActivity : ComponentActivity() {
     private val assessmentViewModel: AssessmentViewModel by viewModels()
     private val skillMirrorViewModel: SkillMirrorViewModel by viewModels()
     private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
+    private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -270,11 +274,36 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onStopClick = {
-                                        Toast.makeText(this@MainActivity, "Recording saved! Feedback ready.", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.DASHBOARD
+                                        Toast.makeText(this@MainActivity, "Recording saved! Analysis ready.", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SPEECH_ANALYSIS
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.SKILL_MIRROR
+                                    }
+                                )
+                            }
+                            AppScreen.SPEECH_ANALYSIS -> {
+                                SpeechAnalysisScreen(
+                                    viewModel = speechAnalysisViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
+                                        }
+                                    },
+                                    onPracticeAgainClick = {
+                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                    },
+                                    onPlayRecordingClick = {
+                                        Toast.makeText(this@MainActivity, "Playing audio recording...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onShareClick = {
+                                        Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.SPEECH_STUDIO
                                     }
                                 )
                             }
