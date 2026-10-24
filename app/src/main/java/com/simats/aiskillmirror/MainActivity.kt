@@ -33,6 +33,8 @@ import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
 import com.simats.aiskillmirror.ui.register.RegisterViewModel
+import com.simats.aiskillmirror.ui.report.GrowthReportScreen
+import com.simats.aiskillmirror.ui.report.GrowthReportViewModel
 import com.simats.aiskillmirror.ui.results.SkillMirrorScreen
 import com.simats.aiskillmirror.ui.results.SkillMirrorViewModel
 import com.simats.aiskillmirror.ui.roadmap.GrowthRoadmapScreen
@@ -63,7 +65,8 @@ enum class AppScreen {
     DAILY_TRAINING,
     SPEECH_STUDIO,
     SPEECH_ANALYSIS,
-    PROGRESS_ANALYTICS
+    PROGRESS_ANALYTICS,
+    GROWTH_REPORT
 }
 
 class MainActivity : ComponentActivity() {
@@ -83,6 +86,7 @@ class MainActivity : ComponentActivity() {
     private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
     private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
     private val progressAnalyticsViewModel: ProgressAnalyticsViewModel by viewModels()
+    private val growthReportViewModel: GrowthReportViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -385,13 +389,33 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onViewReportClick = {
-                                        Toast.makeText(this@MainActivity, "Opening Full Progress Report...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.GROWTH_REPORT
                                     },
                                     onCalendarClick = {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.DASHBOARD
+                                    }
+                                )
+                            }
+                            AppScreen.GROWTH_REPORT -> {
+                                GrowthReportScreen(
+                                    viewModel = growthReportViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            else -> {}
+                                        }
+                                    },
+                                    onExportPdfClick = {
+                                        Toast.makeText(this@MainActivity, "Exporting report as PDF...", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.PROGRESS_ANALYTICS
                                     }
                                 )
                             }
