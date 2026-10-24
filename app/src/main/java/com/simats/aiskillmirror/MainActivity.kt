@@ -23,6 +23,8 @@ import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.DashboardViewModel
 import com.simats.aiskillmirror.ui.login.LoginScreen
 import com.simats.aiskillmirror.ui.login.LoginViewModel
+import com.simats.aiskillmirror.ui.milestones.MilestonesScreen
+import com.simats.aiskillmirror.ui.milestones.MilestonesViewModel
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
 import com.simats.aiskillmirror.ui.profile.ProfileScreen
@@ -66,7 +68,8 @@ enum class AppScreen {
     SPEECH_STUDIO,
     SPEECH_ANALYSIS,
     PROGRESS_ANALYTICS,
-    GROWTH_REPORT
+    GROWTH_REPORT,
+    MILESTONES
 }
 
 class MainActivity : ComponentActivity() {
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
     private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
     private val progressAnalyticsViewModel: ProgressAnalyticsViewModel by viewModels()
     private val growthReportViewModel: GrowthReportViewModel by viewModels()
+    private val milestonesViewModel: MilestonesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -212,7 +216,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Edit Personal Info Clicked", Toast.LENGTH_SHORT).show()
                                     },
                                     onNextMilestoneClick = {
-                                        currentScreen = AppScreen.SKILL_SELECTION
+                                        currentScreen = AppScreen.MILESTONES
                                     }
                                 )
                             }
@@ -413,9 +417,31 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onExportPdfClick = {
                                         Toast.makeText(this@MainActivity, "Exporting report as PDF...", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.MILESTONES
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                    }
+                                )
+                            }
+                            AppScreen.MILESTONES -> {
+                                MilestonesScreen(
+                                    viewModel = milestonesViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                            else -> {}
+                                        }
+                                    },
+                                    onAddGoalClick = {
+                                        Toast.makeText(this@MainActivity, "Add Custom Goal Clicked", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.GROWTH_REPORT
                                     }
                                 )
                             }
