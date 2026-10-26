@@ -39,6 +39,7 @@ import kotlin.math.sin
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
+    onNotificationsClick: () -> Unit = {},
     onTabSelected: (DashboardTab) -> Unit = {},
     onViewSkillMirrorClick: () -> Unit = {},
     onViewPlanClick: () -> Unit = {},
@@ -95,7 +96,10 @@ fun DashboardScreen(
                             .clip(CircleShape)
                             .background(SurfaceDark)
                             .border(1.dp, Color(0xFF22293F), CircleShape)
-                            .clickable { viewModel.onNotificationsClick() },
+                            .clickable {
+                                viewModel.onNotificationsClick()
+                                onNotificationsClick()
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         BellIcon(size = 18.dp, color = TextPrimary)

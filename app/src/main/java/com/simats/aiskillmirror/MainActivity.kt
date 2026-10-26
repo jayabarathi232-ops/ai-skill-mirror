@@ -25,6 +25,8 @@ import com.simats.aiskillmirror.ui.login.LoginScreen
 import com.simats.aiskillmirror.ui.login.LoginViewModel
 import com.simats.aiskillmirror.ui.milestones.MilestonesScreen
 import com.simats.aiskillmirror.ui.milestones.MilestonesViewModel
+import com.simats.aiskillmirror.ui.notifications.NotificationsScreen
+import com.simats.aiskillmirror.ui.notifications.NotificationsViewModel
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
 import com.simats.aiskillmirror.ui.profile.ProfileScreen
@@ -69,7 +71,8 @@ enum class AppScreen {
     SPEECH_ANALYSIS,
     PROGRESS_ANALYTICS,
     GROWTH_REPORT,
-    MILESTONES
+    MILESTONES,
+    NOTIFICATIONS
 }
 
 class MainActivity : ComponentActivity() {
@@ -91,6 +94,7 @@ class MainActivity : ComponentActivity() {
     private val progressAnalyticsViewModel: ProgressAnalyticsViewModel by viewModels()
     private val growthReportViewModel: GrowthReportViewModel by viewModels()
     private val milestonesViewModel: MilestonesViewModel by viewModels()
+    private val notificationsViewModel: NotificationsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -177,6 +181,9 @@ class MainActivity : ComponentActivity() {
                             AppScreen.DASHBOARD -> {
                                 DashboardScreen(
                                     viewModel = dashboardViewModel,
+                                    onNotificationsClick = {
+                                        currentScreen = AppScreen.NOTIFICATIONS
+                                    },
                                     onTabSelected = { tab ->
                                         when (tab) {
                                             DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
@@ -438,10 +445,34 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onAddGoalClick = {
-                                        Toast.makeText(this@MainActivity, "Add Custom Goal Clicked", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.NOTIFICATIONS
                                     },
                                     onBackClick = {
                                         currentScreen = AppScreen.GROWTH_REPORT
+                                    }
+                                )
+                            }
+                            AppScreen.NOTIFICATIONS -> {
+                                NotificationsScreen(
+                                    viewModel = notificationsViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                            else -> {}
+                                        }
+                                    },
+                                    onMarkAllAsReadClick = {
+                                        Toast.makeText(this@MainActivity, "All notifications marked as read", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onSettingsClick = {
+                                        Toast.makeText(this@MainActivity, "Notification Settings", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.MILESTONES
                                     }
                                 )
                             }
