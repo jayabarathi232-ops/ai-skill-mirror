@@ -45,6 +45,8 @@ import com.simats.aiskillmirror.ui.results.SkillMirrorScreen
 import com.simats.aiskillmirror.ui.results.SkillMirrorViewModel
 import com.simats.aiskillmirror.ui.roadmap.GrowthRoadmapScreen
 import com.simats.aiskillmirror.ui.roadmap.GrowthRoadmapViewModel
+import com.simats.aiskillmirror.ui.settings.SettingsScreen
+import com.simats.aiskillmirror.ui.settings.SettingsViewModel
 import com.simats.aiskillmirror.ui.speech.SpeechAnalysisScreen
 import com.simats.aiskillmirror.ui.speech.SpeechAnalysisViewModel
 import com.simats.aiskillmirror.ui.speech.SpeechStudioScreen
@@ -75,7 +77,8 @@ enum class AppScreen {
     GROWTH_REPORT,
     MILESTONES,
     NOTIFICATIONS,
-    AI_COACH
+    AI_COACH,
+    SETTINGS
 }
 
 class MainActivity : ComponentActivity() {
@@ -99,6 +102,7 @@ class MainActivity : ComponentActivity() {
     private val milestonesViewModel: MilestonesViewModel by viewModels()
     private val notificationsViewModel: NotificationsViewModel by viewModels()
     private val aiCoachViewModel: AiCoachViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -224,7 +228,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onEditPersonalInfoClick = {
-                                        Toast.makeText(this@MainActivity, "Edit Personal Info Clicked", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SETTINGS
                                     },
                                     onNextMilestoneClick = {
                                         currentScreen = AppScreen.MILESTONES
@@ -387,7 +391,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.AI_COACH
+                                        currentScreen = AppScreen.SETTINGS
                                     }
                                 )
                             }
@@ -473,10 +477,10 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "All notifications marked as read", Toast.LENGTH_SHORT).show()
                                     },
                                     onSettingsClick = {
-                                        Toast.makeText(this@MainActivity, "Notification Settings", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.SETTINGS
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.AI_COACH
+                                        currentScreen = AppScreen.MILESTONES
                                     }
                                 )
                             }
@@ -495,7 +499,28 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.SPEECH_STUDIO
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        currentScreen = AppScreen.SETTINGS
+                                    }
+                                )
+                            }
+                            AppScreen.SETTINGS -> {
+                                SettingsScreen(
+                                    viewModel = settingsViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
+                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                        }
+                                    },
+                                    onLogoutClick = {
+                                        Toast.makeText(this@MainActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                                        currentScreen = AppScreen.LOGIN
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.PROFILE
                                     }
                                 )
                             }
