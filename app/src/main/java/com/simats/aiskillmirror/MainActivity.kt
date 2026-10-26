@@ -18,6 +18,8 @@ import com.simats.aiskillmirror.ui.assess.SkillSelectionScreen
 import com.simats.aiskillmirror.ui.assess.SkillSelectionViewModel
 import com.simats.aiskillmirror.ui.assessment.AssessmentScreen
 import com.simats.aiskillmirror.ui.assessment.AssessmentViewModel
+import com.simats.aiskillmirror.ui.coach.AiCoachScreen
+import com.simats.aiskillmirror.ui.coach.AiCoachViewModel
 import com.simats.aiskillmirror.ui.dashboard.DashboardScreen
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.DashboardViewModel
@@ -72,7 +74,8 @@ enum class AppScreen {
     PROGRESS_ANALYTICS,
     GROWTH_REPORT,
     MILESTONES,
-    NOTIFICATIONS
+    NOTIFICATIONS,
+    AI_COACH
 }
 
 class MainActivity : ComponentActivity() {
@@ -95,6 +98,7 @@ class MainActivity : ComponentActivity() {
     private val growthReportViewModel: GrowthReportViewModel by viewModels()
     private val milestonesViewModel: MilestonesViewModel by viewModels()
     private val notificationsViewModel: NotificationsViewModel by viewModels()
+    private val aiCoachViewModel: AiCoachViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -203,7 +207,7 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = AppScreen.DAILY_TRAINING
                                     },
                                     onOpenAiCoachClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                        currentScreen = AppScreen.AI_COACH
                                     }
                                 )
                             }
@@ -383,7 +387,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                        currentScreen = AppScreen.AI_COACH
                                     }
                                 )
                             }
@@ -472,7 +476,26 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Notification Settings", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.MILESTONES
+                                        currentScreen = AppScreen.AI_COACH
+                                    }
+                                )
+                            }
+                            AppScreen.AI_COACH -> {
+                                AiCoachScreen(
+                                    viewModel = aiCoachViewModel,
+                                    onTabSelected = { tab ->
+                                        when (tab) {
+                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
+                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
+                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
+                                            else -> {}
+                                        }
+                                    },
+                                    onStartPracticeFromCoachClick = {
+                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                    },
+                                    onBackClick = {
+                                        currentScreen = AppScreen.DASHBOARD
                                     }
                                 )
                             }
