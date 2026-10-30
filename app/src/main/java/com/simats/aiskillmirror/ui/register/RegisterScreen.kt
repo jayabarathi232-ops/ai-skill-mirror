@@ -47,6 +47,16 @@ fun RegisterScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
+    androidx.compose.runtime.LaunchedEffect(key1 = Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is RegisterUiEvent.NavigateToHome -> onCreateAccountClick()
+                is RegisterUiEvent.NavigateToLogin -> onLoginClick()
+                is RegisterUiEvent.ContinueWithGoogle -> onGoogleSignInClick()
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -222,11 +232,21 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            if (!uiState.errorMessage.isNullOrBlank()) {
+                Text(
+                    text = uiState.errorMessage ?: "",
+                    color = Color(0xFFFF5252),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             // Primary Button: Create account
             Button(
+                enabled = !uiState.isLoading,
                 onClick = {
                     viewModel.onCreateAccountClick()
-                    onCreateAccountClick()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -374,7 +394,7 @@ fun CustomOutlinedInputField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    leadingIcon: @Composable () -> Unit,
+    leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default

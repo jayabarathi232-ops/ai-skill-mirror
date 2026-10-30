@@ -33,6 +33,7 @@ import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
 import com.simats.aiskillmirror.ui.profile.ProfileScreen
 import com.simats.aiskillmirror.ui.profile.ProfileViewModel
+import com.simats.aiskillmirror.ui.profile.EditProfileScreen
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsScreen
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsViewModel
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
@@ -66,6 +67,7 @@ enum class AppScreen {
     RECOVERY,
     DASHBOARD,
     PROFILE,
+    EDIT_PROFILE,
     SKILL_SELECTION,
     ASSESSMENT,
     SKILL_MIRROR,
@@ -160,6 +162,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = loginViewModel,
                                     onLoginClick = {
                                         Toast.makeText(this@MainActivity, "Logged in Successfully!", Toast.LENGTH_SHORT).show()
+                                        profileViewModel.loadProfile()
                                         currentScreen = AppScreen.DASHBOARD
                                     },
                                     onForgotPasswordClick = {
@@ -215,6 +218,18 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                            AppScreen.EDIT_PROFILE -> {
+                                EditProfileScreen(
+                                    viewModel = profileViewModel,
+                                    onBackClick = {
+                                        currentScreen = AppScreen.PROFILE
+                                    },
+                                    onProfileSaved = {
+                                        profileViewModel.loadProfile()
+                                        currentScreen = AppScreen.PROFILE
+                                    }
+                                )
+                            }
                             AppScreen.PROFILE -> {
                                 ProfileScreen(
                                     viewModel = profileViewModel,
@@ -228,7 +243,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onEditPersonalInfoClick = {
-                                        currentScreen = AppScreen.SETTINGS
+                                        currentScreen = AppScreen.EDIT_PROFILE
                                     },
                                     onNextMilestoneClick = {
                                         currentScreen = AppScreen.MILESTONES
@@ -514,6 +529,9 @@ class MainActivity : ComponentActivity() {
                                             DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
                                             DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
                                         }
+                                    },
+                                    onPersonalInformationClick = {
+                                        currentScreen = AppScreen.EDIT_PROFILE
                                     },
                                     onLogoutClick = {
                                         Toast.makeText(this@MainActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()

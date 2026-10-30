@@ -2,6 +2,8 @@ package com.simats.aiskillmirror.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simats.aiskillmirror.data.network.ApiClient
+import com.simats.aiskillmirror.data.network.UserSession
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,11 +20,11 @@ class LoginViewModel : ViewModel() {
     val events = _eventChannel.receiveAsFlow()
 
     fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(email = email)
+        _uiState.value = _uiState.value.copy(email = email, errorMessage = null)
     }
 
     fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(password = password)
+        _uiState.value = _uiState.value.copy(password = password, errorMessage = null)
     }
 
     fun onTogglePasswordVisibility() {
@@ -34,8 +36,27 @@ class LoginViewModel : ViewModel() {
     }
 
     fun onLoginClick() {
+        val email = _uiState.value.email.trim()
+        val password = _uiState.value.password
+
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Please enter both email and password")
+            return
+        }
+
         viewModelScope.launch {
-            _eventChannel.send(LoginUiEvent.NavigateToHome)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            val result = ApiClient.login(email, password)
+            _uiState.value = _uiState.value.copy(isLoading = false)
+
+            if (result.isSuccess && result.data != null) {
+                UserSession.update(result.data.id, result.data.name, result.data.email)
+                _eventChannel.send(LoginUiEvent.NavigateToHome)
+            } else {
+                val error = result.message ?: "Invalid email or password"
+                _uiState.value = _uiState.value.copy(errorMessage = error)
+                _eventChannel.send(LoginUiEvent.ShowError(error))
+            }
         }
     }
 

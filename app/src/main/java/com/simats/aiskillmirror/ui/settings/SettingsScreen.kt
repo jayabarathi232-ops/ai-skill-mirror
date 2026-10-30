@@ -46,6 +46,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onTabSelected: (DashboardTab) -> Unit = {},
     onLogoutClick: () -> Unit = {},
+    onPersonalInformationClick: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -133,7 +134,10 @@ fun SettingsScreen(
                         SettingsClickableRow(
                             icon = { PersonIcon(size = 20.dp, color = TextSecondary) },
                             title = "Personal information",
-                            onClick = { viewModel.onPersonalInformationClick() }
+                            onClick = {
+                                viewModel.onPersonalInformationClick()
+                                onPersonalInformationClick()
+                            }
                         )
 
                         HorizontalDivider(

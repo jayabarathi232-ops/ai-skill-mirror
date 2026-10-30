@@ -61,6 +61,7 @@ fun LoginScreen(
                 is LoginUiEvent.NavigateToSignUp -> onSignUpClick()
                 is LoginUiEvent.NavigateToForgotPassword -> onForgotPasswordClick()
                 is LoginUiEvent.ContinueWithGoogle -> onGoogleSignInClick()
+                is LoginUiEvent.ShowError -> {}
             }
         }
     }
@@ -197,11 +198,21 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            if (!uiState.errorMessage.isNullOrBlank()) {
+                Text(
+                    text = uiState.errorMessage ?: "",
+                    color = Color(0xFFFF5252),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             // Primary Button: Log in
             Button(
+                enabled = !uiState.isLoading,
                 onClick = {
                     viewModel.onLoginClick()
-                    onLoginClick()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

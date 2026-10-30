@@ -2,6 +2,8 @@ package com.simats.aiskillmirror.ui.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simats.aiskillmirror.data.network.ApiClient
+import com.simats.aiskillmirror.data.network.UserSession
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,11 +20,11 @@ class RegisterViewModel : ViewModel() {
     val events = _eventChannel.receiveAsFlow()
 
     fun onFullNameChange(name: String) {
-        _uiState.value = _uiState.value.copy(fullName = name)
+        _uiState.value = _uiState.value.copy(fullName = name, errorMessage = null)
     }
 
     fun onEmailChange(email: String) {
-        _uiState.value = _uiState.value.copy(email = email)
+        _uiState.value = _uiState.value.copy(email = email, errorMessage = null)
     }
 
     fun onPasswordChange(password: String) {
@@ -31,7 +33,8 @@ class RegisterViewModel : ViewModel() {
         else "Weak password"
         _uiState.value = _uiState.value.copy(
             password = password,
-            passwordStrengthText = strength
+            passwordStrengthText = strength,
+            errorMessage = null
         )
     }
 
@@ -44,8 +47,27 @@ class RegisterViewModel : ViewModel() {
     }
 
     fun onCreateAccountClick() {
+        val name = _uiState.value.fullName.trim()
+        val email = _uiState.value.email.trim()
+        val password = _uiState.value.password
+
+        if (name.isBlank() || email.isBlank() || password.length < 8) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Please enter name, valid email, and at least 8 characters password")
+            return
+        }
+
         viewModelScope.launch {
-            _eventChannel.send(RegisterUiEvent.NavigateToHome)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            val result = ApiClient.signup(name, email, password)
+            _uiState.value = _uiState.value.copy(isLoading = false)
+
+            if (result.isSuccess && result.data != null) {
+                UserSession.update(result.data.id, result.data.name, result.data.email)
+                _eventChannel.send(RegisterUiEvent.NavigateToHome)
+            } else {
+                val err = result.message ?: "Registration failed"
+                _uiState.value = _uiState.value.copy(errorMessage = err)
+            }
         }
     }
 
