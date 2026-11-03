@@ -233,7 +233,9 @@ data class UserSettingsData(
 object ApiClient {
     // 10.0.2.2 reaches localhost on Android Emulator.
     // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.49.166/skillmirrorbackend"
-    var BASE_URL = "http://10.0.2.2/skillmirrorbackend"
+
+    var BASE_URL = "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend"
+
 
     private fun postJson(endpoint: String, bodyJson: JSONObject): Pair<Int, String> {
         val url = URL("$BASE_URL/$endpoint")
