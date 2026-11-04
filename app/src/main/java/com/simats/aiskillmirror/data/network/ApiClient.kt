@@ -48,7 +48,13 @@ data class DashboardData(
     val currentLessonTitle: String,
     val currentLessonCategory: String,
     val currentLessonDuration: String,
-    val currentLessonProgress: Double
+    val currentLessonProgress: Double,
+    val greeting: String = "Good morning,",
+    val currentDateText: String = "",
+    val headline: String = "Your future is taking shape.",
+    val streakSubtitle: String = "Your best week yet",
+    val minutesSubtitle: String = "to your goal",
+    val currentPlanTitle: String = ""
 )
 
 data class SkillItemData(
@@ -473,7 +479,13 @@ object ApiClient {
                     currentLessonTitle = d.optString("currentLessonTitle", "Speak with confidence"),
                     currentLessonCategory = d.optString("currentLessonCategory", "Communication"),
                     currentLessonDuration = d.optString("currentLessonDuration", "6 min"),
-                    currentLessonProgress = d.optDouble("currentLessonProgress", 0.6)
+                    currentLessonProgress = d.optDouble("currentLessonProgress", 0.6),
+                    greeting = d.optString("greeting", "Good morning,"),
+                    currentDateText = d.optString("currentDateText", ""),
+                    headline = d.optString("headline", "Your future is taking shape."),
+                    streakSubtitle = d.optString("streakSubtitle", "Your best week yet"),
+                    minutesSubtitle = d.optString("minutesSubtitle", "to your goal"),
+                    currentPlanTitle = d.optString("currentPlanTitle", "")
                 )
                 NetworkResult(true, message, data)
             } else {

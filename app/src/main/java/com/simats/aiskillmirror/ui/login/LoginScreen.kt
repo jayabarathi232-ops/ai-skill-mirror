@@ -49,7 +49,8 @@ fun LoginScreen(
     onLoginClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     onGoogleSignInClick: () -> Unit = {},
-    onSignUpClick: () -> Unit = {}
+    onSignUpClick: () -> Unit = {},
+    onBackClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -82,7 +83,10 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Top
         ) {
             // Top Bar
-            TopBarHeader(appName = "AI Skills Mirror")
+            TopBarHeader(
+                appName = "AI Skills Mirror",
+                onBackClick = onBackClick
+            )
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -105,7 +109,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Pick up where your progress left off.",
+                text = "Sign in to access your skills dashboard and progress.",
                 color = TextSecondary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal
@@ -124,7 +128,7 @@ fun LoginScreen(
             CustomOutlinedInputField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
-                placeholder = "Email address",
+                placeholder = "name@example.com",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 leadingIcon = { EmailIcon(size = 20.dp, color = TextSecondary) }
             )
@@ -151,7 +155,7 @@ fun LoginScreen(
                         modifier = Modifier.clickable { viewModel.onTogglePasswordVisibility() },
                         contentAlignment = Alignment.Center
                     ) {
-                        EyeIcon(size = 20.dp, color = TextSecondary)
+                        EyeIcon(size = 20.dp, color = if (uiState.isPasswordVisible) AccentPurple else TextSecondary)
                     }
                 }
             )
@@ -234,31 +238,39 @@ fun LoginScreen(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Canvas(modifier = Modifier.size(16.dp)) {
-                            val strokeWidth = 2.dp.toPx()
-                            drawPath(
-                                path = Path().apply {
-                                    moveTo(2.dp.toPx(), 8.dp.toPx())
-                                    lineTo(14.dp.toPx(), 8.dp.toPx())
-                                    moveTo(9.dp.toPx(), 3.dp.toPx())
-                                    lineTo(14.dp.toPx(), 8.dp.toPx())
-                                    lineTo(9.dp.toPx(), 13.dp.toPx())
-                                },
-                                color = Color.White,
-                                style = Stroke(width = strokeWidth)
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                val strokeWidth = 2.dp.toPx()
+                                drawPath(
+                                    path = Path().apply {
+                                        moveTo(2.dp.toPx(), 8.dp.toPx())
+                                        lineTo(14.dp.toPx(), 8.dp.toPx())
+                                        moveTo(9.dp.toPx(), 3.dp.toPx())
+                                        lineTo(14.dp.toPx(), 8.dp.toPx())
+                                        lineTo(9.dp.toPx(), 13.dp.toPx())
+                                    },
+                                    color = Color.White,
+                                    style = Stroke(width = strokeWidth)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Log in",
+                                color = TextPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Log in",
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
                     }
                 }
             }

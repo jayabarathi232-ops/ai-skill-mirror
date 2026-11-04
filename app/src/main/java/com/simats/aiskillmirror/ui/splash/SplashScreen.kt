@@ -1,5 +1,11 @@
 package com.simats.aiskillmirror.ui.splash
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -31,6 +38,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
 import com.simats.aiskillmirror.ui.theme.*
 
 @Composable
@@ -60,7 +68,7 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Central Graphic (Orbital system)
+            // Central Graphic (Orbital system with animated pulse)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -217,12 +225,30 @@ fun SplashScreen(
 }
 
 @Composable
-fun TopBarHeader(appName: String) {
+fun TopBarHeader(
+    appName: String,
+    onBackClick: (() -> Unit)? = null
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start,
         modifier = Modifier.padding(top = 8.dp)
     ) {
+        if (onBackClick != null) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SurfaceDark)
+                    .border(1.dp, Color(0xFF22293F), RoundedCornerShape(12.dp))
+                    .clickable { onBackClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                BackArrowIcon(size = 18.dp, color = TextPrimary)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
         // Logo Container
         Box(
             modifier = Modifier
@@ -251,8 +277,21 @@ fun TopBarHeader(appName: String) {
 
 @Composable
 fun OrbitalGraphic() {
+    val infiniteTransition = rememberInfiniteTransition(label = "orbital_pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
+    )
+
     Box(
-        modifier = Modifier.size(280.dp),
+        modifier = Modifier
+            .size(280.dp)
+            .scale(pulseScale),
         contentAlignment = Alignment.Center
     ) {
         // Canvas for Orbit Rings & Soft Glow

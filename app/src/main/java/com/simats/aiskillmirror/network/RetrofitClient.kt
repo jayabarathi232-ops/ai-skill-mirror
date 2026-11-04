@@ -1,4 +1,3 @@
-
 package com.simats.aiskillmirror.network
 
 import retrofit2.Retrofit
@@ -8,10 +7,15 @@ object RetrofitClient {
 
     private const val BASE_URL =
         "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend/"
+
     val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
     }
 }

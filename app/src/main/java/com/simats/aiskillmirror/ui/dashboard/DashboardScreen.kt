@@ -1,9 +1,15 @@
 package com.simats.aiskillmirror.ui.dashboard
 
+import android.widget.Toast
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -11,20 +17,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,6 +46,21 @@ import com.simats.aiskillmirror.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * AI Skills Mirror — Brand New Home Dashboard
+ * 
+ * Includes 8 Core Sections:
+ *  1. Welcome back message and user profile (Avatar, greeting, live date, notification bell)
+ *  2. Overall Skill Performance Score (Circular gauge, level, monthly improvement)
+ *  3. My Skills cards (Sports, Dance, Music, Photography, Coding)
+ *  4. AI Skill Analysis with Upload Video / Image / Audio
+ *  5. AI Personal Coach section (Coach advice, session trigger)
+ *  6. Recent Performance History (Timeline of recent diagnostics)
+ *  7. Weekly Progress Chart (7-day bar chart with hours and highlights)
+ *  8. Today's Recommended Practice (Actionable drills across domains)
+ * 
+ * Bottom Navigation: Home | Assess | Learn | Progress | Profile
+ */
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -48,6 +73,26 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    // Listen to ViewModel toast events
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is DashboardUiEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
+        }
+    }
+
+    // Animated Score
+    val animatedScore by animateIntAsState(
+        targetValue = uiState.skillScore,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "overall_score_animation"
+    )
 
     Box(
         modifier = Modifier
@@ -60,14 +105,286 @@ fun DashboardScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            // Main Scrollable Content
+            // Main Scrollable Body
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(scrollState)
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                // Header Row
+                // ==========================================
+                // 1. WELCOME BACK MESSAGE AND USER PROFILE
+                // ==========================================
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Profile Info & Avatar
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        // User Avatar Initial with Gradient Glow Ring
+                        Box(
+                            modifier = Modifier.size(50.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5))
+                                        )
+                                    )
+                                    .border(1.5.dp, Color(0xFFA855F7), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val initial = uiState.userName.firstOrNull()?.uppercase() ?: "M"
+                                Text(
+                                    text = initial,
+                                    color = TextPrimary,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            // Active status green pill
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .align(Alignment.BottomEnd)
+                                    .clip(CircleShape)
+                                    .background(GreenNode)
+                                    .border(2.dp, DarkBackground, CircleShape)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = uiState.greeting,
+                                    color = TextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "✨", fontSize = 12.sp)
+                            }
+                            Text(
+                                text = uiState.userName,
+                                color = TextPrimary,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = uiState.currentDateText,
+                                    color = Color(0xFF94A3B8),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF231B45))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "PRO",
+                                        color = TaglineText,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Notification Bell Icon Button
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(SurfaceDark)
+                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(14.dp))
+                            .clickable {
+                                viewModel.onNotificationsClick()
+                                onNotificationsClick()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BellIcon(size = 20.dp, color = TextPrimary)
+                        // Red Unread Notification Badge
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-8).dp, y = 8.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444))
+                                .border(1.5.dp, SurfaceDark, CircleShape)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // ==========================================
+                // 2. OVERALL SKILL PERFORMANCE SCORE
+                // ==========================================
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(Color(0xFF161233), Color(0xFF20184D))
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF453685), Color(0xFF221A4B))
+                            ),
+                            RoundedCornerShape(24.dp)
+                        )
+                        .padding(18.dp)
+                ) {
+                    Column {
+                        // Header: Tagline & Monthly Pill
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color(0xFF271E52))
+                                    .border(1.dp, Color(0xFF463588), RoundedCornerShape(100.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    SparkleMiniIcon(size = 12.dp, color = TaglineText)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "MULTI-SKILL MIRROR",
+                                        color = TaglineText,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            // Monthly Improvement Pill
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color(0xFF132A1B))
+                                    .border(1.dp, Color(0xFF1E462B), RoundedCornerShape(100.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "▲ +${uiState.monthlyPtsGain}% this month",
+                                    color = GreenNode,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Gauge + Score Details
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Circular Gauge
+                            Box(
+                                modifier = Modifier.size(116.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                DottedSkillScoreArc(score = animatedScore)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "$animatedScore",
+                                        color = TextPrimary,
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Text(
+                                        text = "OVERALL",
+                                        color = TextSecondary,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.6.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            // Score Insights
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = uiState.headline,
+                                    color = TextPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 20.sp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF2C225A))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "⭐ ${uiState.learnerStatus}",
+                                        color = Color(0xFFFBBF24),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable {
+                                        viewModel.onViewSkillMirrorClick()
+                                        onViewSkillMirrorClick()
+                                    }
+                                ) {
+                                    Text(
+                                        text = "View Skill Analytics",
+                                        color = TaglineText,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    RightArrowHeadIcon(size = 14.dp, color = TaglineText)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                // ==========================================
+                // 3. MY SKILLS CARDS (Sports, Dance, Music, Photography, Coding)
+                // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,217 +392,263 @@ fun DashboardScreen(
                 ) {
                     Column {
                         Text(
-                            text = uiState.currentDateText,
-                            color = TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Good morning, ${uiState.userName}",
+                            text = "My Skills",
                             color = TextPrimary,
-                            fontSize = 24.sp,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Real-time AI assessment across 5 core domains",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF1E1742))
+                            .border(1.dp, Color(0xFF382C6E), RoundedCornerShape(10.dp))
+                            .clickable { onTabSelected(DashboardTab.ASSESS) }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Assess All",
+                            color = TaglineText,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
 
-                    // Notification Bell Icon Button
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), CircleShape)
-                            .clickable {
-                                viewModel.onNotificationsClick()
-                                onNotificationsClick()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BellIcon(size = 18.dp, color = TextPrimary)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Horizontal Scrollable Skill Cards
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    uiState.mySkills.forEach { skill ->
+                        MySkillCard(
+                            skill = skill,
+                            onAssessClick = {
+                                Toast.makeText(context, "Opening ${skill.name} assessment...", Toast.LENGTH_SHORT).show()
+                                onTabSelected(DashboardTab.ASSESS)
+                            }
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Skill Score Hero Card
+                // ==========================================
+                // 4. AI SKILL ANALYSIS WITH UPLOAD VIDEO / IMAGE / AUDIO
+                // ==========================================
+                Text(
+                    text = "AI Multi-Modal Skill Analysis",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Upload performance media for computer vision & acoustic evaluation",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Upload Video Tile
+                    MediaUploadTile(
+                        modifier = Modifier.weight(1f),
+                        emoji = "📹",
+                        title = "Upload Video",
+                        subtitle = "Motion & Form",
+                        badge = "Vision AI",
+                        accentColor = Color(0xFFA855F7),
+                        onClick = {
+                            viewModel.onUploadMedia("Video", "sports_swing_form.mp4")
+                        }
+                    )
+
+                    // Upload Image Tile
+                    MediaUploadTile(
+                        modifier = Modifier.weight(1f),
+                        emoji = "🖼️",
+                        title = "Upload Image",
+                        subtitle = "Pose & Framing",
+                        badge = "Pose AI",
+                        accentColor = CyanNode,
+                        onClick = {
+                            viewModel.onUploadMedia("Image", "posture_alignment.jpg")
+                        }
+                    )
+
+                    // Upload Audio Tile
+                    MediaUploadTile(
+                        modifier = Modifier.weight(1f),
+                        emoji = "🎙️",
+                        title = "Upload Audio",
+                        subtitle = "Pitch & Cadence",
+                        badge = "Acoustic AI",
+                        accentColor = GreenNode,
+                        onClick = {
+                            viewModel.onUploadMedia("Audio", "vocal_range_sample.wav")
+                        }
+                    )
+                }
+
+                // Upload Feedback Banner (if active)
+                if (uiState.uploadFeedbackMessage != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF1E1742))
+                            .border(1.dp, Color(0xFF453685), RoundedCornerShape(14.dp))
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "⚡", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (uiState.isAnalyzing) "Processing Upload..." else "AI Analysis Complete",
+                                    color = TextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = uiState.uploadFeedbackMessage ?: "",
+                                    color = TaglineText,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ==========================================
+                // 5. AI PERSONAL COACH SECTION
+                // ==========================================
+                Text(
+                    text = "AI Personal Coach",
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(22.dp))
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF16132D), Color(0xFF1E1A3D))
+                                colors = listOf(Color(0xFF1B163F), Color(0xFF261D57))
                             )
                         )
-                        .border(1.dp, Color(0xFF2E2858), RoundedCornerShape(22.dp))
-                        .padding(18.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Left: Skill Score Circular Arc
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
-                                modifier = Modifier.size(105.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                DottedSkillScoreArc(score = uiState.skillScore)
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "${uiState.skillScore}",
-                                        color = TextPrimary,
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "SKILL SCORE",
-                                        color = TextSecondary,
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "${uiState.assessedSkillsCount} skills assessed",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal
-                            )
+                        .border(
+                            1.dp,
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF4E3D96), Color(0xFF241C4E))
+                            ),
+                            RoundedCornerShape(22.dp)
+                        )
+                        .clickable {
+                            viewModel.onOpenAiCoachClick()
+                            onOpenAiCoachClick()
                         }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Right: Skill Score Info Details
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.Start
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Points Badge
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF132A1B))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF332768)),
+                                contentAlignment = Alignment.Center
                             ) {
+                                SparkleIcon(size = 24.dp, color = TaglineText)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Coach Aria",
+                                        color = TextPrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(Color(0xFF132A1B))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "ONLINE",
+                                            color = GreenNode,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                                 Text(
-                                    text = "+${uiState.monthlyPtsGain} pts this month",
-                                    color = GreenNode,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    text = "Adaptive Multi-Skill Mentor",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
                                 )
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
+                        Text(
+                            text = uiState.aiCoachSubtitle,
+                            color = Color(0xFFE2E8F0),
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // CTA Button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                                    )
+                                )
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = uiState.headline,
+                                text = "Start AI Coaching Session →",
                                 color = TextPrimary,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                lineHeight = 22.sp
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = uiState.learnerStatus,
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text(
-                                text = "View skill mirror →",
-                                color = TaglineText,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.clickable {
-                                    viewModel.onViewSkillMirrorClick()
-                                    onViewSkillMirrorClick()
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Metrics Row (Current streak & Minutes today)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // Metric 1: Current Streak
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "Current streak",
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "${uiState.currentStreakDays} days",
-                                color = TextPrimary,
-                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = uiState.streakSubtitle,
-                                color = GreenNode,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-
-                    // Metric 2: Minutes Today
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "Minutes today",
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "${uiState.minutesToday} / ${uiState.goalMinutesToday}",
-                                color = TextPrimary,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = uiState.minutesSubtitle,
-                                color = Color(0xFFEAB308),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -293,33 +656,69 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Continue Your Journey Section Header
+                // ==========================================
+                // 6. RECENT PERFORMANCE HISTORY
+                // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Continue your journey",
+                        text = "Recent Performance History",
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "View plan",
-                        color = TaglineText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable {
-                            viewModel.onViewPlanClick()
-                            onViewPlanClick()
-                        }
+                        text = "Last 7 days",
+                        color = TextSecondary,
+                        fontSize = 12.sp
                     )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Lesson Card
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    uiState.recentHistory.forEach { item ->
+                        PerformanceHistoryCard(item = item)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ==========================================
+                // 7. WEEKLY PROGRESS CHART
+                // ==========================================
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Weekly Progress",
+                            color = TextPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Practice intensity & hours spent across skills",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Text(
+                        text = "14.5 hrs total",
+                        color = TaglineText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Weekly Chart Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -331,146 +730,86 @@ fun DashboardScreen(
                     Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFF221A3E)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    MicIcon(size = 20.dp, color = TaglineText)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = uiState.currentLessonTitle,
-                                        color = TextPrimary,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = uiState.currentLessonCategory,
-                                        color = TextSecondary,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Normal
-                                    )
-                                }
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryGradientEnd)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Daily Practice Hours",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
-
                             Text(
-                                text = uiState.currentLessonDuration,
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+                                text = "▲ +18% vs last week",
+                                color = GreenNode,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // Linear Progress Bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF222842))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(uiState.currentLessonProgress)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(100.dp))
-                                    .background(PrimaryGradientEnd)
-                            )
-                        }
+                        // Custom Weekly Canvas Bar Chart
+                        WeeklyBarChart(progressList = uiState.weeklyProgress)
+                    }
+                }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
+                // ==========================================
+                // 8. TODAY'S RECOMMENDED PRACTICE
+                // ==========================================
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
                         Text(
-                            text = "Continue training →",
-                            color = TaglineText,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable {
-                                viewModel.onContinueTrainingClick()
+                            text = "Today's Recommended Practice",
+                            color = TextPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Curated drills tailored to your growth goals",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    uiState.recommendedPractice.forEach { practice ->
+                        RecommendedPracticeCard(
+                            practice = practice,
+                            onStartClick = {
+                                Toast.makeText(context, "Starting ${practice.title}...", Toast.LENGTH_SHORT).show()
                                 onContinueTrainingClick()
                             }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // AI Coach Card Banner
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF1A163B), Color(0xFF1F1B45))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
-                        .clickable {
-                            viewModel.onOpenAiCoachClick()
-                            onOpenAiCoachClick()
-                        }
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF2A2252)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                SparkleIcon(size = 20.dp, color = TaglineText)
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column {
-                                Text(
-                                    text = uiState.aiCoachTitle,
-                                    color = TextPrimary,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = uiState.aiCoachSubtitle,
-                                    color = TextSecondary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Normal
-                                )
-                            }
-                        }
-
-                        RightArrowHeadIcon(size = 18.dp, color = TextSecondary)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Fixed Bottom Navigation Bar
+            // ==========================================
+            // FIXED BOTTOM NAVIGATION BAR
+            // ==========================================
             BottomNavigationBar(
-                selectedTab = uiState.selectedTab,
+                selectedTab = DashboardTab.HOME,
                 onTabSelected = { tab ->
                     viewModel.onSelectTab(tab)
                     onTabSelected(tab)
@@ -479,6 +818,436 @@ fun DashboardScreen(
         }
     }
 }
+
+// ========================================================
+// REUSABLE DASHBOARD CARDS & WIDGETS
+// ========================================================
+
+@Composable
+fun MySkillCard(
+    skill: SkillItem,
+    onAssessClick: () -> Unit
+) {
+    val accentColor = Color(skill.accentColor)
+
+    Box(
+        modifier = Modifier
+            .width(165.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF171330), Color(0xFF211947))
+                )
+            )
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    colors = listOf(accentColor.copy(alpha = 0.5f), Color(0xFF2A2052))
+                ),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(14.dp)
+    ) {
+        Column {
+            // Icon & Score
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(accentColor.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = skill.iconEmoji, fontSize = 18.sp)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color(0xFF132A1B))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${skill.score}%",
+                        color = GreenNode,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = skill.name,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = skill.category,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Linear Progress Bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(Color(0xFF222842))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(skill.progress)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(accentColor)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Action link
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAssessClick() },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = skill.level,
+                    color = TaglineText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Assess →",
+                    color = TextPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MediaUploadTile(
+    modifier: Modifier = Modifier,
+    emoji: String,
+    title: String,
+    subtitle: String,
+    badge: String,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(SurfaceDark)
+            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+            .clickable { onClick() }
+            .padding(12.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = emoji, fontSize = 20.sp)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = subtitle,
+                color = TextSecondary,
+                fontSize = 9.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFF1E193C))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = badge,
+                    color = TaglineText,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PerformanceHistoryCard(item: PerformanceHistoryItem) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceDark)
+            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+            .padding(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF221A45)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = item.iconEmoji, fontSize = 20.sp)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.skillName,
+                        color = TaglineText,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = item.dateText,
+                        color = TextSecondary,
+                        fontSize = 10.sp
+                    )
+                }
+
+                Text(
+                    text = item.activity,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = item.feedback,
+                    color = GreenNode,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Score Badge
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF142E1F))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "${item.score}%",
+                    color = GreenNode,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WeeklyBarChart(progressList: List<WeeklyDayProgress>) {
+    val maxHours = 4.0f
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        progressList.forEach { dayProg ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Hours label
+                Text(
+                    text = "${dayProg.hours}h",
+                    color = if (dayProg.isToday) TaglineText else TextSecondary,
+                    fontSize = 9.sp,
+                    fontWeight = if (dayProg.isToday) FontWeight.Bold else FontWeight.Normal
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Bar
+                val barHeightFraction = (dayProg.hours / maxHours).coerceIn(0.15f, 1f)
+                Box(
+                    modifier = Modifier
+                        .width(18.dp)
+                        .fillMaxHeight(barHeightFraction)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                        .background(
+                            if (dayProg.isToday) {
+                                Brush.verticalGradient(
+                                    colors = listOf(PrimaryGradientEnd, PrimaryGradientStart)
+                                )
+                            } else {
+                                Brush.verticalGradient(
+                                    colors = listOf(Color(0xFF332962), Color(0xFF1E1742))
+                                )
+                            }
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Day Label
+                Text(
+                    text = dayProg.day,
+                    color = if (dayProg.isToday) TextPrimary else TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = if (dayProg.isToday) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RecommendedPracticeCard(
+    practice: RecommendedPracticeItem,
+    onStartClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceDark)
+            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+            .padding(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF251D4B)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = practice.iconEmoji, fontSize = 20.sp)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF1E1A3D))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = practice.skill,
+                            color = TaglineText,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "⏱️ ${practice.durationText}",
+                        color = TextSecondary,
+                        fontSize = 10.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = practice.title,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                        )
+                    )
+                    .clickable { onStartClick() }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Start",
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+// ========================================================
+// SHARED EXPORTED COMPONENTS (REQUIRED BY OTHER SCREENS)
+// ========================================================
 
 @Composable
 fun DottedSkillScoreArc(score: Int) {
@@ -735,6 +1504,23 @@ fun RightArrowHeadIcon(size: Dp, color: Color) {
             color = color,
             style = Stroke(width = strokeWidth)
         )
+    }
+}
+
+@Composable
+fun SparkleMiniIcon(size: Dp, color: Color) {
+    Canvas(modifier = Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val path = Path().apply {
+            moveTo(w * 0.50f, 0f)
+            quadraticTo(w * 0.50f, h * 0.50f, w, h * 0.50f)
+            quadraticTo(w * 0.50f, h * 0.50f, w * 0.50f, h)
+            quadraticTo(w * 0.50f, h * 0.50f, 0f, h * 0.50f)
+            quadraticTo(w * 0.50f, h * 0.50f, w * 0.50f, 0f)
+            close()
+        }
+        drawPath(path = path, color = color)
     }
 }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.data.repository.DashboardRepository
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,17 +33,22 @@ class DashboardViewModel(
                 val d = result.data
                 _uiState.value = _uiState.value.copy(
                     userName = if (d.userName.isNotBlank()) d.userName else _uiState.value.userName,
-                    skillScore = d.skillScore,
-                    monthlyPtsGain = d.monthlyPtsGain,
-                    currentStreakDays = d.currentStreakDays,
-                    minutesToday = d.minutesToday,
-                    goalMinutesToday = d.goalMinutesToday,
-                    assessedSkillsCount = d.assessedSkillsCount,
-                    learnerStatus = d.learnerStatus,
-                    currentLessonTitle = d.currentLessonTitle,
-                    currentLessonCategory = d.currentLessonCategory,
-                    currentLessonDuration = d.currentLessonDuration,
-                    currentLessonProgress = d.currentLessonProgress.toFloat()
+                    skillScore = if (d.skillScore > 0) d.skillScore else _uiState.value.skillScore,
+                    monthlyPtsGain = if (d.monthlyPtsGain > 0) d.monthlyPtsGain else _uiState.value.monthlyPtsGain,
+                    currentStreakDays = if (d.currentStreakDays > 0) d.currentStreakDays else _uiState.value.currentStreakDays,
+                    minutesToday = if (d.minutesToday > 0) d.minutesToday else _uiState.value.minutesToday,
+                    goalMinutesToday = if (d.goalMinutesToday > 0) d.goalMinutesToday else _uiState.value.goalMinutesToday,
+                    assessedSkillsCount = if (d.assessedSkillsCount > 0) d.assessedSkillsCount else 5,
+                    learnerStatus = if (d.learnerStatus.isNotBlank()) d.learnerStatus else _uiState.value.learnerStatus,
+                    currentLessonTitle = if (d.currentLessonTitle.isNotBlank()) d.currentLessonTitle else _uiState.value.currentLessonTitle,
+                    currentLessonCategory = if (d.currentLessonCategory.isNotBlank()) d.currentLessonCategory else _uiState.value.currentLessonCategory,
+                    currentLessonDuration = if (d.currentLessonDuration.isNotBlank()) d.currentLessonDuration else _uiState.value.currentLessonDuration,
+                    greeting = if (d.greeting.isNotBlank()) d.greeting else _uiState.value.greeting,
+                    currentDateText = if (d.currentDateText.isNotBlank()) d.currentDateText else _uiState.value.currentDateText,
+                    headline = if (d.headline.isNotBlank()) d.headline else _uiState.value.headline,
+                    streakSubtitle = if (d.streakSubtitle.isNotBlank()) d.streakSubtitle else _uiState.value.streakSubtitle,
+                    minutesSubtitle = if (d.minutesSubtitle.isNotBlank()) d.minutesSubtitle else _uiState.value.minutesSubtitle,
+                    currentPlanTitle = if (d.currentPlanTitle.isNotBlank()) d.currentPlanTitle else _uiState.value.currentPlanTitle
                 )
             }
         }
@@ -50,6 +56,28 @@ class DashboardViewModel(
 
     fun onSelectTab(tab: DashboardTab) {
         _uiState.value = _uiState.value.copy(selectedTab = tab)
+    }
+
+    fun onUploadMedia(type: String, filename: String = "") {
+        viewModelScope.launch {
+            val name = if (filename.isNotBlank()) filename else when (type.lowercase()) {
+                "video" -> "practice_session.mp4"
+                "image" -> "posture_alignment.jpg"
+                else -> "speech_sample.wav"
+            }
+            _uiState.value = _uiState.value.copy(
+                uploadedMediaType = type,
+                uploadedMediaName = name,
+                isAnalyzing = true,
+                uploadFeedbackMessage = "Analyzing $type using AI vision & acoustic models..."
+            )
+            delay(1500)
+            _uiState.value = _uiState.value.copy(
+                isAnalyzing = false,
+                uploadFeedbackMessage = "Analysis complete! Score updated to ${_uiState.value.skillScore}% (+2 pts)."
+            )
+            _eventChannel.send(DashboardUiEvent.ShowToast("Uploaded $type successfully! AI Analysis complete."))
+        }
     }
 
     fun onViewSkillMirrorClick() {

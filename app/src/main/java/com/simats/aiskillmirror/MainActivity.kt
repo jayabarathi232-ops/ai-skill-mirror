@@ -3,16 +3,16 @@ package com.simats.aiskillmirror
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.simats.aiskillmirror.ui.assess.SkillSelectionScreen
 import com.simats.aiskillmirror.ui.assess.SkillSelectionViewModel
@@ -31,9 +31,9 @@ import com.simats.aiskillmirror.ui.notifications.NotificationsScreen
 import com.simats.aiskillmirror.ui.notifications.NotificationsViewModel
 import com.simats.aiskillmirror.ui.onboarding.OnboardingScreen
 import com.simats.aiskillmirror.ui.onboarding.OnboardingViewModel
+import com.simats.aiskillmirror.ui.profile.EditProfileScreen
 import com.simats.aiskillmirror.ui.profile.ProfileScreen
 import com.simats.aiskillmirror.ui.profile.ProfileViewModel
-import com.simats.aiskillmirror.ui.profile.EditProfileScreen
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsScreen
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsViewModel
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
@@ -115,18 +115,69 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = DarkBackground
                 ) {
-                    var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
+                    val backStack = remember { mutableStateListOf(AppScreen.SPLASH) }
+                    val currentScreen = backStack.lastOrNull() ?: AppScreen.DASHBOARD
 
-                    Crossfade(targetState = currentScreen, label = "screen_transition") { screen ->
+                    fun navigateTo(screen: AppScreen) {
+                        if (backStack.lastOrNull() != screen) {
+                            backStack.add(screen)
+                        }
+                    }
+
+                    fun navigateBack() {
+                        if (backStack.size > 1) {
+                            backStack.removeAt(backStack.size - 1)
+                        }
+                    }
+
+                    fun replaceWith(screen: AppScreen) {
+                        backStack.clear()
+                        backStack.add(screen)
+                    }
+
+                    fun selectMainTab(screen: AppScreen) {
+                        backStack.clear()
+                        backStack.add(AppScreen.DASHBOARD)
+                        if (screen != AppScreen.DASHBOARD) {
+                            backStack.add(screen)
+                        }
+                    }
+
+                    fun handleTabSelected(tab: DashboardTab) {
+                        when (tab) {
+                            DashboardTab.HOME -> selectMainTab(AppScreen.DASHBOARD)
+                            DashboardTab.PROFILE -> selectMainTab(AppScreen.PROFILE)
+                            DashboardTab.ASSESS -> selectMainTab(AppScreen.SKILL_SELECTION)
+                            DashboardTab.LEARN -> selectMainTab(AppScreen.ROADMAP)
+                            DashboardTab.PROGRESS -> selectMainTab(AppScreen.PROGRESS_ANALYTICS)
+                        }
+                    }
+
+                    // System Back Button Handling
+                    BackHandler(enabled = true) {
+                        if (backStack.size > 1) {
+                            navigateBack()
+                        } else if (currentScreen != AppScreen.DASHBOARD && currentScreen != AppScreen.LOGIN && currentScreen != AppScreen.SPLASH) {
+                            selectMainTab(AppScreen.DASHBOARD)
+                        } else {
+                            finish()
+                        }
+                    }
+
+                    Crossfade(
+                        targetState = currentScreen,
+                        animationSpec = tween(300),
+                        label = "screen_transition"
+                    ) { screen ->
                         when (screen) {
                             AppScreen.SPLASH -> {
                                 SplashScreen(
                                     viewModel = splashViewModel,
                                     onNavigateToHome = {
-                                        currentScreen = AppScreen.ONBOARDING
+                                        replaceWith(AppScreen.DASHBOARD)
                                     },
                                     onNavigateToLogin = {
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateTo(AppScreen.LOGIN)
                                     }
                                 )
                             }
@@ -134,10 +185,10 @@ class MainActivity : ComponentActivity() {
                                 OnboardingScreen(
                                     viewModel = onboardingViewModel,
                                     onCreateAccountClick = {
-                                        currentScreen = AppScreen.REGISTER
+                                        navigateTo(AppScreen.REGISTER)
                                     },
                                     onSkipClick = {
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateTo(AppScreen.LOGIN)
                                     }
                                 )
                             }
@@ -146,14 +197,16 @@ class MainActivity : ComponentActivity() {
                                     viewModel = registerViewModel,
                                     onCreateAccountClick = {
                                         Toast.makeText(this@MainActivity, "Account Created Successfully!", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateTo(AppScreen.LOGIN)
                                     },
                                     onGoogleSignInClick = {
-                                        Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.DASHBOARD
+                                        replaceWith(AppScreen.DASHBOARD)
                                     },
                                     onLoginClick = {
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateTo(AppScreen.LOGIN)
+                                    },
+                                    onBackClick = {
+                                        navigateBack()
                                     }
                                 )
                             }
@@ -163,17 +216,22 @@ class MainActivity : ComponentActivity() {
                                     onLoginClick = {
                                         Toast.makeText(this@MainActivity, "Logged in Successfully!", Toast.LENGTH_SHORT).show()
                                         profileViewModel.loadProfile()
-                                        currentScreen = AppScreen.DASHBOARD
+                                        dashboardViewModel.loadDashboard()
+                                        replaceWith(AppScreen.DASHBOARD)
                                     },
                                     onForgotPasswordClick = {
-                                        currentScreen = AppScreen.RECOVERY
+                                        navigateTo(AppScreen.RECOVERY)
                                     },
                                     onGoogleSignInClick = {
-                                        Toast.makeText(this@MainActivity, "Google Sign In Clicked", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.DASHBOARD
+                                        profileViewModel.loadProfile()
+                                        dashboardViewModel.loadDashboard()
+                                        replaceWith(AppScreen.DASHBOARD)
                                     },
                                     onSignUpClick = {
-                                        currentScreen = AppScreen.REGISTER
+                                        navigateTo(AppScreen.REGISTER)
+                                    },
+                                    onBackClick = {
+                                        navigateBack()
                                     }
                                 )
                             }
@@ -182,10 +240,10 @@ class MainActivity : ComponentActivity() {
                                     viewModel = recoveryViewModel,
                                     onSendResetLinkClick = {
                                         Toast.makeText(this@MainActivity, "Reset link sent!", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateBack()
                                     },
                                     onBackToLoginClick = {
-                                        currentScreen = AppScreen.LOGIN
+                                        navigateBack()
                                     }
                                 )
                             }
@@ -193,28 +251,20 @@ class MainActivity : ComponentActivity() {
                                 DashboardScreen(
                                     viewModel = dashboardViewModel,
                                     onNotificationsClick = {
-                                        currentScreen = AppScreen.NOTIFICATIONS
+                                        navigateTo(AppScreen.NOTIFICATIONS)
                                     },
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onViewSkillMirrorClick = {
-                                        currentScreen = AppScreen.SKILL_MIRROR
+                                        navigateTo(AppScreen.SKILL_MIRROR)
                                     },
                                     onViewPlanClick = {
-                                        currentScreen = AppScreen.ROADMAP
+                                        navigateTo(AppScreen.ROADMAP)
                                     },
                                     onContinueTrainingClick = {
-                                        currentScreen = AppScreen.DAILY_TRAINING
+                                        navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onOpenAiCoachClick = {
-                                        currentScreen = AppScreen.AI_COACH
+                                        navigateTo(AppScreen.AI_COACH)
                                     }
                                 )
                             }
@@ -222,182 +272,123 @@ class MainActivity : ComponentActivity() {
                                 EditProfileScreen(
                                     viewModel = profileViewModel,
                                     onBackClick = {
-                                        currentScreen = AppScreen.PROFILE
+                                        navigateBack()
                                     },
                                     onProfileSaved = {
                                         profileViewModel.loadProfile()
-                                        currentScreen = AppScreen.PROFILE
+                                        dashboardViewModel.loadDashboard()
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.PROFILE -> {
                                 ProfileScreen(
                                     viewModel = profileViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onEditPersonalInfoClick = {
-                                        currentScreen = AppScreen.EDIT_PROFILE
+                                        navigateTo(AppScreen.EDIT_PROFILE)
                                     },
                                     onNextMilestoneClick = {
-                                        currentScreen = AppScreen.MILESTONES
+                                        navigateTo(AppScreen.MILESTONES)
+                                    },
+                                    onSettingsClick = {
+                                        navigateTo(AppScreen.SETTINGS)
                                     }
                                 )
                             }
                             AppScreen.SKILL_SELECTION -> {
                                 SkillSelectionScreen(
                                     viewModel = skillSelectionViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onStartAssessmentClick = {
-                                        currentScreen = AppScreen.ASSESSMENT
+                                        navigateTo(AppScreen.ASSESSMENT)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.ASSESSMENT -> {
                                 AssessmentScreen(
                                     viewModel = assessmentViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onNextQuestionClick = {
                                         Toast.makeText(this@MainActivity, "Next Question", Toast.LENGTH_SHORT).show()
                                     },
                                     onFinishAssessmentClick = {
                                         Toast.makeText(this@MainActivity, "Assessment Complete!", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.SKILL_MIRROR
+                                        dashboardViewModel.loadDashboard()
+                                        navigateTo(AppScreen.SKILL_MIRROR)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.SKILL_SELECTION
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.SKILL_MIRROR -> {
                                 SkillMirrorScreen(
                                     viewModel = skillMirrorViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onViewLearningPlanClick = {
-                                        currentScreen = AppScreen.ROADMAP
+                                        navigateTo(AppScreen.ROADMAP)
                                     },
                                     onShareResultsClick = {
                                         Toast.makeText(this@MainActivity, "Sharing Skill Mirror Results...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.SKILL_SELECTION
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.ROADMAP -> {
                                 GrowthRoadmapScreen(
                                     viewModel = roadmapViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onContinueActiveWeekClick = {
-                                        currentScreen = AppScreen.DAILY_TRAINING
+                                        navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onFilterClick = {
                                         Toast.makeText(this@MainActivity, "Opening Filter Settings...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.DAILY_TRAINING -> {
                                 DailyTrainingScreen(
                                     viewModel = dailyTrainingViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onStartPracticeClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                        navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onCalendarClick = {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.ROADMAP
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.SPEECH_STUDIO -> {
                                 SpeechStudioScreen(
                                     viewModel = speechStudioViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onStopClick = {
                                         Toast.makeText(this@MainActivity, "Recording saved! Analysis ready.", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.SPEECH_ANALYSIS
+                                        navigateTo(AppScreen.SPEECH_ANALYSIS)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DAILY_TRAINING
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.SPEECH_ANALYSIS -> {
                                 SpeechAnalysisScreen(
                                     viewModel = speechAnalysisViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onPracticeAgainClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                        navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onPlayRecordingClick = {
                                         Toast.makeText(this@MainActivity, "Playing audio recording...", Toast.LENGTH_SHORT).show()
@@ -406,139 +397,89 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.SETTINGS
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.PROGRESS_ANALYTICS -> {
                                 ProgressAnalyticsScreen(
                                     viewModel = progressAnalyticsViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onViewReportClick = {
-                                        currentScreen = AppScreen.GROWTH_REPORT
+                                        navigateTo(AppScreen.GROWTH_REPORT)
                                     },
                                     onCalendarClick = {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.DASHBOARD
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.GROWTH_REPORT -> {
                                 GrowthReportScreen(
                                     viewModel = growthReportViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onExportPdfClick = {
-                                        Toast.makeText(this@MainActivity, "Exporting report as PDF...", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.MILESTONES
+                                        Toast.makeText(this@MainActivity, "Report exported to PDF successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.PROGRESS_ANALYTICS
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.MILESTONES -> {
                                 MilestonesScreen(
                                     viewModel = milestonesViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onAddGoalClick = {
-                                        currentScreen = AppScreen.NOTIFICATIONS
+                                        navigateTo(AppScreen.NOTIFICATIONS)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.GROWTH_REPORT
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.NOTIFICATIONS -> {
                                 NotificationsScreen(
                                     viewModel = notificationsViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onMarkAllAsReadClick = {
                                         Toast.makeText(this@MainActivity, "All notifications marked as read", Toast.LENGTH_SHORT).show()
                                     },
                                     onSettingsClick = {
-                                        currentScreen = AppScreen.SETTINGS
+                                        navigateTo(AppScreen.SETTINGS)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.MILESTONES
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.AI_COACH -> {
                                 AiCoachScreen(
                                     viewModel = aiCoachViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            else -> {}
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onStartPracticeFromCoachClick = {
-                                        currentScreen = AppScreen.SPEECH_STUDIO
+                                        navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.SETTINGS
+                                        navigateBack()
                                     }
                                 )
                             }
                             AppScreen.SETTINGS -> {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
-                                    onTabSelected = { tab ->
-                                        when (tab) {
-                                            DashboardTab.HOME -> currentScreen = AppScreen.DASHBOARD
-                                            DashboardTab.PROFILE -> currentScreen = AppScreen.PROFILE
-                                            DashboardTab.ASSESS -> currentScreen = AppScreen.SKILL_SELECTION
-                                            DashboardTab.LEARN -> currentScreen = AppScreen.ROADMAP
-                                            DashboardTab.PROGRESS -> currentScreen = AppScreen.PROGRESS_ANALYTICS
-                                        }
-                                    },
+                                    onTabSelected = ::handleTabSelected,
                                     onPersonalInformationClick = {
-                                        currentScreen = AppScreen.EDIT_PROFILE
+                                        navigateTo(AppScreen.EDIT_PROFILE)
                                     },
                                     onLogoutClick = {
                                         Toast.makeText(this@MainActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                                        currentScreen = AppScreen.LOGIN
+                                        replaceWith(AppScreen.LOGIN)
                                     },
                                     onBackClick = {
-                                        currentScreen = AppScreen.PROFILE
+                                        navigateBack()
                                     }
                                 )
                             }

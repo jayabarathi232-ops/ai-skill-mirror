@@ -42,7 +42,8 @@ fun RegisterScreen(
     viewModel: RegisterViewModel,
     onCreateAccountClick: () -> Unit = {},
     onGoogleSignInClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {}
+    onLoginClick: () -> Unit = {},
+    onBackClick: () -> Unit = onLoginClick
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -72,8 +73,11 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top
         ) {
-            // Top Bar
-            TopBarHeader(appName = "AI Skills Mirror")
+            // Top Bar with back navigation
+            TopBarHeader(
+                appName = "AI Skills Mirror",
+                onBackClick = onBackClick
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -150,7 +154,7 @@ fun RegisterScreen(
             CustomOutlinedInputField(
                 value = uiState.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
-                placeholder = "Password",
+                placeholder = "Password (min 6 chars)",
                 visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 leadingIcon = { LockIcon(size = 20.dp, color = TextSecondary) },
@@ -159,7 +163,7 @@ fun RegisterScreen(
                         modifier = Modifier.clickable { viewModel.onTogglePasswordVisibility() },
                         contentAlignment = Alignment.Center
                     ) {
-                        EyeIcon(size = 20.dp, color = TextSecondary)
+                        EyeIcon(size = 20.dp, color = if (uiState.isPasswordVisible) AccentPurple else TextSecondary)
                     }
                 }
             )
@@ -268,31 +272,39 @@ fun RegisterScreen(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Canvas(modifier = Modifier.size(16.dp)) {
-                            val strokeWidth = 2.dp.toPx()
-                            drawPath(
-                                path = Path().apply {
-                                    moveTo(2.dp.toPx(), 8.dp.toPx())
-                                    lineTo(14.dp.toPx(), 8.dp.toPx())
-                                    moveTo(9.dp.toPx(), 3.dp.toPx())
-                                    lineTo(14.dp.toPx(), 8.dp.toPx())
-                                    lineTo(9.dp.toPx(), 13.dp.toPx())
-                                },
-                                color = Color.White,
-                                style = Stroke(width = strokeWidth)
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                val strokeWidth = 2.dp.toPx()
+                                drawPath(
+                                    path = Path().apply {
+                                        moveTo(2.dp.toPx(), 8.dp.toPx())
+                                        lineTo(14.dp.toPx(), 8.dp.toPx())
+                                        moveTo(9.dp.toPx(), 3.dp.toPx())
+                                        lineTo(14.dp.toPx(), 8.dp.toPx())
+                                        lineTo(9.dp.toPx(), 13.dp.toPx())
+                                    },
+                                    color = Color.White,
+                                    style = Stroke(width = strokeWidth)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Create account",
+                                color = TextPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Create account",
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
                     }
                 }
             }

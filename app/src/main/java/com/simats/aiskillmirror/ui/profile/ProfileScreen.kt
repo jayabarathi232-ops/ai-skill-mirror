@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -33,6 +34,7 @@ import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.RightArrowHeadIcon
 import com.simats.aiskillmirror.ui.onboarding.TargetScanIcon
 import com.simats.aiskillmirror.ui.register.EmailIcon
+import com.simats.aiskillmirror.ui.roadmap.FilterSlidersIcon
 import com.simats.aiskillmirror.ui.theme.*
 
 @Composable
@@ -40,7 +42,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onTabSelected: (DashboardTab) -> Unit = {},
     onEditPersonalInfoClick: () -> Unit = {},
-    onNextMilestoneClick: () -> Unit = {}
+    onNextMilestoneClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -64,7 +67,34 @@ fun ProfileScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
+                // Top Header Row with Title and Settings Button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "My Profile",
+                        color = TextPrimary,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(SurfaceDark)
+                            .border(1.dp, Color(0xFF22293F), CircleShape)
+                            .clickable { onSettingsClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FilterSlidersIcon(size = 18.dp, color = TextPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Avatar Box
                 Box(
@@ -109,28 +139,28 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Pill Badge
+                // Learner Badge Tagline Pill
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
                         .background(TaglineBackground)
-                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = uiState.learnerBadgeText,
                         color = TaglineText,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // 3 Stats Cards Row
+                // 3 Stats Metrics Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     ProfileStatCard(
                         modifier = Modifier.weight(1f),
@@ -139,59 +169,71 @@ fun ProfileScreen(
                     )
                     ProfileStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Sessions",
-                        value = "${uiState.totalSessions}"
+                        label = "Streak",
+                        value = "${uiState.dayStreak}d"
                     )
                     ProfileStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "Day streak",
-                        value = "${uiState.dayStreak}"
+                        label = "Sessions",
+                        value = "${uiState.totalSessions}"
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Personal Information Section
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Personal information",
-                        color = TextPrimary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Edit",
-                        color = TaglineText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable {
-                            viewModel.onEditPersonalInfoClick()
-                            onEditPersonalInfoClick()
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Personal Information Card Container
+                // Personal Info Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .background(SurfaceDark)
                         .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
-                        .padding(16.dp)
+                        .padding(18.dp)
                 ) {
                     Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Personal info",
+                                color = TextPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Edit",
+                                color = TaglineText,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable {
+                                    viewModel.onEditPersonalInfoClick()
+                                    onEditPersonalInfoClick()
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         // Email Item
                         ProfileInfoItem(
                             icon = { EmailIcon(size = 20.dp, color = TaglineText) },
-                            title = "Email address",
+                            title = "Email",
                             subtitle = uiState.email
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = Color(0xFF20263D),
+                            thickness = 1.dp
+                        )
+
+                        // Phone Item
+                        ProfileInfoItem(
+                            icon = { PhoneIcon(size = 20.dp, color = TaglineText) },
+                            title = "Phone",
+                            subtitle = uiState.phone
                         )
 
                         HorizontalDivider(
@@ -374,6 +416,30 @@ fun ProfileInfoItem(
                 fontWeight = FontWeight.Normal
             )
         }
+    }
+}
+
+@Composable
+fun PhoneIcon(size: Dp, color: Color) {
+    Canvas(modifier = Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val strokeWidth = 1.8.dp.toPx()
+
+        drawPath(
+            path = Path().apply {
+                moveTo(w * 0.28f, h * 0.15f)
+                lineTo(w * 0.72f, h * 0.15f)
+                lineTo(w * 0.72f, h * 0.85f)
+                lineTo(w * 0.28f, h * 0.85f)
+                close()
+
+                moveTo(w * 0.45f, h * 0.75f)
+                lineTo(w * 0.55f, h * 0.75f)
+            },
+            color = color,
+            style = Stroke(width = strokeWidth)
+        )
     }
 }
 
