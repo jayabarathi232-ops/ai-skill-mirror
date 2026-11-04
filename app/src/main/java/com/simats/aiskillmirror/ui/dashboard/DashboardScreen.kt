@@ -69,7 +69,8 @@ fun DashboardScreen(
     onViewSkillMirrorClick: () -> Unit = {},
     onViewPlanClick: () -> Unit = {},
     onContinueTrainingClick: () -> Unit = {},
-    onOpenAiCoachClick: () -> Unit = {}
+    onOpenAiCoachClick: () -> Unit = {},
+    onUploadPerformanceClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -472,7 +473,7 @@ fun DashboardScreen(
                         badge = "Vision AI",
                         accentColor = Color(0xFFA855F7),
                         onClick = {
-                            viewModel.onUploadMedia("Video", "sports_swing_form.mp4")
+                            onUploadPerformanceClick("video")
                         }
                     )
 
@@ -485,7 +486,7 @@ fun DashboardScreen(
                         badge = "Pose AI",
                         accentColor = CyanNode,
                         onClick = {
-                            viewModel.onUploadMedia("Image", "posture_alignment.jpg")
+                            onUploadPerformanceClick("photo")
                         }
                     )
 
@@ -498,7 +499,7 @@ fun DashboardScreen(
                         badge = "Acoustic AI",
                         accentColor = GreenNode,
                         onClick = {
-                            viewModel.onUploadMedia("Audio", "vocal_range_sample.wav")
+                            onUploadPerformanceClick("audio")
                         }
                     )
                 }

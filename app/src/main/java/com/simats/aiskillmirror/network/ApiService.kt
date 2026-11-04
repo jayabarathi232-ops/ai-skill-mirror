@@ -156,5 +156,21 @@ interface ApiService {
     suspend fun deleteReminder(
         @Body request: ReminderDeleteRequest
     ): Response<SimpleMessageResponse>
+
+    // Multi-Modal Performance Upload & History
+    @Multipart
+    @POST("upload/performance_upload.php")
+    suspend fun uploadPerformance(
+        @Part("user_id") userId: RequestBody,
+        @Part("media_type") mediaType: RequestBody,
+        @Part("skill_category") skillCategory: RequestBody,
+        @Part("title") title: RequestBody,
+        @Part file: MultipartBody.Part
+    ): Response<PerformanceUploadResponse>
+
+    @GET("upload/performance_history_fetch.php")
+    suspend fun getPerformanceHistory(
+        @Query("user_id") userId: Int
+    ): Response<PerformanceHistoryResponse>
 }
 

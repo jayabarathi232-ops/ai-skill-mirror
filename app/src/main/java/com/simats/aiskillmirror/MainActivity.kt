@@ -58,6 +58,9 @@ import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
 import com.simats.aiskillmirror.ui.theme.DarkBackground
 import com.simats.aiskillmirror.ui.training.DailyTrainingScreen
 import com.simats.aiskillmirror.ui.training.DailyTrainingViewModel
+import com.simats.aiskillmirror.ui.upload.MediaTypeTab
+import com.simats.aiskillmirror.ui.upload.PerformanceUploadScreen
+import com.simats.aiskillmirror.ui.upload.PerformanceUploadViewModel
 
 enum class AppScreen {
     SPLASH,
@@ -80,7 +83,8 @@ enum class AppScreen {
     MILESTONES,
     NOTIFICATIONS,
     AI_COACH,
-    SETTINGS
+    SETTINGS,
+    PERFORMANCE_UPLOAD
 }
 
 class MainActivity : ComponentActivity() {
@@ -105,6 +109,7 @@ class MainActivity : ComponentActivity() {
     private val notificationsViewModel: NotificationsViewModel by viewModels()
     private val aiCoachViewModel: AiCoachViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
+    private val performanceUploadViewModel: PerformanceUploadViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -265,6 +270,14 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onOpenAiCoachClick = {
                                         navigateTo(AppScreen.AI_COACH)
+                                    },
+                                    onUploadPerformanceClick = { type ->
+                                        when (type.lowercase()) {
+                                            "video" -> performanceUploadViewModel.selectTab(MediaTypeTab.VIDEO)
+                                            "audio" -> performanceUploadViewModel.selectTab(MediaTypeTab.AUDIO)
+                                            else -> performanceUploadViewModel.selectTab(MediaTypeTab.PHOTO)
+                                        }
+                                        navigateTo(AppScreen.PERFORMANCE_UPLOAD)
                                     }
                                 )
                             }
@@ -481,6 +494,15 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = {
                                         navigateBack()
                                     }
+                                )
+                            }
+                            AppScreen.PERFORMANCE_UPLOAD -> {
+                                PerformanceUploadScreen(
+                                    viewModel = performanceUploadViewModel,
+                                    onBackClick = {
+                                        navigateBack()
+                                    },
+                                    onTabSelected = ::handleTabSelected
                                 )
                             }
                         }

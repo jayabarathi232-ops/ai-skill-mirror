@@ -465,3 +465,41 @@ data class ReminderDeleteRequest(
     @SerializedName("reminder_id") val reminderId: Int
 )
 
+// Multi-Modal Performance Upload & History
+data class PerformanceUploadItemDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("user_id") val userId: Int,
+    @SerializedName("media_type") val mediaType: String,
+    @SerializedName("skill_category") val skillCategory: String,
+    @SerializedName("title") val title: String,
+    @SerializedName("file_name") val fileName: String,
+    @SerializedName("file_size_bytes") val fileSizeBytes: Long,
+    @SerializedName("duration_seconds") val durationSeconds: Int? = null,
+    @SerializedName("file_url") val fileUrl: String,
+    @SerializedName("relative_path") val relativePath: String,
+    @SerializedName("score") val score: Int,
+    @SerializedName("analysis_summary") val analysisSummary: String,
+    @SerializedName("ai_feedback") val aiFeedback: String,
+    @SerializedName("gemini_configured") val geminiConfigured: Boolean = false,
+    @SerializedName("gemini_note") val geminiNote: String? = null,
+    @SerializedName("created_at") val createdAt: String
+)
+
+data class PerformanceUploadResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("data") val data: PerformanceUploadItemDto? = null
+)
+
+data class PerformanceHistoryDataDto(
+    @SerializedName("total_uploads") val totalUploads: Int,
+    @SerializedName("uploads") val uploads: List<PerformanceUploadItemDto> = emptyList()
+)
+
+data class PerformanceHistoryResponse(
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("data") val data: PerformanceHistoryDataDto? = null
+)
+
+
