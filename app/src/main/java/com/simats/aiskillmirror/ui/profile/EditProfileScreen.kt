@@ -1,21 +1,20 @@
 package com.simats.aiskillmirror.ui.profile
 
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,13 +22,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
 import com.simats.aiskillmirror.ui.register.CustomOutlinedInputField
 import com.simats.aiskillmirror.ui.theme.*
@@ -40,35 +37,51 @@ fun EditProfileScreen(
     onBackClick: () -> Unit = {},
     onProfileSaved: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     var name by remember(uiState.userName) { mutableStateOf(uiState.userName) }
-    var email by remember(uiState.email) { mutableStateOf(uiState.email) }
     var phone by remember(uiState.phone) { mutableStateOf(uiState.phone) }
     var education by remember(uiState.education) { mutableStateOf(uiState.education) }
     var skills by remember(uiState.skills) { mutableStateOf(uiState.skills) }
     var careerGoal by remember(uiState.careerGoal) { mutableStateOf(uiState.careerGoal) }
     var bio by remember(uiState.userBio) { mutableStateOf(uiState.userBio) }
 
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var selectedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var selectedImageFileName by remember { mutableStateOf<String?>(null) }
+    var isPhotoRemoved by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            selectedImageUri = uri
             try {
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val ext = when {
+                    mimeType.contains("png", ignoreCase = true) -> "png"
+                    mimeType.contains("webp", ignoreCase = true) -> "webp"
+                    else -> "jpg"
+                }
+
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val bytes = inputStream?.readBytes()
                 inputStream?.close()
-                selectedImageBytes = bytes
-                selectedImageFileName = "avatar_${System.currentTimeMillis()}.jpg"
+
+                if (bytes != null && bytes.isNotEmpty()) {
+                    if (bytes.size > 5 * 1024 * 1024) {
+                        Toast.makeText(context, "Image exceeds 5MB size limit", Toast.LENGTH_SHORT).show()
+                    } else {
+                        selectedImageBytes = bytes
+                        selectedImageFileName = "profile_${UserSession.userId}_${System.currentTimeMillis()}.$ext"
+                        isPhotoRemoved = false
+                        Toast.makeText(context, "Photo selected! Save changes to apply.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to read selected image", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
-                Toast.makeText(context, "Failed to read image", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Failed to load image: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -134,58 +147,54 @@ fun EditProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .shadow(16.dp, CircleShape, spotColor = PrimaryGradientStart)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(CenterCardGradientStart, CenterCardGradientEnd)
-                                    )
-                                )
-                                .border(2.dp, PrimaryGradientStart, CircleShape)
-                                .clickable { imagePickerLauncher.launch("image/*") },
-                            contentAlignment = Alignment.Center
+                        ProfileAvatar(
+                            imageUrl = if (isPhotoRemoved) "" else uiState.profilePictureUrl,
+                            initials = uiState.initials,
+                            size = 100.dp,
+                            shape = CircleShape,
+                            previewBytes = selectedImageBytes,
+                            showEditBadge = true,
+                            fontSize = 32,
+                            onEditClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (selectedImageBytes != null) {
-                                val bitmap = remember(selectedImageBytes) {
-                                    BitmapFactory.decodeByteArray(selectedImageBytes, 0, selectedImageBytes!!.size)
-                                }
-                                if (bitmap != null) {
-                                    Image(
-                                        bitmap = bitmap.asImageBitmap(),
-                                        contentDescription = "Profile Picture",
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Text(
-                                        text = uiState.initials,
-                                        color = Color.White,
-                                        fontSize = 32.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            } else {
+                            Text(
+                                text = "Change photo",
+                                color = AccentPurple,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { imagePickerLauncher.launch("image/*") }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+
+                            val hasPhoto = (uiState.profilePictureUrl.isNotBlank() && !isPhotoRemoved) || selectedImageBytes != null
+                            if (hasPhoto) {
                                 Text(
-                                    text = uiState.initials,
-                                    color = Color.White,
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Remove photo",
+                                    color = Color(0xFFEF4444),
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            selectedImageBytes = null
+                                            selectedImageFileName = null
+                                            isPhotoRemoved = true
+                                            viewModel.removePhoto(context)
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = "Change profile picture",
-                            color = TaglineText,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }
-                        )
                     }
                 }
 
@@ -202,35 +211,28 @@ fun EditProfileScreen(
                 // Full Name
                 Text(text = "Full name", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(6.dp))
-                CustomOutlinedInputField(value = name, onValueChange = { name = it }, placeholder = "Full name")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Email
-                Text(text = "Email address", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Spacer(modifier = Modifier.height(6.dp))
-                CustomOutlinedInputField(value = email, onValueChange = { email = it }, placeholder = "Email address", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email))
+                CustomOutlinedInputField(value = name, onValueChange = { name = it }, placeholder = "Enter your full name")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Phone
                 Text(text = "Phone number", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(6.dp))
-                CustomOutlinedInputField(value = phone, onValueChange = { phone = it }, placeholder = "Phone number", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
+                CustomOutlinedInputField(value = phone, onValueChange = { phone = it }, placeholder = "Enter phone number")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Education
                 Text(text = "Education", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(6.dp))
-                CustomOutlinedInputField(value = education, onValueChange = { education = it }, placeholder = "Degree, university or major")
+                CustomOutlinedInputField(value = education, onValueChange = { education = it }, placeholder = "Highest qualification or degree")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Skills
-                Text(text = "Skills (comma separated)", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                // Core Skills
+                Text(text = "Core skills", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(6.dp))
-                CustomOutlinedInputField(value = skills, onValueChange = { skills = it }, placeholder = "e.g. Java, Kotlin, Communication")
+                CustomOutlinedInputField(value = skills, onValueChange = { skills = it }, placeholder = "e.g. Public Speaking, Coding, Python")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -260,12 +262,13 @@ fun EditProfileScreen(
                             bio = bio,
                             imageBytes = selectedImageBytes,
                             fileName = selectedImageFileName,
+                            context = context,
                             onSuccess = {
                                 onProfileSaved()
                             }
                         )
                     },
-                    enabled = !uiState.isLoading,
+                    enabled = !uiState.isLoading && !uiState.isUploadingPhoto,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp)
@@ -284,7 +287,7 @@ fun EditProfileScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (uiState.isLoading) {
+                        if (uiState.isLoading || uiState.isUploadingPhoto) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                         } else {
                             Text(
@@ -302,4 +305,3 @@ fun EditProfileScreen(
         }
     }
 }
-

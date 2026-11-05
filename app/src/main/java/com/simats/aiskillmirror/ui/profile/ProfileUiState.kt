@@ -18,6 +18,7 @@ data class ProfileUiState(
     val nextMilestoneSubtitle: String = "Reach a skill score of 85 by Nov 15",
     val memberSinceText: String = "Growing with AI Skills Mirror since September 2026",
     val isLoading: Boolean = false,
+    val isUploadingPhoto: Boolean = false,
     val errorMessage: String? = null
 )
 

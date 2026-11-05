@@ -1,9 +1,23 @@
 package com.simats.aiskillmirror.ui.notifications
 
+enum class NotificationMainTab {
+    NOTIFICATIONS,
+    PRACTICE_TIMER
+}
+
 enum class NotificationFilterTab {
     ALL,
     LEARNING,
     MILESTONES
+}
+
+enum class NotificationIconType {
+    BOOK,
+    STREAK,
+    SPARKLE,
+    ALARM,
+    MIC,
+    CHECK
 }
 
 data class NotificationItem(
@@ -13,58 +27,49 @@ data class NotificationItem(
     val timestampText: String,
     val badgeText: String? = null,
     val isGreenBadge: Boolean = false,
-    val iconType: NotificationIconType
+    val iconType: NotificationIconType,
+    val category: String = "general",
+    val isRead: Boolean = false
 )
 
-enum class NotificationIconType {
-    BOOK,
-    STREAK,
-    SPARKLE,
-    ALARM
-}
-
 data class NotificationsUiState(
+    val mainTab: NotificationMainTab = NotificationMainTab.NOTIFICATIONS,
+    val selectedFilterTab: NotificationFilterTab = NotificationFilterTab.ALL,
+    val isLoading: Boolean = false,
+    val unreadCount: Int = 0,
     val headerTitle: String = "Keep your momentum",
-    val headerCategory: String = "REMINDERS & UPDATES",
-    val selectedTab: NotificationFilterTab = NotificationFilterTab.ALL,
+    val headerCategory: String = "REMINDERS & NOTIFICATIONS",
+    
+    // Reminder preferences
     val isDailyReminderEnabled: Boolean = true,
-    val reminderTimeText: String = "Every day at 7:00 PM",
+    val reminderTimeText: String = "07:00 PM",
+    val reminderHour: Int = 19,
+    val reminderMinute: Int = 0,
     val reminderNoticeText: String = "A gentle nudge to invest in yourself.",
-    val todayNotifications: List<NotificationItem> = listOf(
-        NotificationItem(
-            id = "1",
-            title = "Your next 6 minutes matter",
-            description = "Finish today's speech practice and complete your 20-minute goal.",
-            timestampText = "7:00 PM",
-            badgeText = "COMING UP",
-            isGreenBadge = false,
-            iconType = NotificationIconType.BOOK
-        ),
-        NotificationItem(
-            id = "2",
-            title = "A week of progress. All you.",
-            description = "You've earned the Week Warrior badge with a 7-day learning streak.",
-            timestampText = "8:15 AM",
-            badgeText = "MILESTONE",
-            isGreenBadge = true,
-            iconType = NotificationIconType.STREAK
-        )
-    ),
-    val yesterdayNotifications: List<NotificationItem> = listOf(
-        NotificationItem(
-            id = "3",
-            title = "Your plan got smarter",
-            description = "We added project storytelling to your communication practice.",
-            timestampText = "Yesterday",
-            badgeText = null,
-            isGreenBadge = false,
-            iconType = NotificationIconType.SPARKLE
-        )
-    )
+    val selectedSkill: String = "Public Speaking",
+    val selectedFrequency: String = "Daily",
+    val selectedDays: Set<String> = setOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+    
+    // Notification list categories
+    val todayNotifications: List<NotificationItem> = emptyList(),
+    val yesterdayNotifications: List<NotificationItem> = emptyList(),
+    val olderNotifications: List<NotificationItem> = emptyList(),
+    
+    // Practice Countdown Timer State
+    val timerSelectedMinutes: Int = 20,
+    val remainingSeconds: Int = 20 * 60,
+    val totalSeconds: Int = 20 * 60,
+    val isTimerRunning: Boolean = false,
+    val isTimerPaused: Boolean = false,
+    val hasShownTwoMinuteWarning: Boolean = false,
+    val showCompletionDialog: Boolean = false,
+    val earnedXp: Int = 50,
+    val bannerMessage: String? = null,
+    val hasNotificationPermission: Boolean = true
 )
 
 sealed interface NotificationsUiEvent {
-    object MarkAllAsRead : NotificationsUiEvent
-    object OpenSettings : NotificationsUiEvent
+    data class ShowToast(val message: String) : NotificationsUiEvent
     object NavigateBack : NotificationsUiEvent
+    object RequestPermission : NotificationsUiEvent
 }

@@ -30,8 +30,12 @@ class DashboardRepository {
                     headline = dto.headline ?: "Your future is taking shape.",
                     streakSubtitle = dto.streakSubtitle ?: "Your best week yet",
                     minutesSubtitle = dto.minutesSubtitle ?: "to your goal",
-                    currentPlanTitle = dto.currentPlanTitle ?: ""
+                    currentPlanTitle = dto.currentPlanTitle ?: "",
+                    profilePicture = ApiClient.resolveImageUrl(dto.profilePicture)
                 )
+                if (data.profilePicture.isNotBlank()) {
+                    UserSession.profilePictureUrl = data.profilePicture
+                }
                 NetworkResult(true, response.body()?.message, data)
             } else {
                 ApiClient.fetchDashboard(userId)

@@ -1,7 +1,9 @@
 package com.simats.aiskillmirror.ui.profile
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simats.aiskillmirror.data.network.ApiClient
 import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.data.repository.ProfileRepository
 import kotlinx.coroutines.channels.Channel
@@ -25,7 +27,7 @@ class ProfileViewModel(
         loadProfile()
     }
 
-    fun loadProfile() {
+    fun loadProfile(context: Context? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val result = profileRepository.getProfile(UserSession.userId)
@@ -41,6 +43,11 @@ class ProfileViewModel(
                         .joinToString("")
                 } else "TS"
 
+                val resolvedUrl = ApiClient.resolveImageUrl(p.profilePicture)
+                if (resolvedUrl.isNotBlank()) {
+                    UserSession.setProfilePicture(context, resolvedUrl)
+                }
+
                 _uiState.value = _uiState.value.copy(
                     userName = if (p.name.isNotBlank()) p.name else _uiState.value.userName,
                     email = if (p.email.isNotBlank()) p.email else _uiState.value.email,
@@ -49,10 +56,69 @@ class ProfileViewModel(
                     education = if (p.education.isNotBlank()) p.education else _uiState.value.education,
                     skills = if (p.skills.isNotBlank()) p.skills else _uiState.value.skills,
                     careerGoal = if (p.careerGoal.isNotBlank()) p.careerGoal else _uiState.value.careerGoal,
-                    profilePictureUrl = p.profilePicture,
+                    profilePictureUrl = resolvedUrl,
                     initials = initials,
                     errorMessage = null
                 )
+            } else if (context != null) {
+                // Restore locally persisted profile picture if offline
+                val localPic = UserSession.getPersistedProfilePicture(context, UserSession.userId)
+                if (localPic.isNotBlank()) {
+                    _uiState.value = _uiState.value.copy(profilePictureUrl = localPic)
+                }
+            }
+        }
+    }
+
+    fun uploadPhotoDirectly(
+        context: Context,
+        imageBytes: ByteArray,
+        fileName: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        if (ext !in listOf("jpg", "jpeg", "png", "webp")) {
+            viewModelScope.launch {
+                _eventChannel.send(ProfileUiEvent.ShowToast("Invalid format. Please select a JPG, PNG, or WEBP image."))
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUploadingPhoto = true, errorMessage = null)
+            val uploadRes = profileRepository.uploadPicture(UserSession.userId, imageBytes, fileName)
+            _uiState.value = _uiState.value.copy(isUploadingPhoto = false)
+
+            if (uploadRes.isSuccess && !uploadRes.data.isNullOrBlank()) {
+                val fullUrl = ApiClient.resolveImageUrl(uploadRes.data)
+                UserSession.setProfilePicture(context, fullUrl)
+                _uiState.value = _uiState.value.copy(profilePictureUrl = fullUrl)
+                _eventChannel.send(ProfileUiEvent.ShowToast("Profile photo updated successfully!"))
+                onSuccess()
+            } else {
+                val err = uploadRes.message ?: "Failed to upload profile photo"
+                _uiState.value = _uiState.value.copy(errorMessage = err)
+                _eventChannel.send(ProfileUiEvent.ShowToast(err))
+            }
+        }
+    }
+
+    fun removePhoto(
+        context: Context,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUploadingPhoto = true, errorMessage = null)
+            val res = profileRepository.removePicture(UserSession.userId)
+            _uiState.value = _uiState.value.copy(isUploadingPhoto = false)
+
+            if (res.isSuccess) {
+                UserSession.setProfilePicture(context, "")
+                _uiState.value = _uiState.value.copy(profilePictureUrl = "")
+                _eventChannel.send(ProfileUiEvent.ShowToast("Profile photo removed"))
+                onSuccess()
+            } else {
+                _eventChannel.send(ProfileUiEvent.ShowToast(res.message ?: "Failed to remove photo"))
             }
         }
     }
@@ -66,16 +132,20 @@ class ProfileViewModel(
         bio: String,
         imageBytes: ByteArray? = null,
         fileName: String? = null,
+        context: Context? = null,
         onSuccess: () -> Unit = {}
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
             // 1. If an image was selected, upload it first
+            var newProfilePic = _uiState.value.profilePictureUrl
             if (imageBytes != null && !fileName.isNullOrBlank()) {
                 val uploadRes = profileRepository.uploadPicture(UserSession.userId, imageBytes, fileName)
-                if (uploadRes.isSuccess && uploadRes.data != null) {
-                    _uiState.value = _uiState.value.copy(profilePictureUrl = uploadRes.data)
+                if (uploadRes.isSuccess && !uploadRes.data.isNullOrBlank()) {
+                    newProfilePic = ApiClient.resolveImageUrl(uploadRes.data)
+                    UserSession.setProfilePicture(context, newProfilePic)
+                    _uiState.value = _uiState.value.copy(profilePictureUrl = newProfilePic)
                 }
             }
 
@@ -93,7 +163,7 @@ class ProfileViewModel(
             _uiState.value = _uiState.value.copy(isLoading = false)
 
             if (updateRes.isSuccess) {
-                loadProfile()
+                loadProfile(context)
                 _eventChannel.send(ProfileUiEvent.ShowToast("Profile updated successfully"))
                 onSuccess()
             } else {

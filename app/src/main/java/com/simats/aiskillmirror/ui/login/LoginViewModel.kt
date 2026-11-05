@@ -50,7 +50,7 @@ class LoginViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = false)
 
             if (result.isSuccess && result.data != null) {
-                UserSession.update(result.data.id, result.data.name, result.data.email)
+                UserSession.update(result.data.id, result.data.name, result.data.email, result.data.profilePicture)
                 _eventChannel.send(LoginUiEvent.NavigateToHome)
             } else {
                 val error = result.message ?: "Invalid email or password"

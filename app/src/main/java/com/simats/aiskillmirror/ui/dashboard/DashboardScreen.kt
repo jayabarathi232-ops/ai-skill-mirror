@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.aiskillmirror.ui.onboarding.TargetScanIcon
+import com.simats.aiskillmirror.ui.profile.ProfileAvatar
 import com.simats.aiskillmirror.ui.splash.ChartIcon
 import com.simats.aiskillmirror.ui.splash.SparkleIcon
 import com.simats.aiskillmirror.ui.theme.*
@@ -119,31 +120,19 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // User Avatar Initial with Violet Gradient Ring
+                        // User Avatar Initial or Profile Photo with Active Indicator
                         Box(
                             modifier = Modifier.size(50.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(Color(0xFF7545C8), Color(0xFF9353E2))
-                                        )
-                                    )
-                                    .border(2.dp, Color(0xFFFFFFFF), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val initial = uiState.userName.firstOrNull()?.uppercase() ?: "M"
-                                Text(
-                                    text = initial,
-                                    color = Color.White,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            val initial = uiState.userName.firstOrNull()?.uppercase() ?: "M"
+                            ProfileAvatar(
+                                imageUrl = uiState.profilePicture,
+                                initials = initial,
+                                size = 48.dp,
+                                shape = CircleShape,
+                                fontSize = 20
+                            )
                             // Active status green indicator
                             Box(
                                 modifier = Modifier
@@ -217,17 +206,26 @@ fun DashboardScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        BellIcon(size = 20.dp, color = TextPrimary)
-                        // Red Unread Badge
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-8).dp, y = 8.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFEF4444))
-                                .border(1.5.dp, Color.White, CircleShape)
-                        )
+                        BellIcon(size = 20.dp, color = HeadingPurple)
+                        if (uiState.unreadNotificationsCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-3).dp, y = 3.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFEF4444))
+                                    .border(1.5.dp, Color.White, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (uiState.unreadNotificationsCount > 9) "9+" else uiState.unreadNotificationsCount.toString(),
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
 

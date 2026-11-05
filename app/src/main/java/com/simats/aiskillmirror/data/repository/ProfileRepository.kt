@@ -13,6 +13,7 @@ class ProfileRepository {
             val response = RetrofitClient.apiService.getProfile(userId)
             if (response.isSuccessful && response.body()?.status == "success" && response.body()?.profile != null) {
                 val p = response.body()!!.profile!!
+                val resolvedPic = ApiClient.resolveImageUrl(p.profilePicture)
                 val data = ProfileData(
                     userId = p.userId,
                     name = p.name,
@@ -22,16 +23,35 @@ class ProfileRepository {
                     skills = p.skills.orEmpty(),
                     careerGoal = p.careerGoal.orEmpty(),
                     bio = p.bio.orEmpty(),
-                    profilePicture = p.profilePicture.orEmpty()
+                    profilePicture = resolvedPic
                 )
                 UserSession.userName = data.name
                 UserSession.userEmail = data.email
+                if (resolvedPic.isNotBlank()) {
+                    UserSession.profilePictureUrl = resolvedPic
+                }
                 NetworkResult(true, response.body()?.message, data)
             } else {
-                ApiClient.fetchProfile(userId)
+                val apiRes = ApiClient.fetchProfile(userId)
+                if (apiRes.isSuccess && apiRes.data != null) {
+                    UserSession.userName = apiRes.data.name
+                    UserSession.userEmail = apiRes.data.email
+                    if (apiRes.data.profilePicture.isNotBlank()) {
+                        UserSession.profilePictureUrl = apiRes.data.profilePicture
+                    }
+                }
+                apiRes
             }
         } catch (e: Exception) {
-            ApiClient.fetchProfile(userId)
+            val apiRes = ApiClient.fetchProfile(userId)
+            if (apiRes.isSuccess && apiRes.data != null) {
+                UserSession.userName = apiRes.data.name
+                UserSession.userEmail = apiRes.data.email
+                if (apiRes.data.profilePicture.isNotBlank()) {
+                    UserSession.profilePictureUrl = apiRes.data.profilePicture
+                }
+            }
+            apiRes
         }
     }
 
@@ -69,6 +89,18 @@ class ProfileRepository {
     }
 
     suspend fun uploadPicture(userId: Int = UserSession.userId, bytes: ByteArray, fileName: String): NetworkResult<String> {
-        return ApiClient.uploadProfilePicture(userId, bytes, fileName)
+        val res = ApiClient.uploadProfilePicture(userId, bytes, fileName)
+        if (res.isSuccess && !res.data.isNullOrBlank()) {
+            UserSession.profilePictureUrl = res.data
+        }
+        return res
+    }
+
+    suspend fun removePicture(userId: Int = UserSession.userId): NetworkResult<Boolean> {
+        val res = ApiClient.removeProfilePicture(userId)
+        if (res.isSuccess) {
+            UserSession.profilePictureUrl = ""
+        }
+        return res
     }
 }

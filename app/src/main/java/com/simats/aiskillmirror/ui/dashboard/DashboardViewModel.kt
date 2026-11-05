@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.data.repository.DashboardRepository
+import com.simats.aiskillmirror.data.repository.ProgressRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class DashboardViewModel(
-    private val dashboardRepository: DashboardRepository = DashboardRepository()
+    private val dashboardRepository: DashboardRepository = DashboardRepository(),
+    private val progressRepository: ProgressRepository = ProgressRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -28,6 +30,9 @@ class DashboardViewModel(
 
     fun loadDashboard() {
         viewModelScope.launch {
+            val notifRes = progressRepository.getNotifications(UserSession.userId)
+            val unreadCount = if (notifRes.isSuccess && notifRes.data != null) notifRes.data.unreadCount else 3
+
             val result = dashboardRepository.getDashboard(UserSession.userId)
             if (result.isSuccess && result.data != null) {
                 val d = result.data
@@ -48,7 +53,14 @@ class DashboardViewModel(
                     headline = if (d.headline.isNotBlank()) d.headline else _uiState.value.headline,
                     streakSubtitle = if (d.streakSubtitle.isNotBlank()) d.streakSubtitle else _uiState.value.streakSubtitle,
                     minutesSubtitle = if (d.minutesSubtitle.isNotBlank()) d.minutesSubtitle else _uiState.value.minutesSubtitle,
-                    currentPlanTitle = if (d.currentPlanTitle.isNotBlank()) d.currentPlanTitle else _uiState.value.currentPlanTitle
+                    currentPlanTitle = if (d.currentPlanTitle.isNotBlank()) d.currentPlanTitle else _uiState.value.currentPlanTitle,
+                    profilePicture = if (d.profilePicture.isNotBlank()) d.profilePicture else UserSession.profilePictureUrl,
+                    unreadNotificationsCount = unreadCount
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    unreadNotificationsCount = unreadCount,
+                    profilePicture = UserSession.profilePictureUrl
                 )
             }
         }

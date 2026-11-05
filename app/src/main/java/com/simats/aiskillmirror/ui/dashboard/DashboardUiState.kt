@@ -39,6 +39,7 @@ data class RecommendedPracticeItem(
 data class DashboardUiState(
     val currentDateText: String = "Wednesday, November 4",
     val userName: String = "Maya",
+    val profilePicture: String = "",
     val skillScore: Int = 84,
     val monthlyPtsGain: Int = 14,
     val headline: String = "Multi-Skill Competency Mirror",
@@ -97,7 +98,10 @@ data class DashboardUiState(
     val uploadedMediaName: String? = null,
     val uploadedMediaType: String? = null,
     val isAnalyzing: Boolean = false,
-    val uploadFeedbackMessage: String? = null
+    val uploadFeedbackMessage: String? = null,
+
+    // Notifications
+    val unreadNotificationsCount: Int = 3
 )
 
 enum class DashboardTab {

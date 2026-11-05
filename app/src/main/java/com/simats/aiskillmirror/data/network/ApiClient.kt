@@ -21,7 +21,8 @@ data class NetworkResult<T>(
 data class UserData(
     val id: Int,
     val name: String,
-    val email: String
+    val email: String,
+    val profilePicture: String = ""
 )
 
 data class ProfileData(
@@ -54,7 +55,8 @@ data class DashboardData(
     val headline: String = "Your future is taking shape.",
     val streakSubtitle: String = "Your best week yet",
     val minutesSubtitle: String = "to your goal",
-    val currentPlanTitle: String = ""
+    val currentPlanTitle: String = "",
+    val profilePicture: String = ""
 )
 
 data class SkillItemData(
@@ -231,15 +233,27 @@ data class NotificationItemData(
     val badgeText: String?,
     val isGreenBadge: Boolean,
     val iconType: String,
-    val category: String
+    val category: String,
+    val isRead: Boolean = false
 )
 
 data class NotificationsData(
+    val unreadCount: Int = 0,
     val isDailyReminderEnabled: Boolean,
     val reminderTimeText: String,
+    val reminderDaysText: String = "Every day",
     val reminderNoticeText: String,
     val todayNotifications: List<NotificationItemData>,
-    val yesterdayNotifications: List<NotificationItemData>
+    val yesterdayNotifications: List<NotificationItemData>,
+    val olderNotifications: List<NotificationItemData> = emptyList()
+)
+
+data class ReminderItemData(
+    val id: Int,
+    val title: String,
+    val reminderTime: String,
+    val reminderDays: String,
+    val isEnabled: Boolean
 )
 
 data class ChatMessageData(
@@ -272,6 +286,17 @@ object ApiClient {
     // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.49.166/skillmirrorbackend"
 
     var BASE_URL = "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend"
+
+    fun resolveImageUrl(pathOrUrl: String?): String {
+        if (pathOrUrl.isNullOrBlank()) return ""
+        val clean = pathOrUrl.trim()
+        if (clean.startsWith("http://", ignoreCase = true) || clean.startsWith("https://", ignoreCase = true)) {
+            return clean
+        }
+        val base = BASE_URL.trimEnd('/')
+        val rel = clean.trimStart('/')
+        return "$base/$rel"
+    }
 
 
     private fun postJson(endpoint: String, bodyJson: JSONObject): Pair<Int, String> {
@@ -327,7 +352,10 @@ object ApiClient {
                 val id = userObj?.optInt("id") ?: userObj?.optInt("user_id") ?: 0
                 val name = userObj?.optString("name").orEmpty()
                 val userEmail = userObj?.optString("email").orEmpty()
-                NetworkResult(true, message, UserData(id, name, userEmail))
+                val rawPic = userObj?.optString("profile_picture_url")?.takeIf { it.isNotBlank() }
+                    ?: userObj?.optString("profile_picture", "") ?: ""
+                val resolvedPic = resolveImageUrl(rawPic)
+                NetworkResult(true, message, UserData(id, name, userEmail, resolvedPic))
             } else {
                 NetworkResult(false, message)
             }
@@ -385,6 +413,9 @@ object ApiClient {
             if (code == 200 && status == "success") {
                 val p = json.optJSONObject("profile")
                 if (p != null) {
+                    val rawPic = p.optString("profile_picture_url").takeIf { it.isNotBlank() }
+                        ?: p.optString("profile_picture", "")
+                    val resolvedPic = resolveImageUrl(rawPic)
                     val profile = ProfileData(
                         userId = p.optInt("user_id", userId),
                         name = p.optString("name", ""),
@@ -394,7 +425,7 @@ object ApiClient {
                         skills = p.optString("skills", ""),
                         careerGoal = p.optString("career_goal", ""),
                         bio = p.optString("bio", ""),
-                        profilePicture = p.optString("profile_picture", "")
+                        profilePicture = resolvedPic
                     )
                     NetworkResult(true, message, profile)
                 } else {
@@ -450,6 +481,12 @@ object ApiClient {
                 readTimeout = 15000
             }
 
+            val mime = when {
+                fileName.endsWith(".png", true) -> "image/png"
+                fileName.endsWith(".webp", true) -> "image/webp"
+                else -> "image/jpeg"
+            }
+
             conn.outputStream.use { os ->
                 // Write user_id
                 os.write("--$boundary\r\n".toByteArray())
@@ -459,7 +496,7 @@ object ApiClient {
                 // Write file
                 os.write("--$boundary\r\n".toByteArray())
                 os.write("Content-Disposition: form-data; name=\"profile_picture\"; filename=\"$fileName\"\r\n".toByteArray())
-                os.write("Content-Type: image/jpeg\r\n\r\n".toByteArray())
+                os.write("Content-Type: $mime\r\n\r\n".toByteArray())
                 os.write(imageBytes)
                 os.write("\r\n".toByteArray())
 
@@ -475,17 +512,36 @@ object ApiClient {
 
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             val status = json.optString("status")
-            val message = json.optString("message")
+            val message = json.optString("message", "Profile picture uploaded successfully")
 
             if (code == 200 && status == "success") {
                 val dataObj = json.optJSONObject("data")
-                val path = dataObj?.optString("profile_picture") ?: ""
-                NetworkResult(true, message, path)
+                val rawUrl = dataObj?.optString("url")?.takeIf { it.isNotBlank() }
+                    ?: json.optString("url").takeIf { it.isNotBlank() }
+                    ?: dataObj?.optString("profile_picture")
+                    ?: json.optString("profile_picture", "")
+                val resolvedUrl = resolveImageUrl(rawUrl)
+                NetworkResult(true, message, resolvedUrl)
             } else {
                 NetworkResult(false, message)
             }
         } catch (e: Exception) {
             NetworkResult(false, "Upload error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun removeProfilePicture(userId: Int): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+            }
+            val (code, text) = postJson("profile/profile_remove_picture.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            val status = json.optString("status")
+            val message = json.optString("message", "Profile photo removed")
+            NetworkResult(code == 200 && status == "success", message, code == 200 && status == "success")
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}", false)
         }
     }
 
@@ -498,6 +554,10 @@ object ApiClient {
 
             if (code == 200 && status == "success") {
                 val d = json.getJSONObject("data")
+                val rawProfilePic = d.optString("profilePictureUrl").takeIf { it.isNotBlank() }
+                    ?: d.optString("profilePicture", "")
+                val resolvedProfilePic = resolveImageUrl(rawProfilePic)
+
                 val data = DashboardData(
                     userName = d.optString("userName", "Learner"),
                     skillScore = d.optInt("skillScore", 78),
@@ -516,7 +576,8 @@ object ApiClient {
                     headline = d.optString("headline", "Your future is taking shape."),
                     streakSubtitle = d.optString("streakSubtitle", "Your best week yet"),
                     minutesSubtitle = d.optString("minutesSubtitle", "to your goal"),
-                    currentPlanTitle = d.optString("currentPlanTitle", "")
+                    currentPlanTitle = d.optString("currentPlanTitle", ""),
+                    profilePicture = resolvedProfilePic
                 )
                 NetworkResult(true, message, data)
             } else {
@@ -806,7 +867,8 @@ object ApiClient {
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val d = json.getJSONObject("data")
-                fun parseArr(arr: JSONArray): List<NotificationItemData> {
+                fun parseArr(arr: JSONArray?): List<NotificationItemData> {
+                    if (arr == null) return emptyList()
                     val list = mutableListOf<NotificationItemData>()
                     for (i in 0 until arr.length()) {
                         val n = arr.getJSONObject(i)
@@ -819,20 +881,25 @@ object ApiClient {
                                 badgeText = if (n.isNull("badgeText")) null else n.optString("badgeText"),
                                 isGreenBadge = n.optBoolean("isGreenBadge"),
                                 iconType = n.optString("iconType"),
-                                category = n.optString("category")
+                                category = n.optString("category"),
+                                isRead = n.optBoolean("isRead", false)
                             )
                         )
                     }
                     return list
                 }
-                val today = parseArr(d.getJSONArray("todayNotifications"))
-                val yesterday = parseArr(d.getJSONArray("yesterdayNotifications"))
+                val today = parseArr(d.optJSONArray("todayNotifications"))
+                val yesterday = parseArr(d.optJSONArray("yesterdayNotifications"))
+                val older = parseArr(d.optJSONArray("olderNotifications"))
                 val data = NotificationsData(
+                    unreadCount = d.optInt("unreadCount", 0),
                     isDailyReminderEnabled = d.optBoolean("isDailyReminderEnabled", true),
-                    reminderTimeText = d.optString("reminderTimeText"),
-                    reminderNoticeText = d.optString("reminderNoticeText"),
+                    reminderTimeText = d.optString("reminderTimeText", "Every day at 7:00 PM"),
+                    reminderDaysText = d.optString("reminderDaysText", "Every day"),
+                    reminderNoticeText = d.optString("reminderNoticeText", "A gentle nudge to invest in yourself."),
                     todayNotifications = today,
-                    yesterdayNotifications = yesterday
+                    yesterdayNotifications = yesterday,
+                    olderNotifications = older
                 )
                 NetworkResult(true, "Notifications fetched", data)
             } else {
@@ -840,6 +907,97 @@ object ApiClient {
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun markNotificationRead(userId: Int, notificationId: String = "all"): NetworkResult<Int> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+                put("notification_id", notificationId)
+            }
+            val (code, text) = postJson("notifications/notification_mark_read.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val unread = json.optJSONObject("data")?.optInt("unreadCount") ?: 0
+                NetworkResult(true, "Marked as read", unread)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to mark as read"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun clearNotifications(userId: Int): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+            }
+            val (code, text) = postJson("notifications/notification_clear.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            NetworkResult(code == 200 && json.optString("status") == "success", json.optString("message"), true)
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}", false)
+        }
+    }
+
+    suspend fun createNotification(
+        userId: Int,
+        title: String,
+        description: String,
+        badgeText: String = "REMINDER",
+        iconType: String = "ALARM",
+        category: String = "PRACTICE",
+        isGreenBadge: Boolean = false
+    ): NetworkResult<Int> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+                put("title", title)
+                put("description", description)
+                put("badge_text", badgeText)
+                put("icon_type", iconType)
+                put("category", category)
+                put("is_green_badge", if (isGreenBadge) 1 else 0)
+            }
+            val (code, text) = postJson("notifications/notification_create.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val notifId = json.optJSONObject("data")?.optInt("notificationId") ?: 0
+                NetworkResult(true, "Notification created", notifId)
+            } else {
+                NetworkResult(false, json.optString("message"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun saveReminder(
+        userId: Int,
+        title: String,
+        time: String,
+        days: String,
+        frequency: String = "Daily",
+        skill: String = "Public Speaking",
+        isEnabled: Boolean = true
+    ): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+                put("title", title)
+                put("reminder_time", time)
+                put("reminder_days", days)
+                put("frequency", frequency)
+                put("skill_category", skill)
+                put("is_enabled", isEnabled)
+            }
+            val (code, text) = postJson("reminders/reminder_save.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            NetworkResult(code == 200 && json.optString("status") == "success", json.optString("message"), true)
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}", false)
         }
     }
 

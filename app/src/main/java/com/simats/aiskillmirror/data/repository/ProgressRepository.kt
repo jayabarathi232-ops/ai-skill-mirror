@@ -111,17 +111,23 @@ class ProgressRepository {
             if (response.isSuccessful && response.body()?.status == "success" && response.body()?.data != null) {
                 val d = response.body()!!.data!!
                 val today = d.todayNotifications.map {
-                    NotificationItemData(it.id, it.title, it.description, it.timestampText, it.badgeText, it.isGreenBadge, it.iconType, it.category)
+                    NotificationItemData(it.id, it.title, it.description, it.timestampText, it.badgeText, it.isGreenBadge, it.iconType, it.category, it.isRead)
                 }
                 val yest = d.yesterdayNotifications.map {
-                    NotificationItemData(it.id, it.title, it.description, it.timestampText, it.badgeText, it.isGreenBadge, it.iconType, it.category)
+                    NotificationItemData(it.id, it.title, it.description, it.timestampText, it.badgeText, it.isGreenBadge, it.iconType, it.category, it.isRead)
+                }
+                val older = d.olderNotifications.map {
+                    NotificationItemData(it.id, it.title, it.description, it.timestampText, it.badgeText, it.isGreenBadge, it.iconType, it.category, it.isRead)
                 }
                 val data = NotificationsData(
+                    unreadCount = d.unreadCount,
                     isDailyReminderEnabled = d.isDailyReminderEnabled,
                     reminderTimeText = d.reminderTimeText,
+                    reminderDaysText = d.reminderDaysText ?: "Every day",
                     reminderNoticeText = d.reminderNoticeText,
                     todayNotifications = today,
-                    yesterdayNotifications = yest
+                    yesterdayNotifications = yest,
+                    olderNotifications = older
                 )
                 NetworkResult(true, response.body()?.message, data)
             } else {
@@ -130,5 +136,37 @@ class ProgressRepository {
         } catch (e: Exception) {
             ApiClient.fetchNotifications(userId)
         }
+    }
+
+    suspend fun markNotificationRead(userId: Int = UserSession.userId, notificationId: String = "all"): NetworkResult<Int> {
+        return ApiClient.markNotificationRead(userId, notificationId)
+    }
+
+    suspend fun clearNotifications(userId: Int = UserSession.userId): NetworkResult<Boolean> {
+        return ApiClient.clearNotifications(userId)
+    }
+
+    suspend fun createNotification(
+        userId: Int = UserSession.userId,
+        title: String,
+        description: String,
+        badgeText: String = "REMINDER",
+        iconType: String = "ALARM",
+        category: String = "PRACTICE",
+        isGreenBadge: Boolean = false
+    ): NetworkResult<Int> {
+        return ApiClient.createNotification(userId, title, description, badgeText, iconType, category, isGreenBadge)
+    }
+
+    suspend fun saveReminder(
+        userId: Int = UserSession.userId,
+        title: String,
+        time: String,
+        days: String,
+        frequency: String = "Daily",
+        skill: String = "Public Speaking",
+        isEnabled: Boolean = true
+    ): NetworkResult<Boolean> {
+        return ApiClient.saveReminder(userId, title, time, days, frequency, skill, isEnabled)
     }
 }

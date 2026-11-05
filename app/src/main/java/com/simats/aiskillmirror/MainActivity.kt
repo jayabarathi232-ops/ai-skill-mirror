@@ -1,11 +1,15 @@
 package com.simats.aiskillmirror
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -14,6 +18,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
+import com.simats.aiskillmirror.data.network.UserSession
+import com.simats.aiskillmirror.data.notifications.SmartNotificationManager
 import com.simats.aiskillmirror.ui.assess.SkillSelectionScreen
 import com.simats.aiskillmirror.ui.assess.SkillSelectionViewModel
 import com.simats.aiskillmirror.ui.assessment.AssessmentScreen
@@ -111,8 +118,21 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val performanceUploadViewModel: PerformanceUploadViewModel by viewModels()
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        notificationsViewModel.checkPermission(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UserSession.init(this)
+        SmartNotificationManager.initNotificationChannel(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         enableEdgeToEdge()
         setContent {
             AISkillsMirrorTheme {
@@ -220,7 +240,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = loginViewModel,
                                     onLoginClick = {
                                         Toast.makeText(this@MainActivity, "Logged in Successfully!", Toast.LENGTH_SHORT).show()
-                                        profileViewModel.loadProfile()
+                                        profileViewModel.loadProfile(this@MainActivity)
                                         dashboardViewModel.loadDashboard()
                                         replaceWith(AppScreen.DASHBOARD)
                                     },
@@ -228,7 +248,7 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.RECOVERY)
                                     },
                                     onGoogleSignInClick = {
-                                        profileViewModel.loadProfile()
+                                        profileViewModel.loadProfile(this@MainActivity)
                                         dashboardViewModel.loadDashboard()
                                         replaceWith(AppScreen.DASHBOARD)
                                     },
@@ -291,7 +311,7 @@ class MainActivity : ComponentActivity() {
                                         navigateBack()
                                     },
                                     onProfileSaved = {
-                                        profileViewModel.loadProfile()
+                                        profileViewModel.loadProfile(this@MainActivity)
                                         dashboardViewModel.loadDashboard()
                                         navigateBack()
                                     }
@@ -460,6 +480,11 @@ class MainActivity : ComponentActivity() {
                                 NotificationsScreen(
                                     viewModel = notificationsViewModel,
                                     onTabSelected = ::handleTabSelected,
+                                    onRequestPermission = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    },
                                     onMarkAllAsReadClick = {
                                         Toast.makeText(this@MainActivity, "All notifications marked as read", Toast.LENGTH_SHORT).show()
                                     },
@@ -491,6 +516,7 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.EDIT_PROFILE)
                                     },
                                     onLogoutClick = {
+                                        UserSession.clear(this@MainActivity)
                                         Toast.makeText(this@MainActivity, "Logged out successfully", Toast.LENGTH_SHORT).show()
                                         replaceWith(AppScreen.LOGIN)
                                     },

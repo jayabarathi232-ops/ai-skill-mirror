@@ -351,15 +351,19 @@ data class NotificationItemDto(
     @SerializedName("badgeText") val badgeText: String?,
     @SerializedName("isGreenBadge") val isGreenBadge: Boolean,
     @SerializedName("iconType") val iconType: String,
-    @SerializedName("category") val category: String
+    @SerializedName("category") val category: String,
+    @SerializedName("is_read") val isRead: Boolean = false
 )
 
 data class NotificationsDto(
+    @SerializedName("unreadCount") val unreadCount: Int = 0,
     @SerializedName("isDailyReminderEnabled") val isDailyReminderEnabled: Boolean,
     @SerializedName("reminderTimeText") val reminderTimeText: String,
+    @SerializedName("reminderDaysText") val reminderDaysText: String? = null,
     @SerializedName("reminderNoticeText") val reminderNoticeText: String,
     @SerializedName("todayNotifications") val todayNotifications: List<NotificationItemDto> = emptyList(),
-    @SerializedName("yesterdayNotifications") val yesterdayNotifications: List<NotificationItemDto> = emptyList()
+    @SerializedName("yesterdayNotifications") val yesterdayNotifications: List<NotificationItemDto> = emptyList(),
+    @SerializedName("olderNotifications") val olderNotifications: List<NotificationItemDto> = emptyList()
 )
 
 data class NotificationsResponse(

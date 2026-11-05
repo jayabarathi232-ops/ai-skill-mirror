@@ -12,10 +12,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -47,6 +49,11 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile(context)
+    }
 
     Box(
         modifier = Modifier
@@ -97,26 +104,17 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Avatar Box
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .shadow(16.dp, RoundedCornerShape(24.dp), spotColor = CenterCardGradientStart)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(CenterCardGradientStart, CenterCardGradientEnd)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = uiState.initials,
-                        color = Color.White,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // Avatar Box with permanent profile photo & edit badge
+                ProfileAvatar(
+                    imageUrl = uiState.profilePictureUrl,
+                    initials = uiState.initials,
+                    size = 92.dp,
+                    shape = CircleShape,
+                    showEditBadge = true,
+                    fontSize = 30,
+                    onEditClick = { onEditPersonalInfoClick() },
+                    modifier = Modifier.clickable { onEditPersonalInfoClick() }
+                )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
