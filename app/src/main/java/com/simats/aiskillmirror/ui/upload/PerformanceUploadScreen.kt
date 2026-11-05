@@ -259,11 +259,10 @@ fun PerformanceUploadScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val categories = listOf(
-                        "photography" to "📷 Photography",
-                        "sports" to "⚽ Sports",
-                        "dance" to "💃 Dance",
+                        "speaking" to "🎙️ Public Speaking",
+                        "coding" to "💻 Coding",
                         "music" to "🎵 Music",
-                        "coding" to "💻 Coding"
+                        "photography" to "📷 Photography"
                     )
                     categories.forEach { (catKey, label) ->
                         val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)

@@ -25,9 +25,9 @@ data class SkillSelectionUiState(
     val skills: List<SkillCategory> = listOf(
         SkillCategory(
             id = "comm",
-            name = "Communication",
-            description = "Clarity, expression & active listening",
-            lastScore = 72,
+            name = "Public Speaking & Communication",
+            description = "Clarity, pacing, articulation & vocal presence",
+            lastScore = 86,
             iconType = SkillIconType.COMMUNICATION
         ),
         SkillCategory(

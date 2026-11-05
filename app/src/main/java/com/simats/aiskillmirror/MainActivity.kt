@@ -278,6 +278,9 @@ class MainActivity : ComponentActivity() {
                                             else -> performanceUploadViewModel.selectTab(MediaTypeTab.PHOTO)
                                         }
                                         navigateTo(AppScreen.PERFORMANCE_UPLOAD)
+                                    },
+                                    onOpenPublicSpeakingClick = {
+                                        navigateTo(AppScreen.SPEECH_STUDIO)
                                     }
                                 )
                             }

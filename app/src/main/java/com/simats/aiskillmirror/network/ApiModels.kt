@@ -393,7 +393,13 @@ data class CoachChatResponse(
 
 data class CoachMessageRequest(
     @SerializedName("user_id") val userId: Int,
-    @SerializedName("message") val message: String
+    @SerializedName("message") val message: String,
+    @SerializedName("language") val language: String? = "en"
+)
+
+data class ClearCoachChatRequest(
+    @SerializedName("user_id") val userId: Int,
+    @SerializedName("language") val language: String? = "en"
 )
 
 data class CoachSendMessageDataDto(

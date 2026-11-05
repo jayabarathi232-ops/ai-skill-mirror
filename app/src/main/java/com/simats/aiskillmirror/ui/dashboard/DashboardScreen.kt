@@ -63,7 +63,8 @@ fun DashboardScreen(
     onViewPlanClick: () -> Unit = {},
     onContinueTrainingClick: () -> Unit = {},
     onOpenAiCoachClick: () -> Unit = {},
-    onUploadPerformanceClick: (String) -> Unit = {}
+    onUploadPerformanceClick: (String) -> Unit = {},
+    onOpenPublicSpeakingClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -383,7 +384,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Real-time AI assessment across 5 core domains",
+                            text = "Real-time AI assessment across 4 core domains",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
@@ -418,8 +419,12 @@ fun DashboardScreen(
                         MySkillCard(
                             skill = skill,
                             onAssessClick = {
-                                Toast.makeText(context, "Opening ${skill.name} assessment...", Toast.LENGTH_SHORT).show()
-                                onTabSelected(DashboardTab.ASSESS)
+                                if (skill.id == "speaking") {
+                                    onOpenPublicSpeakingClick()
+                                } else {
+                                    Toast.makeText(context, "Opening ${skill.name} assessment...", Toast.LENGTH_SHORT).show()
+                                    onTabSelected(DashboardTab.ASSESS)
+                                }
                             }
                         )
                     }
@@ -779,6 +784,7 @@ fun MySkillCard(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
             .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .clickable { onAssessClick() }
             .padding(14.dp)
     ) {
         Column {

@@ -29,12 +29,25 @@ data class AiCoachUiState(
             isUser = false
         )
     ),
-    val suggestionChips: List<String> = listOf("Let's practice", "Show me an example"),
-    val currentInputText: String = ""
+    val suggestionChips: List<String> = listOf("Let's practice", "Show me an example", "Tamil Coaching"),
+    val currentInputText: String = "",
+    // Voice Chat State
+    val isVoiceModeActive: Boolean = false,
+    val voiceState: VoiceCoachState = VoiceCoachState.IDLE,
+    val voiceLanguage: VoiceLanguage = VoiceLanguage.ENGLISH,
+    val userSpokenText: String = "",
+    val isEditingSpokenText: Boolean = false,
+    val latestAiVoiceResponse: String = "Hi, I'm Mira! Ask me anything about your public speaking, music, photography, coding, or communication progress.",
+    val audioRmsLevel: Float = 0f,
+    val isContinuousMode: Boolean = true,
+    val isAudioMuted: Boolean = false,
+    val voiceErrorMessage: String? = null,
+    val isSendingVoiceMessage: Boolean = false
 )
 
 sealed interface AiCoachUiEvent {
     object SendMessage : AiCoachUiEvent
     object StartPracticeFromCoach : AiCoachUiEvent
     object NavigateBack : AiCoachUiEvent
+    data class ShowToast(val message: String) : AiCoachUiEvent
 }

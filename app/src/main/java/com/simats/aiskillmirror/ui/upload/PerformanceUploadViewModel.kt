@@ -46,8 +46,8 @@ class PerformanceUploadViewModel(
         clearSelectedMedia()
         val defaultCategory = when (tab) {
             MediaTypeTab.PHOTO -> "photography"
-            MediaTypeTab.VIDEO -> "sports"
-            MediaTypeTab.AUDIO -> "music"
+            MediaTypeTab.VIDEO -> "speaking"
+            MediaTypeTab.AUDIO -> "speaking"
         }
         _uiState.value = _uiState.value.copy(
             selectedTab = tab,

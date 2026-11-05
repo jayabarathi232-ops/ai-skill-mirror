@@ -168,6 +168,37 @@ data class SpeechAnalysisData(
     val aiTipText: String
 )
 
+data class SpeechHistoryItemData(
+    val id: String,
+    val promptTitle: String,
+    val promptQuote: String,
+    val durationSeconds: Int,
+    val speechScore: Int,
+    val pronunciationScore: Int,
+    val fluencyScore: Int,
+    val clarityScore: Int,
+    val transcript: String,
+    val aiFeedback: String,
+    val dateText: String
+)
+
+data class SpeechDashboardData(
+    val totalPracticeSessions: Int,
+    val speakingProgress: Int,
+    val speechClarityFeedback: String,
+    val speakingSpeed: String,
+    val pronunciationFeedback: String,
+    val recommendedNextExercise: String,
+    val history: List<SpeechHistoryItemData>
+)
+
+data class SpeechTopicData(
+    val title: String,
+    val prompt: String,
+    val duration: Int,
+    val tip: String
+)
+
 data class MilestoneAchievementData(
     val id: String,
     val title: String,
@@ -853,11 +884,12 @@ object ApiClient {
         }
     }
 
-    suspend fun sendCoachMessage(userId: Int, message: String): NetworkResult<Pair<ChatMessageData, ChatMessageData>> = withContext(Dispatchers.IO) {
+    suspend fun sendCoachMessage(userId: Int, message: String, language: String = "en"): NetworkResult<Pair<ChatMessageData, ChatMessageData>> = withContext(Dispatchers.IO) {
         try {
             val body = JSONObject().apply {
                 put("user_id", userId)
                 put("message", message)
+                put("language", language)
             }
             val (code, text) = postJson("coach/coach_send_message.php", body)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
@@ -870,6 +902,32 @@ object ApiClient {
                 NetworkResult(true, "Sent", Pair(userMsg, coachMsg))
             } else {
                 NetworkResult(false, json.optString("message"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun clearCoachChat(userId: Int, language: String = "en"): NetworkResult<ChatMessageData> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+                put("language", language)
+            }
+            val (code, text) = postJson("coach/coach_clear_chat.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.optJSONObject("data")
+                val w = d?.optJSONObject("welcomeMessage")
+                val welcomeMsg = ChatMessageData(
+                    id = w?.optString("id") ?: "1",
+                    text = w?.optString("text") ?: "Conversation cleared.",
+                    isUser = false,
+                    timestamp = w?.optString("timestamp") ?: "Now"
+                )
+                NetworkResult(true, "Conversation cleared", welcomeMsg)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to clear chat"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
@@ -923,4 +981,110 @@ object ApiClient {
             NetworkResult(false, "Network error: ${e.localizedMessage}", false)
         }
     }
-}
+
+    suspend fun fetchSpeechHistory(userId: Int): NetworkResult<SpeechDashboardData> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("speech/speech_history_fetch.php?user_id=$userId")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data")
+                val arr = d.optJSONArray("history")
+                val list = mutableListOf<SpeechHistoryItemData>()
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val item = arr.getJSONObject(i)
+                        list.add(
+                            SpeechHistoryItemData(
+                                id = item.optString("id"),
+                                promptTitle = item.optString("promptTitle"),
+                                promptQuote = item.optString("promptQuote"),
+                                durationSeconds = item.optInt("durationSeconds", 45),
+                                speechScore = item.optInt("speechScore", 80),
+                                pronunciationScore = item.optInt("pronunciationScore", 80),
+                                fluencyScore = item.optInt("fluencyScore", 80),
+                                clarityScore = item.optInt("clarityScore", 80),
+                                transcript = item.optString("transcript"),
+                                aiFeedback = item.optString("aiFeedback"),
+                                dateText = item.optString("dateText")
+                            )
+                        )
+                    }
+                }
+                val result = SpeechDashboardData(
+                    totalPracticeSessions = d.optInt("totalPracticeSessions", 18),
+                    speakingProgress = d.optInt("speakingProgress", 86),
+                    speechClarityFeedback = d.optString("speechClarityFeedback", "88% - Crisp articulation & structured flow"),
+                    speakingSpeed = d.optString("speakingSpeed", "142 WPM (Optimal Conversational Range)"),
+                    pronunciationFeedback = d.optString("pronunciationFeedback", "84% - Excellent vowel balance"),
+                    recommendedNextExercise = d.optString("recommendedNextExercise", "60-Second Elevator Pitch with Zero Filler Words"),
+                    history = list
+                )
+                NetworkResult(true, "Speech history fetched", result)
+            } else {
+                NetworkResult(false, json.optString("message"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchSpeechTopic(module: String): NetworkResult<SpeechTopicData> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("speech/speech_topics_fetch.php?module=$module")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data")
+                val t = d.getJSONObject("topic")
+                val topic = SpeechTopicData(
+                    title = t.optString("title"),
+                    prompt = t.optString("prompt"),
+                    duration = t.optInt("duration", 60),
+                    tip = t.optString("tip")
+                )
+                NetworkResult(true, "Topic fetched", topic)
+            } else {
+                NetworkResult(false, json.optString("message"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun saveSpeechSession(
+        userId: Int,
+        moduleType: String,
+        promptTitle: String,
+        promptQuote: String,
+        durationSeconds: Int,
+        speechScore: Int,
+        pronunciationScore: Int,
+        fluencyScore: Int,
+        clarityScore: Int,
+        transcript: String,
+        aiTip: String,
+        wpm: Int
+    ): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().apply {
+                put("user_id", userId)
+                put("module_type", moduleType)
+                put("prompt_title", promptTitle)
+                put("prompt_quote", promptQuote)
+                put("duration_seconds", durationSeconds)
+                put("speech_score", speechScore)
+                put("pronunciation_score", pronunciationScore)
+                put("fluency_score", fluencyScore)
+                put("clarity_score", clarityScore)
+                put("transcript", transcript)
+                put("ai_tip", aiTip)
+                put("wpm", wpm)
+            }
+            val (code, text) = postJson("speech/speech_session_save.php", body)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            NetworkResult(code == 200 && json.optString("status") == "success", json.optString("message"), true)
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}", false)
+        }
+    }
+    }
+

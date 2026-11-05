@@ -125,6 +125,11 @@ interface ApiService {
         @Body request: CoachMessageRequest
     ): Response<CoachSendMessageResponse>
 
+    @POST("coach/coach_clear_chat.php")
+    suspend fun clearCoachChat(
+        @Body request: ClearCoachChatRequest
+    ): Response<SimpleMessageResponse>
+
     // Settings
     @GET("settings/settings_fetch.php")
     suspend fun getSettings(

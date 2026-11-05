@@ -54,26 +54,25 @@ data class DashboardUiState(
     val currentLessonDuration: String = "15 min",
     val currentLessonProgress: Float = 0.75f,
     val aiCoachTitle: String = "Coach Aria is ready",
-    val aiCoachSubtitle: String = "\"Your dance tempo improved by 14%! Let's focus on coding dynamic programming next.\"",
+    val aiCoachSubtitle: String = "\"Your speech clarity reached 88%! Let's focus on structured presentation delivery next.\"",
     val greeting: String = "Welcome back,",
     val currentPlanTitle: String = "Multi-Skill Mastery",
     val selectedTab: DashboardTab = DashboardTab.HOME,
     
-    // My 5 Core Skills
+    // My Core Skills
     val mySkills: List<SkillItem> = listOf(
-        SkillItem("sports", "Sports", "Agility & Reflexes", 82, "Advanced", "⚽", 0xFF10B981, 0.82f),
-        SkillItem("dance", "Dance", "Rhythm & Posture", 78, "Intermediate", "💃", 0xFFEC4899, 0.78f),
+        SkillItem("speaking", "Public Speaking", "Speech & Articulation", 86, "Advanced", "🎙️", 0xFF8B5CF6, 0.86f),
+        SkillItem("coding", "Coding", "Algorithms & Logic", 92, "Master", "💻", 0xFF6366F1, 0.92f),
         SkillItem("music", "Music", "Pitch & Cadence", 88, "Pro", "🎵", 0xFFA855F7, 0.88f),
-        SkillItem("photo", "Photography", "Composition & Light", 75, "Intermediate", "📷", 0xFF06B6D4, 0.75f),
-        SkillItem("coding", "Coding", "Algorithms & Logic", 92, "Master", "💻", 0xFF6366F1, 0.92f)
+        SkillItem("photo", "Photography", "Composition & Light", 75, "Intermediate", "📷", 0xFF06B6D4, 0.75f)
     ),
 
     // Recent Performance History
     val recentHistory: List<PerformanceHistoryItem> = listOf(
-        PerformanceHistoryItem("1", "Coding", "Tree Traversal Algorithm Test", 92, "Today, 10:30 AM", "💻", "Optimal complexity achieved"),
-        PerformanceHistoryItem("2", "Dance", "Choreography Balance & Posture", 78, "Yesterday", "💃", "Great fluid body alignment"),
+        PerformanceHistoryItem("1", "Public Speaking", "Impromptu Speech Clarity Drill", 86, "Today, 11:15 AM", "🎙️", "WPM: 142 · Clarity: 88% · Minimal fillers"),
+        PerformanceHistoryItem("2", "Coding", "Tree Traversal Algorithm Test", 92, "Yesterday", "💻", "Optimal complexity achieved"),
         PerformanceHistoryItem("3", "Music", "Vocal Pitch & Harmonic Scale", 88, "Nov 2", "🎵", "98% note accuracy achieved"),
-        PerformanceHistoryItem("4", "Sports", "Sprint Agility & Footwork Drill", 82, "Nov 1", "⚽", "Reaction time improved +12%")
+        PerformanceHistoryItem("4", "Photography", "Rule of Thirds & Lighting Study", 75, "Nov 1", "📷", "Golden hour framing accuracy 94%")
     ),
 
     // Weekly Progress Chart Data
@@ -89,8 +88,8 @@ data class DashboardUiState(
 
     // Today's Recommended Practice
     val recommendedPractice: List<RecommendedPracticeItem> = listOf(
-        RecommendedPracticeItem("1", "Dynamic Programming Sprint", "Coding", "15 min", "Hard", "💻"),
-        RecommendedPracticeItem("2", "Cadence & Rhythm Sync", "Dance", "10 min", "Medium", "💃"),
+        RecommendedPracticeItem("1", "60s Elevator Pitch Practice", "Public Speaking", "6 min", "Medium", "🎙️"),
+        RecommendedPracticeItem("2", "Dynamic Programming Sprint", "Coding", "15 min", "Hard", "💻"),
         RecommendedPracticeItem("3", "Interval Ear Training & Scales", "Music", "8 min", "Easy", "🎵")
     ),
 
