@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -33,7 +32,6 @@ import com.simats.aiskillmirror.ui.dashboard.BottomNavigationBar
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.MicIcon
 import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
-import com.simats.aiskillmirror.ui.register.CheckCircleIcon
 import com.simats.aiskillmirror.ui.theme.*
 
 @Composable
@@ -58,7 +56,7 @@ fun DailyTrainingScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            // Scrollable Body Content
+            // Scrollable Body
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -92,13 +90,13 @@ fun DailyTrainingScreen(
 
                         Column {
                             Text(
-                                text = uiState.headerTitle,
-                                color = TextPrimary,
+                                text = "Daily training",
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = uiState.headerDateText,
+                                text = "MICRO-LEARNING SESSIONS",
                                 color = TextSecondary,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -107,11 +105,14 @@ fun DailyTrainingScreen(
                         }
                     }
 
-                    // Calendar Icon Button
+                    // Calendar Button
                     Box(
                         modifier = Modifier
                             .size(36.dp)
+                            .shadow(2.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(RoundedCornerShape(10.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                             .clickable {
                                 viewModel.onCalendarClick()
                                 onCalendarClick()
@@ -133,7 +134,7 @@ fun DailyTrainingScreen(
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100.dp))
-                            .background(Color(0xFF132A1B))
+                            .background(Color(0xFFE8F5E9))
                             .padding(horizontal = 12.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -161,13 +162,10 @@ fun DailyTrainingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.Start) {
@@ -203,7 +201,7 @@ fun DailyTrainingScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF20263F))
+                                .background(Color(0xFFEDE5FA))
                         ) {
                             Box(
                                 modifier = Modifier
@@ -235,7 +233,7 @@ fun DailyTrainingScreen(
                 ) {
                     Text(
                         text = "Your daily practice",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -264,13 +262,10 @@ fun DailyTrainingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF201B48))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -282,7 +277,7 @@ fun DailyTrainingScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF2A2252))
+                                    .background(TaglineBackground)
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
@@ -312,7 +307,7 @@ fun DailyTrainingScreen(
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF2A2252)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 MicIcon(size = 20.dp, color = TaglineText)
@@ -323,7 +318,7 @@ fun DailyTrainingScreen(
                             Column {
                                 Text(
                                     text = uiState.upNextTitle,
-                                    color = TextPrimary,
+                                    color = HeadingPurple,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -360,7 +355,7 @@ fun DailyTrainingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
@@ -385,7 +380,7 @@ fun DailyTrainingScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = uiState.startButtonText,
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -410,9 +405,10 @@ fun CompletedPracticeCard(item: PracticeItem) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(18.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
             .padding(14.dp)
     ) {
         Row(
@@ -428,7 +424,7 @@ fun CompletedPracticeCard(item: PracticeItem) {
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF132A1B)),
+                        .background(Color(0xFFE8F5E9)),
                     contentAlignment = Alignment.Center
                 ) {
                     CheckCircleIcon(size = 20.dp, color = GreenNode)
@@ -439,7 +435,7 @@ fun CompletedPracticeCard(item: PracticeItem) {
                 Column {
                     Text(
                         text = item.title,
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -460,6 +456,32 @@ fun CompletedPracticeCard(item: PracticeItem) {
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+@Composable
+fun CheckCircleIcon(size: Dp, color: Color) {
+    Canvas(modifier = Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val strokeWidth = 1.8.dp.toPx()
+
+        drawCircle(
+            color = color,
+            radius = w * 0.42f,
+            center = Offset(w / 2, h / 2),
+            style = Stroke(width = strokeWidth)
+        )
+
+        drawPath(
+            path = Path().apply {
+                moveTo(w * 0.30f, h * 0.50f)
+                lineTo(w * 0.44f, h * 0.64f)
+                lineTo(w * 0.70f, h * 0.36f)
+            },
+            color = color,
+            style = Stroke(width = strokeWidth)
+        )
     }
 }
 

@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -93,7 +94,7 @@ fun NotificationsScreen(
                         Column {
                             Text(
                                 text = uiState.headerTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -111,7 +112,10 @@ fun NotificationsScreen(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
+                            .shadow(2.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(RoundedCornerShape(10.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                             .clickable {
                                 viewModel.onSettingsClick()
                                 onSettingsClick()
@@ -136,13 +140,10 @@ fun NotificationsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column {
@@ -159,7 +160,7 @@ fun NotificationsScreen(
                                     modifier = Modifier
                                         .size(42.dp)
                                         .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFF2A2252)),
+                                        .background(TaglineBackground),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     AlarmClockIcon(size = 20.dp, color = TaglineText)
@@ -170,7 +171,7 @@ fun NotificationsScreen(
                                 Column {
                                     Text(
                                         text = "Your daily learning time",
-                                        color = TextPrimary,
+                                        color = HeadingPurple,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -191,7 +192,7 @@ fun NotificationsScreen(
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = PrimaryGradientStart,
                                     uncheckedThumbColor = TextSecondary,
-                                    uncheckedTrackColor = SurfaceDark
+                                    uncheckedTrackColor = Color(0xFFEDE5FA)
                                 )
                             )
                         }
@@ -217,7 +218,7 @@ fun NotificationsScreen(
                 ) {
                     Text(
                         text = "Today",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -235,30 +236,29 @@ fun NotificationsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Today Notification Items List
+                // Notification Items List
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     uiState.todayNotifications.forEach { item ->
                         NotificationCardItem(item = item)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Section: Yesterday
+                // Section: Earlier
                 Text(
-                    text = "Yesterday",
-                    color = TextPrimary,
+                    text = "Earlier",
+                    color = HeadingPurple,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Yesterday Notification Items List
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     uiState.yesterdayNotifications.forEach { item ->
                         NotificationCardItem(item = item)
@@ -282,9 +282,10 @@ fun NotificationCardItem(item: NotificationItem) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
             .padding(16.dp)
     ) {
         Column {
@@ -294,7 +295,7 @@ fun NotificationCardItem(item: NotificationItem) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val badgeBg = if (item.isGreenBadge) Color(0xFF132A1B) else Color(0xFF2A2252)
+                    val badgeBg = if (item.isGreenBadge) Color(0xFFE8F5E9) else TaglineBackground
                     val badgeTextColor = if (item.isGreenBadge) GreenNode else TaglineText
 
                     Box(
@@ -327,7 +328,7 @@ fun NotificationCardItem(item: NotificationItem) {
                 verticalAlignment = Alignment.Top,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val iconBg = if (item.isGreenBadge) Color(0xFF132A1B) else Color(0xFF221A3E)
+                val iconBg = if (item.isGreenBadge) Color(0xFFE8F5E9) else TaglineBackground
                 val iconColor = if (item.isGreenBadge) GreenNode else TaglineText
 
                 Box(
@@ -350,7 +351,7 @@ fun NotificationCardItem(item: NotificationItem) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.title,
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -377,8 +378,8 @@ fun NotificationSegmentedTabs(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(14.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .padding(4.dp)
     ) {
         Row(
@@ -415,9 +416,9 @@ fun NotificationTabItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabBackground = if (isSelected) Color(0xFF1E1A3D) else Color.Transparent
+    val tabBackground = if (isSelected) TaglineBackground else Color.Transparent
     val borderModifier = if (isSelected) {
-        Modifier.border(1.dp, Color(0xFF332B66), RoundedCornerShape(10.dp))
+        Modifier.border(1.dp, AccentPurple, RoundedCornerShape(10.dp))
     } else Modifier
 
     Box(
@@ -431,7 +432,7 @@ fun NotificationTabItem(
     ) {
         Text(
             text = label,
-            color = if (isSelected) TextPrimary else TextSecondary,
+            color = if (isSelected) AccentPurple else TextSecondary,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )

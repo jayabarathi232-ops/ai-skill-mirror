@@ -91,7 +91,7 @@ fun GrowthReportScreen(
                         Column {
                             Text(
                                 text = uiState.headerTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -109,7 +109,10 @@ fun GrowthReportScreen(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
+                            .shadow(2.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                             .clip(RoundedCornerShape(10.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                             .clickable {
                                 viewModel.onExportPdfClick()
                                 onExportPdfClick()
@@ -126,13 +129,10 @@ fun GrowthReportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.Start) {
@@ -144,7 +144,7 @@ fun GrowthReportScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF2A2252))
+                                    .background(TaglineBackground)
                                     .padding(horizontal = 12.dp, vertical = 5.dp)
                             ) {
                                 Text(
@@ -163,7 +163,7 @@ fun GrowthReportScreen(
 
                         Text(
                             text = uiState.headline,
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 26.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -190,7 +190,7 @@ fun GrowthReportScreen(
                 ) {
                     Text(
                         text = "Then vs. now",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -204,7 +204,7 @@ fun GrowthReportScreen(
                                 modifier = Modifier
                                     .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF3B4468))
+                                    .background(Color(0xFFB0A8C7))
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -239,9 +239,10 @@ fun GrowthReportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column(
@@ -259,13 +260,10 @@ fun GrowthReportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF201B48))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -274,7 +272,7 @@ fun GrowthReportScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFF2A2252)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 SparkleIcon(size = 18.dp, color = TaglineText)
@@ -282,7 +280,7 @@ fun GrowthReportScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = uiState.breakthroughTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -311,7 +309,7 @@ fun GrowthReportScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
@@ -336,7 +334,7 @@ fun GrowthReportScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = uiState.exportButtonText,
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -366,7 +364,7 @@ fun SkillComparisonBarItem(item: SkillComparisonItem) {
         ) {
             Text(
                 text = item.name,
-                color = TextPrimary,
+                color = HeadingPurple,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -392,14 +390,14 @@ fun SkillComparisonBarItem(item: SkillComparisonItem) {
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF20263F))
+                        .background(Color(0xFFEDE5FA))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(item.baselineScore / 100f)
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(100.dp))
-                            .background(Color(0xFF424C72))
+                            .background(Color(0xFFB0A8C7))
                     )
                 }
 
@@ -411,7 +409,7 @@ fun SkillComparisonBarItem(item: SkillComparisonItem) {
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF20263F))
+                        .background(Color(0xFFEDE5FA))
                 ) {
                     Box(
                         modifier = Modifier

@@ -93,7 +93,7 @@ fun MilestonesScreen(
                         Column {
                             Text(
                                 text = uiState.headerTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -111,9 +111,10 @@ fun MilestonesScreen(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
+                            .shadow(2.dp, CircleShape, spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(CircleShape)
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), CircleShape)
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, CircleShape)
                             .clickable {
                                 viewModel.onAddGoalClick()
                                 onAddGoalClick()
@@ -130,13 +131,10 @@ fun MilestonesScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.Start) {
@@ -148,7 +146,7 @@ fun MilestonesScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF2A2252))
+                                    .background(TaglineBackground)
                                     .padding(horizontal = 12.dp, vertical = 5.dp)
                             ) {
                                 Text(
@@ -167,7 +165,7 @@ fun MilestonesScreen(
 
                         Text(
                             text = uiState.mainGoalTitle,
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -201,7 +199,7 @@ fun MilestonesScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF20263F))
+                                .background(Color(0xFFEDE5FA))
                         ) {
                             Box(
                                 modifier = Modifier
@@ -229,9 +227,10 @@ fun MilestonesScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(18.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Row(
@@ -247,7 +246,7 @@ fun MilestonesScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF132A1B)),
+                                    .background(Color(0xFFE8F5E9)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 FlameIcon(size = 18.dp, color = GreenNode)
@@ -291,7 +290,7 @@ fun MilestonesScreen(
                 ) {
                     Text(
                         text = "Your achievement shelf",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -334,9 +333,10 @@ fun MilestonesScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(18.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Row(
@@ -352,7 +352,7 @@ fun MilestonesScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF221A3E)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 LockIcon(size = 18.dp, color = TaglineText)
@@ -416,9 +416,10 @@ fun AchievementCard(
 ) {
     Box(
         modifier = modifier
+            .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(18.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -429,7 +430,7 @@ fun AchievementCard(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF221A3E)),
+                    .background(TaglineBackground),
                 contentAlignment = Alignment.Center
             ) {
                 when (item.iconType) {

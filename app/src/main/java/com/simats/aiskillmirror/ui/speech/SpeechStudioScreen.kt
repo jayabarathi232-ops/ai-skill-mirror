@@ -92,7 +92,7 @@ fun SpeechStudioScreen(
                         Column {
                             Text(
                                 text = uiState.title,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -110,9 +110,10 @@ fun SpeechStudioScreen(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
+                            .shadow(2.dp, CircleShape, spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(CircleShape)
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), CircleShape),
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         QuestionMarkCircleIcon(size = 18.dp, color = TextSecondary)
@@ -156,13 +157,10 @@ fun SpeechStudioScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.Start) {
@@ -252,9 +250,10 @@ fun SpeechStudioScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .shadow(2.dp, CircleShape, spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(CircleShape)
-                            .background(Color(0xFF1B1E2E))
-                            .border(1.dp, Color(0xFF282E48), CircleShape)
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, CircleShape)
                             .clickable { viewModel.onRestartClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -295,9 +294,10 @@ fun SpeechStudioScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .shadow(2.dp, CircleShape, spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(CircleShape)
-                            .background(Color(0xFF1B1E2E))
-                            .border(1.dp, Color(0xFF282E48), CircleShape)
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, CircleShape)
                             .clickable { viewModel.onPauseClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -320,9 +320,10 @@ fun SpeechStudioScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(16.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                         .padding(14.dp)
                 ) {
                     Row(
@@ -333,7 +334,7 @@ fun SpeechStudioScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF221A3E)),
+                                .background(TaglineBackground),
                             contentAlignment = Alignment.Center
                         ) {
                             ShieldCheckIcon(size = 18.dp, color = TaglineText)

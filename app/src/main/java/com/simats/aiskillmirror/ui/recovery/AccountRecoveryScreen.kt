@@ -85,7 +85,7 @@ fun AccountRecoveryScreen(
                     Column {
                         Text(
                             text = "Account recovery",
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -105,7 +105,7 @@ fun AccountRecoveryScreen(
                 Box(
                     modifier = Modifier
                         .size(72.dp)
-                        .shadow(20.dp, RoundedCornerShape(22.dp), spotColor = CenterCardGradientStart)
+                        .shadow(12.dp, RoundedCornerShape(22.dp), spotColor = CenterCardGradientStart)
                         .clip(RoundedCornerShape(22.dp))
                         .background(
                             brush = Brush.linearGradient(
@@ -122,14 +122,14 @@ fun AccountRecoveryScreen(
                 // Headline
                 Text(
                     text = "Forgot your",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 36.sp
                 )
                 Text(
                     text = "password?",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 36.sp
@@ -174,7 +174,7 @@ fun AccountRecoveryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
@@ -212,7 +212,7 @@ fun AccountRecoveryScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Send reset link",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -226,9 +226,10 @@ fun AccountRecoveryScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(16.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
                     Row(
@@ -239,7 +240,7 @@ fun AccountRecoveryScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF221A3E)),
+                                .background(TaglineBackground),
                             contentAlignment = Alignment.Center
                         ) {
                             EmailIcon(size = 18.dp, color = TaglineText)

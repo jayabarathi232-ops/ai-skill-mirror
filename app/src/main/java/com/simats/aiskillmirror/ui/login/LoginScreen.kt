@@ -93,14 +93,14 @@ fun LoginScreen(
             // Headline
             Text(
                 text = "Welcome back,",
-                color = TextPrimary,
+                color = HeadingPurple,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 36.sp
             )
             Text(
                 text = "future you.",
-                color = TextPrimary,
+                color = HeadingPurple,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 36.sp
@@ -266,7 +266,7 @@ fun LoginScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Log in",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -285,7 +285,7 @@ fun LoginScreen(
             ) {
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color(0xFF22293F),
+                    color = Color(0xFFEDE5FA),
                     thickness = 1.dp
                 )
                 Text(
@@ -296,7 +296,7 @@ fun LoginScreen(
                 )
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color(0xFF22293F),
+                    color = Color(0xFFEDE5FA),
                     thickness = 1.dp
                 )
             }
@@ -308,9 +308,10 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .shadow(2.dp, RoundedCornerShape(14.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                     .clip(RoundedCornerShape(14.dp))
-                    .background(SurfaceDark)
-                    .border(1.dp, Color(0xFF2A314A), RoundedCornerShape(14.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                     .clickable {
                         viewModel.onGoogleSignInClick()
                         onGoogleSignInClick()
@@ -338,9 +339,10 @@ fun LoginScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF161530))
-                    .border(1.dp, Color(0xFF2D2852), RoundedCornerShape(16.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                     .padding(16.dp)
             ) {
                 Row(
@@ -351,7 +353,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF28224D)),
+                            .background(TaglineBackground),
                         contentAlignment = Alignment.Center
                     ) {
                         ShieldCheckIcon(size = 18.dp, color = TaglineText)

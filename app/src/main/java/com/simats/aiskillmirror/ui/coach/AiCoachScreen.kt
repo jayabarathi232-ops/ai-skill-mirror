@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -69,7 +68,7 @@ fun AiCoachScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Bar
+                // Top Header Row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,7 +95,7 @@ fun AiCoachScreen(
                         Column {
                             Text(
                                 text = uiState.coachName,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -127,9 +126,10 @@ fun AiCoachScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF181538))
-                        .border(1.dp, Color(0xFF2F285C), RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Row(
@@ -175,9 +175,10 @@ fun AiCoachScreen(
                             Box(
                                 modifier = Modifier
                                     .widthIn(max = 280.dp)
+                                    .shadow(2.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp))
-                                    .background(Color(0xFF251E45))
-                                    .border(1.dp, Color(0xFF392F60), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp))
+                                    .background(TaglineBackground)
+                                    .border(1.dp, CardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp))
                                     .padding(14.dp)
                             ) {
                                 Text(
@@ -219,9 +220,10 @@ fun AiCoachScreen(
                                 Box(
                                     modifier = Modifier
                                         .widthIn(max = 290.dp)
+                                        .shadow(2.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
-                                        .background(SurfaceDark)
-                                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+                                        .background(CardBackground)
+                                        .border(1.dp, CardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
                                         .padding(14.dp)
                                 ) {
                                     Text(
@@ -243,9 +245,10 @@ fun AiCoachScreen(
                                         uiState.suggestionChips.forEach { chipText ->
                                             Box(
                                                 modifier = Modifier
+                                                    .shadow(1.dp, RoundedCornerShape(100.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                                     .clip(RoundedCornerShape(100.dp))
-                                                    .background(Color(0xFF221A3E))
-                                                    .border(1.dp, Color(0xFF382D60), RoundedCornerShape(100.dp))
+                                                    .background(CardBackground)
+                                                    .border(1.dp, CardBorder, RoundedCornerShape(100.dp))
                                                     .clickable {
                                                         if (chipText.contains("practice", ignoreCase = true)) {
                                                             onStartPracticeFromCoachClick()
@@ -256,7 +259,7 @@ fun AiCoachScreen(
                                             ) {
                                                 Text(
                                                     text = chipText,
-                                                    color = TaglineText,
+                                                    color = AccentPurple,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Medium
                                                 )
@@ -277,9 +280,10 @@ fun AiCoachScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .shadow(4.dp, RoundedCornerShape(26.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                     .clip(RoundedCornerShape(26.dp))
-                    .background(SurfaceDark)
-                    .border(1.dp, Color(0xFF22293F), RoundedCornerShape(26.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(26.dp))
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Row(

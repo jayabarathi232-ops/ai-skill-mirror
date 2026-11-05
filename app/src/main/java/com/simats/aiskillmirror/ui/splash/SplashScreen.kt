@@ -106,14 +106,14 @@ fun SplashScreen(
                 // Title Headline
                 Text(
                     text = uiState.headlineLine1,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 38.sp
                 )
                 Text(
                     text = uiState.headlineLine2,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 38.sp
@@ -141,7 +141,7 @@ fun SplashScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
@@ -180,7 +180,7 @@ fun SplashScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = uiState.getStartedButtonText,
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -197,7 +197,7 @@ fun SplashScreen(
                     }
                     withStyle(
                         style = SpanStyle(
-                            color = TextPrimary,
+                            color = TaglineText,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -238,9 +238,10 @@ fun TopBarHeader(
             Box(
                 modifier = Modifier
                     .size(38.dp)
+                    .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                     .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceDark)
-                    .border(1.dp, Color(0xFF22293F), RoundedCornerShape(12.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                     .clickable { onBackClick() },
                 contentAlignment = Alignment.Center
             ) {
@@ -302,7 +303,7 @@ fun OrbitalGraphic() {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        CenterCardGradientStart.copy(alpha = 0.25f),
+                        CenterCardGradientStart.copy(alpha = 0.12f),
                         Color.Transparent
                     ),
                     center = center,
@@ -333,7 +334,7 @@ fun OrbitalGraphic() {
         Box(
             modifier = Modifier
                 .size(90.dp)
-                .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = CenterCardGradientStart)
+                .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = CenterCardGradientStart)
                 .clip(RoundedCornerShape(26.dp))
                 .background(
                     brush = Brush.linearGradient(
@@ -373,8 +374,8 @@ fun OrbitalGraphic() {
                 .offset(x = (-76).dp, y = 58.dp)
                 .size(38.dp)
                 .clip(CircleShape)
-                .background(BadgeBackground)
-                .border(1.dp, BadgeBorder, CircleShape),
+                .background(Color(0xFFE8F5E9))
+                .border(1.dp, Color(0xFFC8E6C9), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             ChartIcon(size = 18.dp, color = GreenNode)

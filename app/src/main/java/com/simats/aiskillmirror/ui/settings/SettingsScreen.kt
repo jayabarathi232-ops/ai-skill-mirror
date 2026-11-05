@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -96,7 +97,7 @@ fun SettingsScreen(
                     Column {
                         Text(
                             text = uiState.headerTitle,
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -115,7 +116,7 @@ fun SettingsScreen(
                 // Section 1: Account
                 Text(
                     text = "Account",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -125,14 +126,15 @@ fun SettingsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         SettingsClickableRow(
-                            icon = { PersonIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { PersonIcon(size = 20.dp, color = AccentPurple) },
                             title = "Personal information",
                             onClick = {
                                 viewModel.onPersonalInformationClick()
@@ -142,24 +144,24 @@ fun SettingsScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsClickableRow(
-                            icon = { LockIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { LockIcon(size = 20.dp, color = AccentPurple) },
                             title = "Password & security",
                             onClick = { viewModel.onPasswordSecurityClick() }
                         )
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsToggleRow(
-                            icon = { BellIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { BellIcon(size = 20.dp, color = AccentPurple) },
                             title = "Learning reminders",
                             isChecked = uiState.isLearningRemindersEnabled,
                             onCheckedChange = { viewModel.onToggleLearningReminders(it) }
@@ -172,7 +174,7 @@ fun SettingsScreen(
                 // Section 2: Privacy & intelligence
                 Text(
                     text = "Privacy & intelligence",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -182,14 +184,15 @@ fun SettingsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         SettingsToggleRow(
-                            icon = { SparkleIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { SparkleIcon(size = 20.dp, color = AccentPurple) },
                             title = "Personalized AI insights",
                             isChecked = uiState.isPersonalizedAiEnabled,
                             onCheckedChange = { viewModel.onTogglePersonalizedAi(it) }
@@ -197,12 +200,12 @@ fun SettingsScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsToggleRow(
-                            icon = { MicIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { MicIcon(size = 20.dp, color = AccentPurple) },
                             title = "Save voice recordings",
                             isChecked = uiState.isSaveVoiceRecordingsEnabled,
                             onCheckedChange = { viewModel.onToggleSaveVoiceRecordings(it) }
@@ -210,24 +213,24 @@ fun SettingsScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsClickableRow(
-                            icon = { ShieldCheckIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { ShieldCheckIcon(size = 20.dp, color = AccentPurple) },
                             title = "Data & permissions",
                             onClick = { viewModel.onDataPermissionsClick() }
                         )
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsClickableRow(
-                            icon = { ExportTrayIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { ExportTrayIcon(size = 20.dp, color = AccentPurple) },
                             title = "Download my data",
                             onClick = { viewModel.onDownloadDataClick() }
                         )
@@ -239,7 +242,7 @@ fun SettingsScreen(
                 // Section 3: Preferences
                 Text(
                     text = "Preferences",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -249,26 +252,27 @@ fun SettingsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
                         SettingsValueRow(
-                            icon = { MoonIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { MoonIcon(size = 20.dp, color = AccentPurple) },
                             title = "Appearance",
                             valueText = uiState.currentAppearanceText
                         )
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
                         SettingsValueRow(
-                            icon = { GlobeIcon(size = 20.dp, color = TextSecondary) },
+                            icon = { GlobeIcon(size = 20.dp, color = AccentPurple) },
                             title = "Language",
                             valueText = uiState.currentLanguageText
                         )
@@ -389,7 +393,7 @@ fun SettingsToggleRow(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = PrimaryGradientStart,
                 uncheckedThumbColor = TextSecondary,
-                uncheckedTrackColor = SurfaceDark
+                uncheckedTrackColor = Color(0xFFEDE5FA)
             )
         )
     }

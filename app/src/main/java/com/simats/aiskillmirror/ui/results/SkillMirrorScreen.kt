@@ -93,7 +93,7 @@ fun SkillMirrorScreen(
                         Column {
                             Text(
                                 text = "Your skill mirror",
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -128,13 +128,10 @@ fun SkillMirrorScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF16132D), Color(0xFF1E1A3D))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF2E2858), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Row(
@@ -175,7 +172,7 @@ fun SkillMirrorScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF132A1B))
+                                    .background(Color(0xFFE8F5E9))
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
@@ -233,7 +230,7 @@ fun SkillMirrorScreen(
                 ) {
                     Text(
                         text = "Your AI skill scores",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -251,9 +248,10 @@ fun SkillMirrorScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column(
@@ -271,13 +269,10 @@ fun SkillMirrorScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF201B48))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -286,7 +281,7 @@ fun SkillMirrorScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFF2A2252)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 SparkleIcon(size = 18.dp, color = TaglineText)
@@ -372,7 +367,7 @@ fun SkillMirrorScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "View my learning plan",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -423,7 +418,7 @@ fun SkillScoreBarItem(item: SkillScoreItem) {
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(100.dp))
-                .background(Color(0xFF20263F))
+                .background(Color(0xFFEDE5FA))
         ) {
             Box(
                 modifier = Modifier

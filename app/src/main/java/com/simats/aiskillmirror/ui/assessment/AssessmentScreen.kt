@@ -90,7 +90,7 @@ fun AssessmentScreen(
                         Column {
                             Text(
                                 text = uiState.categoryTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -145,7 +145,7 @@ fun AssessmentScreen(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF20263F))
+                        .background(Color(0xFFEDE5FA))
                 ) {
                     Box(
                         modifier = Modifier
@@ -166,7 +166,7 @@ fun AssessmentScreen(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF142B1F))
+                        .background(Color(0xFFE8F5E9))
                         .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
                     Text(
@@ -183,7 +183,7 @@ fun AssessmentScreen(
                 // Question Headline
                 Text(
                     text = uiState.questionHeadline,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 24.sp
@@ -268,7 +268,7 @@ fun AssessmentScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (uiState.isLastQuestion) "Finish assessment" else "Next question",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -294,18 +294,24 @@ fun OptionCardItem(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
-    val cardBackground = if (isSelected) Color(0xFF1E1842) else SurfaceDark
+    val cardBackground = if (isSelected) TaglineBackground else CardBackground
     val borderBrush = if (isSelected) {
         Brush.horizontalGradient(listOf(PrimaryGradientStart, PrimaryGradientEnd))
     } else {
-        Brush.linearGradient(listOf(Color(0xFF22293F), Color(0xFF22293F)))
+        Brush.linearGradient(listOf(CardBorder, CardBorder))
     }
-    val badgeBackground = if (isSelected) Color(0xFF2D235E) else Color(0xFF1E243A)
-    val badgeTextColor = if (isSelected) TaglineText else TextSecondary
+    val badgeBackground = if (isSelected) AccentPurple else TaglineBackground
+    val badgeTextColor = if (isSelected) Color.White else AccentPurple
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = if (isSelected) 4.dp else 2.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color(0xFFD6C8F2),
+                ambientColor = Color(0xFFE9DDFF)
+            )
             .clip(RoundedCornerShape(16.dp))
             .background(cardBackground)
             .border(

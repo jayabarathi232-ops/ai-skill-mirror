@@ -88,7 +88,7 @@ fun SkillSelectionScreen(
                     Column {
                         Text(
                             text = uiState.headerTitle,
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -117,7 +117,7 @@ fun SkillSelectionScreen(
 
                 Text(
                     text = uiState.headline,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -213,7 +213,7 @@ fun SkillSelectionScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Start assessment",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -239,17 +239,23 @@ fun SkillCategoryCard(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
-    val cardBackground = if (isSelected) Color(0xFF1D193E) else SurfaceDark
+    val cardBackground = if (isSelected) Color(0xFFF9F6FF) else CardBackground
     val borderBrush = if (isSelected) {
         Brush.horizontalGradient(listOf(PrimaryGradientStart, PrimaryGradientEnd))
     } else {
-        Brush.linearGradient(listOf(Color(0xFF22293F), Color(0xFF22293F)))
+        Brush.linearGradient(listOf(CardBorder, CardBorder))
     }
-    val scoreColor = if (isSelected) TaglineText else GreenNode
+    val scoreColor = if (isSelected) AccentPurple else GreenNode
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = if (isSelected) 6.dp else 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                spotColor = Color(0xFFD6C8F2),
+                ambientColor = Color(0xFFE9DDFF)
+            )
             .clip(RoundedCornerShape(20.dp))
             .background(cardBackground)
             .border(
@@ -270,14 +276,14 @@ fun SkillCategoryCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF142B1F)),
+                    .background(TaglineBackground),
                 contentAlignment = Alignment.Center
             ) {
                 when (skill.iconType) {
-                    SkillIconType.COMMUNICATION -> ChatIcon(size = 20.dp, color = GreenNode)
-                    SkillIconType.TECHNICAL -> CodeChevronIcon(size = 20.dp, color = GreenNode)
-                    SkillIconType.PROBLEM_SOLVING -> LightningIcon(size = 20.dp, color = GreenNode)
-                    SkillIconType.INTERVIEW -> BriefcaseIcon(size = 20.dp, color = GreenNode)
+                    SkillIconType.COMMUNICATION -> ChatIcon(size = 20.dp, color = AccentPurple)
+                    SkillIconType.TECHNICAL -> CodeChevronIcon(size = 20.dp, color = AccentPurple)
+                    SkillIconType.PROBLEM_SOLVING -> LightningIcon(size = 20.dp, color = AccentPurple)
+                    SkillIconType.INTERVIEW -> BriefcaseIcon(size = 20.dp, color = AccentPurple)
                 }
             }
 
@@ -286,7 +292,7 @@ fun SkillCategoryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = skill.name,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )

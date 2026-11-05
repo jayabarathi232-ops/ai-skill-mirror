@@ -77,16 +77,17 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = "My Profile",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Box(
                         modifier = Modifier
                             .size(38.dp)
+                            .shadow(2.dp, CircleShape, spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(CircleShape)
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), CircleShape)
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, CircleShape)
                             .clickable { onSettingsClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -100,7 +101,7 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .shadow(20.dp, RoundedCornerShape(24.dp), spotColor = CenterCardGradientStart)
+                        .shadow(16.dp, RoundedCornerShape(24.dp), spotColor = CenterCardGradientStart)
                         .clip(RoundedCornerShape(24.dp))
                         .background(
                             brush = Brush.linearGradient(
@@ -122,7 +123,7 @@ fun ProfileScreen(
                 // User Name
                 Text(
                     text = uiState.userName,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -185,9 +186,10 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(18.dp)
                 ) {
                     Column {
@@ -198,7 +200,7 @@ fun ProfileScreen(
                         ) {
                             Text(
                                 text = "Personal info",
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -225,7 +227,7 @@ fun ProfileScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
@@ -238,7 +240,7 @@ fun ProfileScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
@@ -251,7 +253,7 @@ fun ProfileScreen(
 
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 12.dp),
-                            color = Color(0xFF20263D),
+                            color = Color(0xFFEDE5FA),
                             thickness = 1.dp
                         )
 
@@ -270,13 +272,10 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF201B48))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .clickable {
                             viewModel.onNextMilestoneClick()
                             onNextMilestoneClick()
@@ -296,7 +295,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF2A2252)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 TargetScanIcon(size = 20.dp, color = TaglineText)
@@ -355,9 +354,10 @@ fun ProfileStatCard(
 ) {
     Box(
         modifier = modifier
+            .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(18.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
             .padding(vertical = 14.dp, horizontal = 12.dp)
     ) {
         Column(horizontalAlignment = Alignment.Start) {
@@ -393,7 +393,7 @@ fun ProfileInfoItem(
             modifier = Modifier
                 .size(42.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF221A3E)),
+                .background(TaglineBackground),
             contentAlignment = Alignment.Center
         ) {
             icon()

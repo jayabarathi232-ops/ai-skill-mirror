@@ -2,7 +2,6 @@ package com.simats.aiskillmirror.ui.dashboard
 
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -24,9 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -47,19 +44,15 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * AI Skills Mirror — Brand New Home Dashboard
+ * AI Skills Mirror — Brand New Home Dashboard (Soft Lavender & Pure White Design)
  * 
- * Includes 8 Core Sections:
- *  1. Welcome back message and user profile (Avatar, greeting, live date, notification bell)
- *  2. Overall Skill Performance Score (Circular gauge, level, monthly improvement)
- *  3. My Skills cards (Sports, Dance, Music, Photography, Coding)
- *  4. AI Skill Analysis with Upload Video / Image / Audio
- *  5. AI Personal Coach section (Coach advice, session trigger)
- *  6. Recent Performance History (Timeline of recent diagnostics)
- *  7. Weekly Progress Chart (7-day bar chart with hours and highlights)
- *  8. Today's Recommended Practice (Actionable drills across domains)
- * 
- * Bottom Navigation: Home | Assess | Learn | Progress | Profile
+ * Theme:
+ * - Background: Soft lavender (#F5F0FF)
+ * - Cards: Pure white (#FFFFFF) with subtle shadows
+ * - Primary: Deep purple (#7545C8)
+ * - Secondary: Light purple (#E9DDFF)
+ * - Text: Dark charcoal (#25213A)
+ * - Buttons: Purple gradient (#7545C8 -> #9353E2)
  */
 @Composable
 fun DashboardScreen(
@@ -76,7 +69,6 @@ fun DashboardScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
-    // Listen to ViewModel toast events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -126,7 +118,7 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // User Avatar Initial with Gradient Glow Ring
+                        // User Avatar Initial with Violet Gradient Ring
                         Box(
                             modifier = Modifier.size(50.dp),
                             contentAlignment = Alignment.Center
@@ -137,28 +129,28 @@ fun DashboardScreen(
                                     .clip(CircleShape)
                                     .background(
                                         brush = Brush.linearGradient(
-                                            colors = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5))
+                                            colors = listOf(Color(0xFF7545C8), Color(0xFF9353E2))
                                         )
                                     )
-                                    .border(1.5.dp, Color(0xFFA855F7), CircleShape),
+                                    .border(2.dp, Color(0xFFFFFFFF), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 val initial = uiState.userName.firstOrNull()?.uppercase() ?: "M"
                                 Text(
                                     text = initial,
-                                    color = TextPrimary,
+                                    color = Color.White,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            // Active status green pill
+                            // Active status green indicator
                             Box(
                                 modifier = Modifier
-                                    .size(12.dp)
+                                    .size(13.dp)
                                     .align(Alignment.BottomEnd)
                                     .clip(CircleShape)
                                     .background(GreenNode)
-                                    .border(2.dp, DarkBackground, CircleShape)
+                                    .border(2.dp, Color.White, CircleShape)
                             )
                         }
 
@@ -186,7 +178,7 @@ fun DashboardScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = uiState.currentDateText,
-                                    color = Color(0xFF94A3B8),
+                                    color = TextSecondary,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Normal
                                 )
@@ -194,7 +186,7 @@ fun DashboardScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(Color(0xFF231B45))
+                                        .background(TaglineBackground)
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
@@ -214,9 +206,10 @@ fun DashboardScreen(
                     Box(
                         modifier = Modifier
                             .size(44.dp)
+                            .shadow(2.dp, RoundedCornerShape(14.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
                             .clip(RoundedCornerShape(14.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(14.dp))
+                            .background(Color.White)
+                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                             .clickable {
                                 viewModel.onNotificationsClick()
                                 onNotificationsClick()
@@ -224,7 +217,7 @@ fun DashboardScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         BellIcon(size = 20.dp, color = TextPrimary)
-                        // Red Unread Notification Badge
+                        // Red Unread Badge
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
@@ -232,7 +225,7 @@ fun DashboardScreen(
                                 .offset(x = (-8).dp, y = 8.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEF4444))
-                                .border(1.5.dp, SurfaceDark, CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape)
                         )
                     }
                 }
@@ -240,24 +233,15 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // ==========================================
-                // 2. OVERALL SKILL PERFORMANCE SCORE
+                // 2. OVERALL SKILL PERFORMANCE SCORE (WHITE CARD)
                 // ==========================================
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(24.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF161233), Color(0xFF20184D))
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.linearGradient(
-                                colors = listOf(Color(0xFF453685), Color(0xFF221A4B))
-                            ),
-                            RoundedCornerShape(24.dp)
-                        )
+                        .background(Color.White)
+                        .border(1.dp, CardBorder, RoundedCornerShape(24.dp))
                         .padding(18.dp)
                 ) {
                     Column {
@@ -270,8 +254,8 @@ fun DashboardScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF271E52))
-                                    .border(1.dp, Color(0xFF463588), RoundedCornerShape(100.dp))
+                                    .background(TaglineBackground)
+                                    .border(1.dp, Color(0xFFD6C3F7), RoundedCornerShape(100.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -291,8 +275,8 @@ fun DashboardScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF132A1B))
-                                    .border(1.dp, Color(0xFF1E462B), RoundedCornerShape(100.dp))
+                                    .background(Color(0xFFDCFCE7))
+                                    .border(1.dp, Color(0xFF86EFAC), RoundedCornerShape(100.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
@@ -349,12 +333,12 @@ fun DashboardScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFF2C225A))
+                                        .background(TaglineBackground)
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = "⭐ ${uiState.learnerStatus}",
-                                        color = Color(0xFFFBBF24),
+                                        color = TaglineText,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -369,12 +353,12 @@ fun DashboardScreen(
                                 ) {
                                     Text(
                                         text = "View Skill Analytics",
-                                        color = TaglineText,
+                                        color = AccentPurple,
                                         fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Bold
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    RightArrowHeadIcon(size = 14.dp, color = TaglineText)
+                                    RightArrowHeadIcon(size = 14.dp, color = AccentPurple)
                                 }
                             }
                         }
@@ -384,7 +368,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(22.dp))
 
                 // ==========================================
-                // 3. MY SKILLS CARDS (Sports, Dance, Music, Photography, Coding)
+                // 3. MY SKILLS CARDS (WHITE CARDS)
                 // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -394,7 +378,7 @@ fun DashboardScreen(
                     Column {
                         Text(
                             text = "My Skills",
-                            color = TextPrimary,
+                            color = AccentPurple,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -407,8 +391,8 @@ fun DashboardScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF1E1742))
-                            .border(1.dp, Color(0xFF382C6E), RoundedCornerShape(10.dp))
+                            .background(TaglineBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                             .clickable { onTabSelected(DashboardTab.ASSESS) }
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
@@ -444,11 +428,11 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 4. AI SKILL ANALYSIS WITH UPLOAD VIDEO / IMAGE / AUDIO
+                // 4. AI SKILL ANALYSIS WITH UPLOAD (WHITE TILES)
                 // ==========================================
                 Text(
                     text = "AI Multi-Modal Skill Analysis",
-                    color = TextPrimary,
+                    color = AccentPurple,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -471,7 +455,7 @@ fun DashboardScreen(
                         title = "Upload Video",
                         subtitle = "Motion & Form",
                         badge = "Vision AI",
-                        accentColor = Color(0xFFA855F7),
+                        accentColor = AccentPurple,
                         onClick = {
                             onUploadPerformanceClick("video")
                         }
@@ -504,48 +488,14 @@ fun DashboardScreen(
                     )
                 }
 
-                // Upload Feedback Banner (if active)
-                if (uiState.uploadFeedbackMessage != null) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF1E1742))
-                            .border(1.dp, Color(0xFF453685), RoundedCornerShape(14.dp))
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(text = "⚡", fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (uiState.isAnalyzing) "Processing Upload..." else "AI Analysis Complete",
-                                    color = TextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = uiState.uploadFeedbackMessage ?: "",
-                                    color = TaglineText,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 5. AI PERSONAL COACH SECTION
+                // 5. AI PERSONAL COACH SECTION (WHITE CARD)
                 // ==========================================
                 Text(
                     text = "AI Personal Coach",
-                    color = TextPrimary,
+                    color = AccentPurple,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -555,19 +505,10 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF1B163F), Color(0xFF261D57))
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.linearGradient(
-                                colors = listOf(Color(0xFF4E3D96), Color(0xFF241C4E))
-                            ),
-                            RoundedCornerShape(22.dp)
-                        )
+                        .background(Color.White)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .clickable {
                             viewModel.onOpenAiCoachClick()
                             onOpenAiCoachClick()
@@ -583,7 +524,7 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .size(46.dp)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF332768)),
+                                    .background(TaglineBackground),
                                 contentAlignment = Alignment.Center
                             ) {
                                 SparkleIcon(size = 24.dp, color = TaglineText)
@@ -601,7 +542,7 @@ fun DashboardScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFF132A1B))
+                                            .background(Color(0xFFDCFCE7))
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
@@ -624,7 +565,7 @@ fun DashboardScreen(
 
                         Text(
                             text = uiState.aiCoachSubtitle,
-                            color = Color(0xFFE2E8F0),
+                            color = TextPrimary,
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
                             fontWeight = FontWeight.Normal
@@ -639,7 +580,7 @@ fun DashboardScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(
                                     Brush.horizontalGradient(
-                                        colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                     )
                                 )
                                 .padding(vertical = 10.dp),
@@ -647,7 +588,7 @@ fun DashboardScreen(
                         ) {
                             Text(
                                 text = "Start AI Coaching Session →",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -658,7 +599,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 6. RECENT PERFORMANCE HISTORY
+                // 6. RECENT PERFORMANCE HISTORY (WHITE CARDS)
                 // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -667,7 +608,7 @@ fun DashboardScreen(
                 ) {
                     Text(
                         text = "Recent Performance History",
-                        color = TextPrimary,
+                        color = AccentPurple,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -689,7 +630,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 7. WEEKLY PROGRESS CHART
+                // 7. WEEKLY PROGRESS CHART (WHITE CARD)
                 // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -699,7 +640,7 @@ fun DashboardScreen(
                     Column {
                         Text(
                             text = "Weekly Progress",
-                            color = TextPrimary,
+                            color = AccentPurple,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -723,9 +664,10 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -759,7 +701,6 @@ fun DashboardScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Custom Weekly Canvas Bar Chart
                         WeeklyBarChart(progressList = uiState.weeklyProgress)
                     }
                 }
@@ -767,7 +708,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 8. TODAY'S RECOMMENDED PRACTICE
+                // 8. TODAY'S RECOMMENDED PRACTICE (WHITE CARDS)
                 // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -777,7 +718,7 @@ fun DashboardScreen(
                     Column {
                         Text(
                             text = "Today's Recommended Practice",
-                            color = TextPrimary,
+                            color = AccentPurple,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -807,7 +748,7 @@ fun DashboardScreen(
             }
 
             // ==========================================
-            // FIXED BOTTOM NAVIGATION BAR
+            // WHITE BOTTOM NAVIGATION BAR WITH PURPLE ACTIVE ICONS
             // ==========================================
             BottomNavigationBar(
                 selectedTab = DashboardTab.HOME,
@@ -821,7 +762,7 @@ fun DashboardScreen(
 }
 
 // ========================================================
-// REUSABLE DASHBOARD CARDS & WIDGETS
+// REUSABLE DASHBOARD CARDS & WIDGETS (WHITE CARDS + SOFT SHADOWS)
 // ========================================================
 
 @Composable
@@ -834,23 +775,13 @@ fun MySkillCard(
     Box(
         modifier = Modifier
             .width(165.dp)
+            .shadow(3.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFF171330), Color(0xFF211947))
-                )
-            )
-            .border(
-                1.dp,
-                Brush.linearGradient(
-                    colors = listOf(accentColor.copy(alpha = 0.5f), Color(0xFF2A2052))
-                ),
-                RoundedCornerShape(20.dp)
-            )
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
         Column {
-            // Icon & Score
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -860,7 +791,7 @@ fun MySkillCard(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(accentColor.copy(alpha = 0.18f)),
+                        .background(accentColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = skill.iconEmoji, fontSize = 18.sp)
@@ -869,7 +800,7 @@ fun MySkillCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF132A1B))
+                        .background(Color(0xFFDCFCE7))
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
                     Text(
@@ -906,7 +837,7 @@ fun MySkillCard(
                     .fillMaxWidth()
                     .height(5.dp)
                     .clip(RoundedCornerShape(100.dp))
-                    .background(Color(0xFF222842))
+                    .background(Color(0xFFF1EBFB))
             ) {
                 Box(
                     modifier = Modifier
@@ -919,7 +850,6 @@ fun MySkillCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Action link
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -935,7 +865,7 @@ fun MySkillCard(
                 )
                 Text(
                     text = "Assess →",
-                    color = TextPrimary,
+                    color = AccentPurple,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -956,9 +886,10 @@ fun MediaUploadTile(
 ) {
     Box(
         modifier = modifier
+            .shadow(2.dp, RoundedCornerShape(18.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
             .clip(RoundedCornerShape(18.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
             .clickable { onClick() }
             .padding(12.dp)
     ) {
@@ -967,7 +898,7 @@ fun MediaUploadTile(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.15f)),
+                    .background(accentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = emoji, fontSize = 20.sp)
@@ -999,7 +930,7 @@ fun MediaUploadTile(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF1E193C))
+                    .background(TaglineBackground)
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
@@ -1018,9 +949,10 @@ fun PerformanceHistoryCard(item: PerformanceHistoryItem) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(12.dp)
     ) {
         Row(
@@ -1031,7 +963,7 @@ fun PerformanceHistoryCard(item: PerformanceHistoryItem) {
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF221A45)),
+                    .background(TaglineBackground),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = item.iconEmoji, fontSize = 20.sp)
@@ -1083,7 +1015,7 @@ fun PerformanceHistoryCard(item: PerformanceHistoryItem) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF142E1F))
+                    .background(Color(0xFFDCFCE7))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
@@ -1134,11 +1066,11 @@ fun WeeklyBarChart(progressList: List<WeeklyDayProgress>) {
                         .background(
                             if (dayProg.isToday) {
                                 Brush.verticalGradient(
-                                    colors = listOf(PrimaryGradientEnd, PrimaryGradientStart)
+                                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                 )
                             } else {
                                 Brush.verticalGradient(
-                                    colors = listOf(Color(0xFF332962), Color(0xFF1E1742))
+                                    colors = listOf(Color(0xFFD4C1F6), Color(0xFFE9DCFD))
                                 )
                             }
                         )
@@ -1149,7 +1081,7 @@ fun WeeklyBarChart(progressList: List<WeeklyDayProgress>) {
                 // Day Label
                 Text(
                     text = dayProg.day,
-                    color = if (dayProg.isToday) TextPrimary else TextSecondary,
+                    color = if (dayProg.isToday) AccentPurple else TextSecondary,
                     fontSize = 11.sp,
                     fontWeight = if (dayProg.isToday) FontWeight.Bold else FontWeight.Normal
                 )
@@ -1166,9 +1098,10 @@ fun RecommendedPracticeCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
         Row(
@@ -1179,7 +1112,7 @@ fun RecommendedPracticeCard(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF251D4B)),
+                    .background(TaglineBackground),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = practice.iconEmoji, fontSize = 20.sp)
@@ -1192,7 +1125,7 @@ fun RecommendedPracticeCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF1E1A3D))
+                            .background(TaglineBackground)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -1229,7 +1162,7 @@ fun RecommendedPracticeCard(
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                            colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                         )
                     )
                     .clickable { onStartClick() }
@@ -1237,7 +1170,7 @@ fun RecommendedPracticeCard(
             ) {
                 Text(
                     text = "Start",
-                    color = TextPrimary,
+                    color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -1247,7 +1180,7 @@ fun RecommendedPracticeCard(
 }
 
 // ========================================================
-// SHARED EXPORTED COMPONENTS (REQUIRED BY OTHER SCREENS)
+// SHARED EXPORTED COMPONENTS (WHITE BOTTOM NAVIGATION & ICONS)
 // ========================================================
 
 @Composable
@@ -1265,7 +1198,7 @@ fun DottedSkillScoreArc(score: Int) {
             val dotX = cx + radius * cos(angleRad).toFloat()
             val dotY = cy + radius * sin(angleRad).toFloat()
 
-            val dotColor = if (i < activeDots) AccentPurple else Color(0xFF322C5C)
+            val dotColor = if (i < activeDots) AccentPurple else Color(0xFFDCCDF7)
             val dotRadius = if (i < activeDots) 3.5.dp.toPx() else 2.5.dp.toPx()
 
             drawCircle(
@@ -1277,6 +1210,9 @@ fun DottedSkillScoreArc(score: Int) {
     }
 }
 
+/**
+ * Clean White Bottom Navigation Bar with Deep Purple Highlight for Active Tab
+ */
 @Composable
 fun BottomNavigationBar(
     selectedTab: DashboardTab,
@@ -1285,8 +1221,9 @@ fun BottomNavigationBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0C0F1D))
-            .border(1.dp, Color(0xFF1E243A), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .shadow(8.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .padding(vertical = 10.dp, horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
@@ -1331,21 +1268,29 @@ fun BottomNavItem(
     icon: @Composable (Color) -> Unit,
     onClick: () -> Unit
 ) {
-    val contentColor = if (isSelected) AccentPurple else Color(0xFF64748B)
+    val contentColor = if (isSelected) AccentPurple else Color(0xFF8E88A8)
+    val backgroundModifier = if (isSelected) {
+        Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFE9DDFF))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    } else {
+        Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .then(backgroundModifier)
     ) {
         icon(contentColor)
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
             color = contentColor,
             fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
     }
 }

@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -134,9 +135,10 @@ fun PerformanceUploadScreen(
                     Box(
                         modifier = Modifier
                             .size(38.dp)
+                            .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(RoundedCornerShape(12.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(12.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                             .clickable { onBackClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -146,7 +148,7 @@ fun PerformanceUploadScreen(
                     Column {
                         Text(
                             text = "Upload Performance",
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -161,9 +163,10 @@ fun PerformanceUploadScreen(
                 // Previous Uploads Button
                 Box(
                     modifier = Modifier
+                        .shadow(2.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF201844))
-                        .border(1.dp, Color(0xFF3B2E70), RoundedCornerShape(12.dp))
+                        .background(TaglineBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                         .clickable { viewModel.toggleHistorySheet(true) }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
@@ -209,7 +212,7 @@ fun PerformanceUploadScreen(
                         icon = "🖼️",
                         subtitle = "JPG, PNG, WEBP",
                         isSelected = uiState.selectedTab == MediaTypeTab.PHOTO,
-                        accentColor = Color(0xFFA855F7),
+                        accentColor = AccentPurple,
                         onClick = { viewModel.selectTab(MediaTypeTab.PHOTO) }
                     )
 
@@ -266,11 +269,12 @@ fun PerformanceUploadScreen(
                         val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)
                         Box(
                             modifier = Modifier
+                                .shadow(if (isSelected) 3.dp else 1.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) Color(0xFF2C1E55) else SurfaceDark)
+                                .background(if (isSelected) TaglineBackground else CardBackground)
                                 .border(
                                     1.dp,
-                                    if (isSelected) TaglineText else Color(0xFF22293F),
+                                    if (isSelected) AccentPurple else CardBorder,
                                     RoundedCornerShape(10.dp)
                                 )
                                 .clickable { viewModel.setSkillCategory(catKey) }
@@ -278,7 +282,7 @@ fun PerformanceUploadScreen(
                         ) {
                             Text(
                                 text = label,
-                                color = if (isSelected) TextPrimary else TextSecondary,
+                                color = if (isSelected) AccentPurple else TextSecondary,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -294,13 +298,10 @@ fun PerformanceUploadScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF161233), Color(0xFF1D1743))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF362B6A), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(
@@ -419,9 +420,10 @@ fun PerformanceUploadScreen(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                                 .clip(RoundedCornerShape(16.dp))
-                                                .background(SurfaceDark)
-                                                .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+                                                .background(CardBackground)
+                                                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                                                 .padding(14.dp)
                                         ) {
                                             Row(
@@ -438,7 +440,7 @@ fun PerformanceUploadScreen(
                                                     )
                                                     Text(
                                                         text = if (uiState.isRecordingAudio) "Timer: ${String.format("%02d:%02d", uiState.audioRecordSeconds / 60, uiState.audioRecordSeconds % 60)}" else "Tap mic to capture practice clip",
-                                                        color = if (uiState.isRecordingAudio) Color(0xFFEF4444) else TextSecondary,
+                                                        color = if (uiState.isRecordingAudio) Color(0xFFDC2626) else TextSecondary,
                                                         fontSize = 11.sp
                                                     )
                                                 }
@@ -447,7 +449,7 @@ fun PerformanceUploadScreen(
                                                     modifier = Modifier
                                                         .size(44.dp)
                                                         .clip(CircleShape)
-                                                        .background(if (uiState.isRecordingAudio) Color(0xFFEF4444) else Color(0xFF381F10))
+                                                        .background(if (uiState.isRecordingAudio) Color(0xFFDC2626) else TaglineBackground)
                                                         .clickable {
                                                             if (uiState.isRecordingAudio) {
                                                                 viewModel.stopVoiceRecording(context)
@@ -478,13 +480,13 @@ fun PerformanceUploadScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF2D1515))
+                            .background(Color(0xFFFEE2E2))
                             .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         Text(
                             text = "⚠️ ${uiState.errorMessage}",
-                            color = Color(0xFFFCA5A5),
+                            color = Color(0xFFDC2626),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -508,7 +510,7 @@ fun PerformanceUploadScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF222842))
+                                .background(Color(0xFFEDE5FA))
                         ) {
                             Box(
                                 modifier = Modifier
@@ -533,11 +535,12 @@ fun PerformanceUploadScreen(
                     enabled = !uiState.isUploading && (uiState.selectedUri != null || uiState.capturedBitmap != null),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
+                        .height(54.dp)
+                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        disabledContainerColor = Color(0xFF1E2438)
+                        disabledContainerColor = Color(0xFFD9D4E8)
                     ),
                     contentPadding = PaddingValues(0.dp)
                 ) {
@@ -547,22 +550,22 @@ fun PerformanceUploadScreen(
                             .background(
                                 if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
                                     Brush.horizontalGradient(
-                                        colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                     )
                                 } else {
                                     Brush.linearGradient(
-                                        colors = listOf(Color(0xFF1E2438), Color(0xFF1E2438))
+                                        colors = listOf(Color(0xFFD9D4E8), Color(0xFFD9D4E8))
                                     )
                                 }
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            SparkleIcon(size = 18.dp, color = TextPrimary)
+                            SparkleIcon(size = 18.dp, color = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (uiState.isUploading) "Evaluating via AI..." else "Submit for AI Evaluation →",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -616,8 +619,8 @@ fun PhotoPreviewSection(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF120E26))
-                    .border(1.dp, Color(0xFF453685), RoundedCornerShape(16.dp)),
+                    .background(Color(0xFFEDE5FA))
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -632,7 +635,7 @@ fun PhotoPreviewSection(
                     .fillMaxWidth()
                     .height(140.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF120E26)),
+                    .background(Color(0xFFEDE5FA)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = "🖼️ Image Selected", color = TaglineText, fontSize = 14.sp)
@@ -666,19 +669,19 @@ fun PhotoPreviewSection(
                 Button(
                     onClick = onReplace,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF261D4C)),
+                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Replace", color = TaglineText, fontSize = 11.sp)
+                    Text(text = "Replace", color = AccentPurple, fontSize = 11.sp)
                 }
 
                 Button(
                     onClick = onRemove,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B1515)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Remove", color = Color(0xFFFCA5A5), fontSize = 11.sp)
+                    Text(text = "Remove", color = Color(0xFFDC2626), fontSize = 11.sp)
                 }
             }
         }
@@ -704,8 +707,8 @@ fun VideoPreviewSection(
                 .fillMaxWidth()
                 .height(190.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF0F0C22))
-                .border(1.dp, Color(0xFF453685), RoundedCornerShape(16.dp)),
+                .background(Color(0xFF25213A))
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
             AndroidView(
@@ -749,19 +752,19 @@ fun VideoPreviewSection(
                 Button(
                     onClick = onReplace,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF261D4C)),
+                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Replace", color = TaglineText, fontSize = 11.sp)
+                    Text(text = "Replace", color = AccentPurple, fontSize = 11.sp)
                 }
 
                 Button(
                     onClick = onRemove,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B1515)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Remove", color = Color(0xFFFCA5A5), fontSize = 11.sp)
+                    Text(text = "Remove", color = Color(0xFFDC2626), fontSize = 11.sp)
                 }
             }
         }
@@ -785,9 +788,10 @@ fun AudioPreviewSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF140F2D))
-                .border(1.dp, Color(0xFF453685), RoundedCornerShape(16.dp))
+                .background(CardBackground)
+                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             Row(
@@ -801,7 +805,7 @@ fun AudioPreviewSection(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                colors = listOf(Color(0xFF7C3AED), Color(0xFF6366F1))
+                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                             )
                         )
                         .clickable { onTogglePlay() },
@@ -841,19 +845,19 @@ fun AudioPreviewSection(
                 Button(
                     onClick = onReplace,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF261D4C)),
+                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Replace", color = TaglineText, fontSize = 11.sp)
+                    Text(text = "Replace", color = AccentPurple, fontSize = 11.sp)
                 }
 
                 Button(
                     onClick = onRemove,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B1515)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Text(text = "Remove", color = Color(0xFFFCA5A5), fontSize = 11.sp)
+                    Text(text = "Remove", color = Color(0xFFDC2626), fontSize = 11.sp)
                 }
             }
         }
@@ -869,16 +873,13 @@ fun AnalysisResultCard(result: PerformanceUploadItemDto) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(22.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFF1B143F), Color(0xFF281E5B))
-                )
-            )
+            .background(CardBackground)
             .border(
-                1.dp,
-                Brush.linearGradient(
-                    colors = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5))
+                1.5.dp,
+                Brush.horizontalGradient(
+                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                 ),
                 RoundedCornerShape(22.dp)
             )
@@ -905,7 +906,7 @@ fun AnalysisResultCard(result: PerformanceUploadItemDto) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF132A1B))
+                        .background(Color(0xFFE8F5E9))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
@@ -930,7 +931,7 @@ fun AnalysisResultCard(result: PerformanceUploadItemDto) {
 
             Text(
                 text = result.analysisSummary,
-                color = Color(0xFFCBD5E1),
+                color = TextSecondary,
                 fontSize = 12.sp,
                 lineHeight = 17.sp
             )
@@ -942,8 +943,8 @@ fun AnalysisResultCard(result: PerformanceUploadItemDto) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF120E2A))
-                    .border(1.dp, Color(0xFF38296A), RoundedCornerShape(14.dp))
+                    .background(TaglineBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                     .padding(12.dp)
             ) {
                 Column {
@@ -1034,8 +1035,8 @@ fun PreviousUploadsDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF140E2D))
-                                    .border(1.dp, Color(0xFF281E55), RoundedCornerShape(12.dp))
+                                    .background(CardBackground)
+                                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
                                     .padding(10.dp)
                             ) {
                                 Row(
@@ -1068,7 +1069,7 @@ fun PreviousUploadsDialog(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFF132A1B))
+                                            .background(Color(0xFFE8F5E9))
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
@@ -1085,7 +1086,7 @@ fun PreviousUploadsDialog(
                 }
             }
         },
-        containerColor = Color(0xFF1A1438),
+        containerColor = CardBackground,
         shape = RoundedCornerShape(20.dp)
     )
 }
@@ -1106,11 +1107,12 @@ fun UploadTypeCard(
 ) {
     Box(
         modifier = modifier
+            .shadow(if (isSelected) 4.dp else 2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) Color(0xFF231A47) else SurfaceDark)
+            .background(if (isSelected) TaglineBackground else CardBackground)
             .border(
                 1.5.dp,
-                if (isSelected) accentColor else Color(0xFF22293F),
+                if (isSelected) accentColor else CardBorder,
                 RoundedCornerShape(16.dp)
             )
             .clickable { onClick() }
@@ -1121,14 +1123,14 @@ fun UploadTypeCard(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = title,
-                color = if (isSelected) TextPrimary else TextSecondary,
+                color = if (isSelected) AccentPurple else TextPrimary,
                 fontSize = 13.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
-                color = Color(0xFF64748B),
+                color = TextSecondary,
                 fontSize = 8.sp,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -1148,9 +1150,10 @@ fun SelectMediaButton(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
             .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(14.dp)
     ) {
@@ -1177,4 +1180,3 @@ fun SelectMediaButton(
         }
     }
 }
-

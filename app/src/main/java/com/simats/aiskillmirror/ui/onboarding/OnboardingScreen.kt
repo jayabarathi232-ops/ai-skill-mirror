@@ -110,14 +110,14 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = uiState.headlineLine1,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 34.sp
                 )
                 Text(
                     text = uiState.headlineLine2,
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 34.sp
@@ -139,9 +139,10 @@ fun OnboardingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column(
@@ -166,21 +167,21 @@ fun OnboardingScreen(
                             .width(24.dp)
                             .height(6.dp)
                             .clip(RoundedCornerShape(100.dp))
-                            .background(PrimaryGradientEnd)
+                            .background(PrimaryGradientStart)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .size(6.dp)
                             .clip(CircleShape)
-                            .background(OrbitRing)
+                            .background(Color(0xFFD8C7F8))
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .size(6.dp)
                             .clip(CircleShape)
-                            .background(OrbitRing)
+                            .background(Color(0xFFD8C7F8))
                     )
                 }
 
@@ -195,7 +196,7 @@ fun OnboardingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
@@ -234,7 +235,7 @@ fun OnboardingScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = uiState.buttonText,
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -257,8 +258,8 @@ fun FeatureRowItem(feature: OnboardingFeature) {
     ) {
         // Icon Badge
         val badgeBackground = when (feature.iconType) {
-            OnboardingIconType.PROGRESS -> Color(0xFF14291D)
-            else -> Color(0xFF221A3E)
+            OnboardingIconType.PROGRESS -> Color(0xFFE8F5E9)
+            else -> TaglineBackground
         }
 
         Box(
@@ -344,7 +345,7 @@ fun CompactOrbitalGraphic() {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        CenterCardGradientStart.copy(alpha = 0.20f),
+                        CenterCardGradientStart.copy(alpha = 0.12f),
                         Color.Transparent
                     ),
                     center = center,
@@ -375,7 +376,7 @@ fun CompactOrbitalGraphic() {
         Box(
             modifier = Modifier
                 .size(72.dp)
-                .shadow(20.dp, RoundedCornerShape(20.dp), spotColor = CenterCardGradientStart)
+                .shadow(12.dp, RoundedCornerShape(20.dp), spotColor = CenterCardGradientStart)
                 .clip(RoundedCornerShape(20.dp))
                 .background(
                     brush = Brush.linearGradient(

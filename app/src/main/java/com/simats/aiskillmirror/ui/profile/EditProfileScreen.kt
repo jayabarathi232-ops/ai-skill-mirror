@@ -113,7 +113,7 @@ fun EditProfileScreen(
 
                 Text(
                     text = "Personal information",
-                    color = TextPrimary,
+                    color = HeadingPurple,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -289,7 +289,7 @@ fun EditProfileScreen(
                         } else {
                             Text(
                                 text = "Save changes",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )

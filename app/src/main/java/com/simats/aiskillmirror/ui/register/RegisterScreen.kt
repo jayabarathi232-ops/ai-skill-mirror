@@ -84,14 +84,14 @@ fun RegisterScreen(
             // Headline
             Text(
                 text = "Your growth",
-                color = TextPrimary,
+                color = HeadingPurple,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 36.sp
             )
             Text(
                 text = "starts here.",
-                color = TextPrimary,
+                color = HeadingPurple,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 36.sp
@@ -300,7 +300,7 @@ fun RegisterScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Create account",
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -319,7 +319,7 @@ fun RegisterScreen(
             ) {
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color(0xFF22293F),
+                    color = Color(0xFFEDE5FA),
                     thickness = 1.dp
                 )
                 Text(
@@ -330,7 +330,7 @@ fun RegisterScreen(
                 )
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color(0xFF22293F),
+                    color = Color(0xFFEDE5FA),
                     thickness = 1.dp
                 )
             }
@@ -342,9 +342,10 @@ fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .shadow(2.dp, RoundedCornerShape(14.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                     .clip(RoundedCornerShape(14.dp))
-                    .background(SurfaceDark)
-                    .border(1.dp, Color(0xFF2A314A), RoundedCornerShape(14.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                     .clickable {
                         viewModel.onGoogleSignInClick()
                         onGoogleSignInClick()
@@ -417,7 +418,8 @@ fun CustomOutlinedInputField(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, Color(0xFF232A42), RoundedCornerShape(14.dp)),
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp)),
         placeholder = { Text(text = placeholder, color = TextSecondary, fontSize = 14.sp) },
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,

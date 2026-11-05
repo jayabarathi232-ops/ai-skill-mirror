@@ -94,7 +94,7 @@ fun GrowthRoadmapScreen(
                         Column {
                             Text(
                                 text = uiState.headerTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -129,13 +129,10 @@ fun GrowthRoadmapScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF221B4A))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.Start) {
@@ -147,7 +144,7 @@ fun GrowthRoadmapScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF2A2252))
+                                    .background(TaglineBackground)
                                     .padding(horizontal = 12.dp, vertical = 5.dp)
                             ) {
                                 Text(
@@ -166,7 +163,7 @@ fun GrowthRoadmapScreen(
 
                         Text(
                             text = uiState.planTitle,
-                            color = TextPrimary,
+                            color = HeadingPurple,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -188,7 +185,7 @@ fun GrowthRoadmapScreen(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF20263F))
+                                .background(Color(0xFFEDE5FA))
                         ) {
                             Box(
                                 modifier = Modifier
@@ -220,7 +217,7 @@ fun GrowthRoadmapScreen(
                 ) {
                     Text(
                         text = "Your next steps",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -238,13 +235,10 @@ fun GrowthRoadmapScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF181538), Color(0xFF201B48))
-                            )
-                        )
-                        .border(1.dp, Color(0xFF332B66), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -261,7 +255,7 @@ fun GrowthRoadmapScreen(
                                     modifier = Modifier
                                         .size(42.dp)
                                         .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFF2A2252)),
+                                        .background(TaglineBackground),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     MicIcon(size = 20.dp, color = TaglineText)
@@ -272,7 +266,7 @@ fun GrowthRoadmapScreen(
                                 Column {
                                     Text(
                                         text = uiState.activeStepTitle,
-                                        color = TextPrimary,
+                                        color = HeadingPurple,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -314,7 +308,7 @@ fun GrowthRoadmapScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(100.dp))
-                                        .background(Color(0xFF221A3E))
+                                        .background(TaglineBackground)
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
                                     Text(
@@ -335,9 +329,10 @@ fun GrowthRoadmapScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -355,7 +350,7 @@ fun GrowthRoadmapScreen(
                                         modifier = Modifier
                                             .size(42.dp)
                                             .clip(RoundedCornerShape(14.dp))
-                                            .background(Color(0xFF1E243A)),
+                                            .background(TaglineBackground),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         when (step.iconType) {
@@ -370,7 +365,7 @@ fun GrowthRoadmapScreen(
                                     Column {
                                         Text(
                                             text = step.title,
-                                            color = TextPrimary,
+                                            color = HeadingPurple,
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -395,7 +390,7 @@ fun GrowthRoadmapScreen(
                             if (index < uiState.upcomingSteps.size - 1) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
-                                    color = Color(0xFF20263D),
+                                    color = Color(0xFFEDE5FA),
                                     thickness = 1.dp
                                 )
                             }
@@ -452,7 +447,7 @@ fun GrowthRoadmapScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = uiState.continueButtonText,
-                                color = TextPrimary,
+                                color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )

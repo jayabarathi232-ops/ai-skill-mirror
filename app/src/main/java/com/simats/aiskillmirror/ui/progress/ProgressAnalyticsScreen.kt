@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -91,7 +92,7 @@ fun ProgressAnalyticsScreen(
                         Column {
                             Text(
                                 text = uiState.headerTitle,
-                                color = TextPrimary,
+                                color = HeadingPurple,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -134,9 +135,10 @@ fun ProgressAnalyticsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(22.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
                         .padding(18.dp)
                 ) {
                     Column {
@@ -165,7 +167,7 @@ fun ProgressAnalyticsScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color(0xFF132A1B))
+                                    .background(Color(0xFFE8F5E9))
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
@@ -223,9 +225,10 @@ fun ProgressAnalyticsScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
+                            .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(RoundedCornerShape(18.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
                             .padding(16.dp)
                     ) {
                         Column {
@@ -256,9 +259,10 @@ fun ProgressAnalyticsScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
+                            .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                             .clip(RoundedCornerShape(18.dp))
-                            .background(SurfaceDark)
-                            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(18.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
                             .padding(16.dp)
                     ) {
                         Column {
@@ -296,7 +300,7 @@ fun ProgressAnalyticsScreen(
                 ) {
                     Text(
                         text = "Skill growth",
-                        color = TextPrimary,
+                        color = HeadingPurple,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -318,9 +322,10 @@ fun ProgressAnalyticsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark)
-                        .border(1.dp, Color(0xFF22293F), RoundedCornerShape(20.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
                     Column(
@@ -360,8 +365,8 @@ fun TimeframeSegmentedTabs(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(SurfaceDark)
-            .border(1.dp, Color(0xFF22293F), RoundedCornerShape(14.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
             .padding(4.dp)
     ) {
         Row(
@@ -398,9 +403,9 @@ fun TimeframeTabItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabBackground = if (isSelected) Color(0xFF1E1A3D) else Color.Transparent
+    val tabBackground = if (isSelected) TaglineBackground else Color.Transparent
     val borderModifier = if (isSelected) {
-        Modifier.border(1.dp, Color(0xFF332B66), RoundedCornerShape(10.dp))
+        Modifier.border(1.dp, AccentPurple, RoundedCornerShape(10.dp))
     } else Modifier
 
     Box(
@@ -414,7 +419,7 @@ fun TimeframeTabItem(
     ) {
         Text(
             text = label,
-            color = if (isSelected) TextPrimary else TextSecondary,
+            color = if (isSelected) AccentPurple else TextSecondary,
             fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
@@ -466,7 +471,7 @@ fun SmoothTrendChartCanvas() {
             path = fillPath,
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    AccentPurple.copy(alpha = 0.35f),
+                    AccentPurple.copy(alpha = 0.20f),
                     Color.Transparent
                 )
             )
@@ -482,7 +487,7 @@ fun SmoothTrendChartCanvas() {
         )
 
         // Draw glowing end dot at Oct 20
-        drawCircle(color = GreenNode, radius = 5.dp.toPx(), center = p4)
+        drawCircle(color = AccentPurple, radius = 5.dp.toPx(), center = p4)
         drawCircle(color = Color.White, radius = 2.5.dp.toPx(), center = p4)
     }
 }
