@@ -65,6 +65,7 @@ import com.simats.aiskillmirror.ui.theme.AISkillsMirrorTheme
 import com.simats.aiskillmirror.ui.theme.DarkBackground
 import com.simats.aiskillmirror.ui.training.DailyTrainingScreen
 import com.simats.aiskillmirror.ui.training.DailyTrainingViewModel
+import com.simats.aiskillmirror.ui.upload.LiveCameraMode
 import com.simats.aiskillmirror.ui.upload.MediaTypeTab
 import com.simats.aiskillmirror.ui.upload.PerformanceUploadScreen
 import com.simats.aiskillmirror.ui.upload.PerformanceUploadViewModel
@@ -140,7 +141,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = DarkBackground
                 ) {
-                    val backStack = remember { mutableStateListOf(AppScreen.SPLASH) }
+                    val navigateToExtra = intent?.getStringExtra("navigateTo")
+                    val initialScreen = when (navigateToExtra) {
+                        "SPEECH_STUDIO" -> AppScreen.SPEECH_STUDIO
+                        "NOTIFICATIONS" -> AppScreen.NOTIFICATIONS
+                        else -> AppScreen.SPLASH
+                    }
+                    val backStack = remember { mutableStateListOf(initialScreen) }
                     val currentScreen = backStack.lastOrNull() ?: AppScreen.DASHBOARD
 
                     fun navigateTo(screen: AppScreen) {
@@ -295,6 +302,10 @@ class MainActivity : ComponentActivity() {
                                         when (type.lowercase()) {
                                             "video" -> performanceUploadViewModel.selectTab(MediaTypeTab.VIDEO)
                                             "audio" -> performanceUploadViewModel.selectTab(MediaTypeTab.AUDIO)
+                                            "live", "camera" -> {
+                                                performanceUploadViewModel.selectTab(MediaTypeTab.LIVE_CAPTURE)
+                                                performanceUploadViewModel.openLiveCamera(LiveCameraMode.PHOTO)
+                                            }
                                             else -> performanceUploadViewModel.selectTab(MediaTypeTab.PHOTO)
                                         }
                                         navigateTo(AppScreen.PERFORMANCE_UPLOAD)
@@ -486,10 +497,13 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onMarkAllAsReadClick = {
-                                        Toast.makeText(this@MainActivity, "All notifications marked as read", Toast.LENGTH_SHORT).show()
+                                        notificationsViewModel.onMarkAllAsRead()
                                     },
                                     onSettingsClick = {
-                                        navigateTo(AppScreen.SETTINGS)
+                                        notificationsViewModel.openSettingsDialog()
+                                    },
+                                    onStartPracticeClick = {
+                                        navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onBackClick = {
                                         navigateBack()

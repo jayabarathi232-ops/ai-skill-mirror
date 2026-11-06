@@ -492,6 +492,7 @@ data class PerformanceUploadItemDto(
     @SerializedName("ai_feedback") val aiFeedback: String,
     @SerializedName("gemini_configured") val geminiConfigured: Boolean = false,
     @SerializedName("gemini_note") val geminiNote: String? = null,
+    @SerializedName("metrics") val metrics: Map<String, Any>? = null,
     @SerializedName("created_at") val createdAt: String
 )
 

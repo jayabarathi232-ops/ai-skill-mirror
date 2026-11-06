@@ -47,6 +47,7 @@ object SmartNotificationManager {
         context: Context,
         title: String,
         message: String,
+        targetScreen: String = "SPEECH_STUDIO",
         notificationId: Int = (System.currentTimeMillis() % 100000).toInt()
     ) {
         initNotificationChannel(context)
@@ -57,10 +58,11 @@ object SmartNotificationManager {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("navigateTo", targetScreen)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         )
@@ -86,14 +88,15 @@ object SmartNotificationManager {
         context: Context,
         hourOfDay: Int,
         minute: Int,
-        title: String = "It's time for your daily practice!",
-        message: String = "Your Public Speaking practice is waiting. Keep your streak alive!"
+        title: String = "Daily Practice Reminder",
+        message: String = "It's time for your Public Speaking practice. Keep your streak alive!"
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             putExtra("reminder_title", title)
             putExtra("reminder_message", message)
+            putExtra("target_screen", "SPEECH_STUDIO")
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -136,5 +139,31 @@ object SmartNotificationManager {
         )
         alarmManager.cancel(pendingIntent)
     }
-}
 
+    fun showPracticeReminder(context: Context, timeText: String, skillName: String = "Public Speaking") {
+        showLocalNotification(
+            context = context,
+            title = "Daily Practice Reminder",
+            message = "It's $timeText! Time for your $skillName practice.",
+            targetScreen = "SPEECH_STUDIO"
+        )
+    }
+
+    fun showFiveMinuteWarning(context: Context) {
+        showLocalNotification(
+            context = context,
+            title = "5 Minutes Remaining!",
+            message = "5 minutes left in your session. Finish strong!",
+            targetScreen = "SPEECH_STUDIO"
+        )
+    }
+
+    fun showSessionCompleted(context: Context) {
+        showLocalNotification(
+            context = context,
+            title = "Practice Session Over!",
+            message = "Your practice time is over! Great job completing today's session.",
+            targetScreen = "SPEECH_STUDIO"
+        )
+    }
+}

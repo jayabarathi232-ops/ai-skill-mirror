@@ -11,14 +11,16 @@ import kotlinx.coroutines.launch
 class ReminderBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val title = intent.getStringExtra("reminder_title") ?: "It's time for your daily practice!"
-        val message = intent.getStringExtra("reminder_message") ?: "Your Public Speaking practice is waiting. Keep your streak alive!"
+        val title = intent.getStringExtra("reminder_title") ?: "Daily Practice Reminder"
+        val message = intent.getStringExtra("reminder_message") ?: "Time for your Public Speaking practice. Keep your streak alive!"
+        val targetScreen = intent.getStringExtra("target_screen") ?: "SPEECH_STUDIO"
 
         // 1. Show the local Android push notification
         SmartNotificationManager.showLocalNotification(
             context = context,
             title = title,
-            message = message
+            message = message,
+            targetScreen = targetScreen
         )
 
         // 2. Persist notification into backend database asynchronously
@@ -29,8 +31,9 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
                     userId = 1,
                     title = title,
                     description = message,
-                    category = "learning",
-                    iconType = "bell"
+                    badgeText = "REMINDER",
+                    iconType = "ALARM",
+                    category = "PRACTICE"
                 )
             } catch (_: Exception) {
                 // Silently handle if offline
@@ -40,4 +43,3 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         }
     }
 }
-

@@ -448,17 +448,32 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Capture Live Tile (New!)
+                    MediaUploadTile(
+                        modifier = Modifier.width(110.dp),
+                        emoji = "📸",
+                        title = "Capture Live",
+                        subtitle = "Camera & Video",
+                        badge = "Live AI",
+                        accentColor = AccentPurple,
+                        onClick = {
+                            onUploadPerformanceClick("live")
+                        }
+                    )
+
                     // Upload Video Tile
                     MediaUploadTile(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(110.dp),
                         emoji = "📹",
                         title = "Upload Video",
                         subtitle = "Motion & Form",
                         badge = "Vision AI",
-                        accentColor = AccentPurple,
+                        accentColor = CyanNode,
                         onClick = {
                             onUploadPerformanceClick("video")
                         }
@@ -466,12 +481,12 @@ fun DashboardScreen(
 
                     // Upload Image Tile
                     MediaUploadTile(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(110.dp),
                         emoji = "🖼️",
                         title = "Upload Image",
                         subtitle = "Pose & Framing",
                         badge = "Pose AI",
-                        accentColor = CyanNode,
+                        accentColor = AccentPurple,
                         onClick = {
                             onUploadPerformanceClick("photo")
                         }
@@ -479,7 +494,7 @@ fun DashboardScreen(
 
                     // Upload Audio Tile
                     MediaUploadTile(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(110.dp),
                         emoji = "🎙️",
                         title = "Upload Audio",
                         subtitle = "Pitch & Cadence",

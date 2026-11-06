@@ -929,10 +929,11 @@ object ApiClient {
         }
     }
 
-    suspend fun clearNotifications(userId: Int): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun clearNotifications(userId: Int, notificationId: String? = null): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
         try {
             val body = JSONObject().apply {
                 put("user_id", userId)
+                notificationId?.let { put("notification_id", it) }
             }
             val (code, text) = postJson("notifications/notification_clear.php", body)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()

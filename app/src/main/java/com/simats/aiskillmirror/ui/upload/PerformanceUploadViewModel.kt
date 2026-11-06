@@ -37,6 +37,7 @@ class PerformanceUploadViewModel(
     private var mediaRecorder: MediaRecorder? = null
     private var audioRecordingFile: File? = null
     private var recordingTimerJob: Job? = null
+    private var videoRecordingTimerJob: Job? = null
 
     init {
         loadHistory()
@@ -48,10 +49,14 @@ class PerformanceUploadViewModel(
             MediaTypeTab.PHOTO -> "photography"
             MediaTypeTab.VIDEO -> "speaking"
             MediaTypeTab.AUDIO -> "speaking"
+            MediaTypeTab.LIVE_CAPTURE -> "speaking"
         }
+        val openCamera = (tab == MediaTypeTab.LIVE_CAPTURE)
         _uiState.value = _uiState.value.copy(
             selectedTab = tab,
             skillCategory = defaultCategory,
+            isLiveCameraOpen = openCamera,
+            isReviewingCapture = false,
             errorMessage = null,
             successResult = null
         )
@@ -72,11 +77,187 @@ class PerformanceUploadViewModel(
         }
     }
 
+    // -------------------------------------------------------------------------
+    // LIVE CAMERA METHODS
+    // -------------------------------------------------------------------------
+    fun openLiveCamera(mode: LiveCameraMode = LiveCameraMode.PHOTO) {
+        _uiState.value = _uiState.value.copy(
+            isLiveCameraOpen = true,
+            liveCameraMode = mode,
+            isReviewingCapture = false,
+            capturedPhotoPreview = null,
+            recordedVideoPreviewUri = null,
+            recordedVideoFile = null,
+            liveCameraError = null,
+            videoRecordSeconds = 0,
+            isRecordingVideo = false,
+            isVideoRecordingPaused = false
+        )
+    }
+
+    fun closeLiveCamera() {
+        videoRecordingTimerJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            isLiveCameraOpen = false,
+            isReviewingCapture = false,
+            isRecordingVideo = false,
+            isVideoRecordingPaused = false,
+            videoRecordSeconds = 0
+        )
+    }
+
+    fun setLiveCameraMode(mode: LiveCameraMode) {
+        if (_uiState.value.isRecordingVideo) return
+        _uiState.value = _uiState.value.copy(
+            liveCameraMode = mode,
+            isReviewingCapture = false,
+            capturedPhotoPreview = null,
+            recordedVideoPreviewUri = null,
+            liveCameraError = null
+        )
+    }
+
+    fun toggleCameraFacing() {
+        if (_uiState.value.isRecordingVideo) return
+        _uiState.value = _uiState.value.copy(
+            isUsingFrontCamera = !_uiState.value.isUsingFrontCamera
+        )
+    }
+
+    fun setCameraPermission(granted: Boolean) {
+        _uiState.value = _uiState.value.copy(hasCameraPermission = granted)
+    }
+
+    fun onPhotoCapturedLive(bitmap: Bitmap, file: File) {
+        _uiState.value = _uiState.value.copy(
+            capturedPhotoPreview = bitmap,
+            isReviewingCapture = true,
+            liveCameraError = null
+        )
+    }
+
+    fun retakeLiveCapture() {
+        _uiState.value.recordedVideoFile?.delete()
+        _uiState.value = _uiState.value.copy(
+            capturedPhotoPreview = null,
+            recordedVideoPreviewUri = null,
+            recordedVideoFile = null,
+            isReviewingCapture = false,
+            liveCameraError = null,
+            videoRecordSeconds = 0
+        )
+    }
+
+    fun usePhotoCapturedLive(context: Context) {
+        val bitmap = _uiState.value.capturedPhotoPreview ?: return
+        try {
+            val cacheFile = File(context.cacheDir, "live_photo_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(cacheFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+            }
+            val size = cacheFile.length()
+            val uri = Uri.fromFile(cacheFile)
+
+            val category = if (_uiState.value.skillCategory == "speaking") "photography" else _uiState.value.skillCategory
+
+            _uiState.value = _uiState.value.copy(
+                selectedTab = MediaTypeTab.PHOTO,
+                selectedUri = uri,
+                capturedBitmap = bitmap,
+                selectedFileName = cacheFile.name,
+                selectedFileSizeBytes = size,
+                selectedFileSizeText = formatFileSize(size),
+                skillCategory = category,
+                isLiveCameraOpen = false,
+                isReviewingCapture = false,
+                errorMessage = null
+            )
+            viewModelScope.launch {
+                _eventChannel.send(PerformanceUploadUiEvent.ShowToast("Live photo ready for AI analysis!"))
+            }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Failed to process photo: ${e.message}")
+        }
+    }
+
+    fun onVideoRecordingStarted() {
+        _uiState.value = _uiState.value.copy(
+            isRecordingVideo = true,
+            isVideoRecordingPaused = false,
+            videoRecordSeconds = 0,
+            liveCameraError = null
+        )
+        videoRecordingTimerJob?.cancel()
+        videoRecordingTimerJob = viewModelScope.launch {
+            while (_uiState.value.isRecordingVideo) {
+                delay(1000)
+                if (!_uiState.value.isVideoRecordingPaused) {
+                    val nextSec = _uiState.value.videoRecordSeconds + 1
+                    _uiState.value = _uiState.value.copy(videoRecordSeconds = nextSec)
+                }
+            }
+        }
+    }
+
+    fun onVideoRecordingPaused() {
+        _uiState.value = _uiState.value.copy(isVideoRecordingPaused = true)
+    }
+
+    fun onVideoRecordingResumed() {
+        _uiState.value = _uiState.value.copy(isVideoRecordingPaused = false)
+    }
+
+    fun onVideoRecordingStopped(file: File) {
+        videoRecordingTimerJob?.cancel()
+        val durationSec = _uiState.value.videoRecordSeconds.coerceAtLeast(1)
+        val uri = Uri.fromFile(file)
+        _uiState.value = _uiState.value.copy(
+            isRecordingVideo = false,
+            isVideoRecordingPaused = false,
+            recordedVideoFile = file,
+            recordedVideoPreviewUri = uri,
+            isReviewingCapture = true,
+            liveCameraError = null
+        )
+    }
+
+    fun useVideoRecordedLive(context: Context) {
+        val file = _uiState.value.recordedVideoFile ?: return
+        if (!file.exists() || file.length() == 0L) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Recorded video is invalid or empty.")
+            return
+        }
+
+        val uri = Uri.fromFile(file)
+        val durationSec = _uiState.value.videoRecordSeconds.coerceAtLeast(1)
+        val durationText = String.format(Locale.US, "%02d:%02d", durationSec / 60, durationSec % 60)
+
+        _uiState.value = _uiState.value.copy(
+            selectedTab = MediaTypeTab.VIDEO,
+            selectedUri = uri,
+            capturedBitmap = null,
+            selectedFileName = file.name,
+            selectedFileSizeBytes = file.length(),
+            selectedFileSizeText = formatFileSize(file.length()),
+            selectedDurationText = durationText,
+            selectedDurationSeconds = durationSec,
+            skillCategory = if (_uiState.value.skillCategory == "photography") "speaking" else _uiState.value.skillCategory,
+            isLiveCameraOpen = false,
+            isReviewingCapture = false,
+            errorMessage = null
+        )
+        viewModelScope.launch {
+            _eventChannel.send(PerformanceUploadUiEvent.ShowToast("Live video ready for AI analysis!"))
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // MEDIA PICKER & AUDIO RECORDING METHODS
+    // -------------------------------------------------------------------------
     fun onMediaSelected(context: Context, uri: Uri) {
         clearSelectedMedia()
         val currentTab = _uiState.value.selectedTab
 
-        // Extract metadata
         var fileName = "performance_media"
         var fileSize: Long = 0
 
@@ -99,11 +280,11 @@ class PerformanceUploadViewModel(
 
         val ext = fileName.substringAfterLast(".", "").lowercase(Locale.ROOT)
 
-        // Validation by media tab
         val validationError = when (currentTab) {
             MediaTypeTab.PHOTO -> validatePhoto(ext, fileSize)
             MediaTypeTab.VIDEO -> validateVideo(ext, fileSize)
             MediaTypeTab.AUDIO -> validateAudio(ext, fileSize)
+            MediaTypeTab.LIVE_CAPTURE -> null
         }
 
         if (validationError != null) {
@@ -124,7 +305,6 @@ class PerformanceUploadViewModel(
             errorMessage = null
         )
 
-        // If audio, prepare duration with MediaPlayer
         if (currentTab == MediaTypeTab.AUDIO) {
             prepareAudioPreview(context, uri)
         }
@@ -306,6 +486,9 @@ class PerformanceUploadViewModel(
         )
     }
 
+    // -------------------------------------------------------------------------
+    // SUBMISSION & AI ANALYSIS
+    // -------------------------------------------------------------------------
     fun uploadPerformance(context: Context) {
         val uri = _uiState.value.selectedUri
         if (uri == null) {
@@ -321,7 +504,6 @@ class PerformanceUploadViewModel(
             )
 
             try {
-                // Copy URI to cache file for multipart submission
                 val ext = (_uiState.value.selectedFileName ?: "media").substringAfterLast(".", "tmp")
                 val tempFile = File(context.cacheDir, "upload_temp_${System.currentTimeMillis()}.$ext")
                 context.contentResolver.openInputStream(uri)?.use { input ->
@@ -336,6 +518,7 @@ class PerformanceUploadViewModel(
                     MediaTypeTab.PHOTO -> "photo"
                     MediaTypeTab.VIDEO -> "video"
                     MediaTypeTab.AUDIO -> "audio"
+                    MediaTypeTab.LIVE_CAPTURE -> if (ext in listOf("jpg", "jpeg", "png", "webp")) "photo" else "video"
                 }
 
                 val mime = when (ext.lowercase(Locale.ROOT)) {
@@ -452,7 +635,7 @@ class PerformanceUploadViewModel(
         super.onCleared()
         stopAudioPlayback()
         recordingTimerJob?.cancel()
+        videoRecordingTimerJob?.cancel()
         mediaRecorder?.release()
     }
 }
-

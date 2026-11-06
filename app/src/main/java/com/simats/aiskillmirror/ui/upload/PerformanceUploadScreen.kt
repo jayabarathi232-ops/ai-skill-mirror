@@ -61,6 +61,9 @@ fun PerformanceUploadScreen(
                 is PerformanceUploadUiEvent.UploadSuccess -> {
                     // Handled in state
                 }
+                is PerformanceUploadUiEvent.RequestCameraPermission -> {
+                    // Handled in UI permission requests
+                }
             }
         }
     }
@@ -202,12 +205,14 @@ fun PerformanceUploadScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Photo Card
                     UploadTypeCard(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(96.dp),
                         title = "Photo",
                         icon = "🖼️",
                         subtitle = "JPG, PNG, WEBP",
@@ -218,7 +223,7 @@ fun PerformanceUploadScreen(
 
                     // Video Card
                     UploadTypeCard(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(96.dp),
                         title = "Video",
                         icon = "📹",
                         subtitle = "MP4, MOV, WEBM",
@@ -229,13 +234,28 @@ fun PerformanceUploadScreen(
 
                     // Audio Card
                     UploadTypeCard(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(96.dp),
                         title = "Audio",
                         icon = "🎙️",
                         subtitle = "MP3, WAV, M4A",
                         isSelected = uiState.selectedTab == MediaTypeTab.AUDIO,
                         accentColor = GreenNode,
                         onClick = { viewModel.selectTab(MediaTypeTab.AUDIO) }
+                    )
+
+                    // Live Camera Card
+                    UploadTypeCard(
+                        modifier = Modifier.width(112.dp),
+                        title = "Capture Live",
+                        icon = "📸",
+                        subtitle = "Photo / Video",
+                        isSelected = uiState.selectedTab == MediaTypeTab.LIVE_CAPTURE,
+                        accentColor = AccentPurple,
+                        isLiveBadge = true,
+                        onClick = {
+                            viewModel.selectTab(MediaTypeTab.LIVE_CAPTURE)
+                            viewModel.openLiveCamera(LiveCameraMode.PHOTO)
+                        }
                     )
                 }
 
@@ -245,7 +265,7 @@ fun PerformanceUploadScreen(
                 // 2. SKILL CATEGORY SELECTOR
                 // ==========================================
                 Text(
-                    text = "Skill Discipline",
+                    text = "Skill Discipline for AI Analysis",
                     color = TextSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
@@ -260,9 +280,10 @@ fun PerformanceUploadScreen(
                 ) {
                     val categories = listOf(
                         "speaking" to "🎙️ Public Speaking",
+                        "photography" to "📷 Photography",
+                        "drawing" to "🎨 Drawing & Art",
                         "coding" to "💻 Coding",
-                        "music" to "🎵 Music",
-                        "photography" to "📷 Photography"
+                        "music" to "🎵 Music"
                     )
                     categories.forEach { (catKey, label) ->
                         val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)
@@ -289,6 +310,23 @@ fun PerformanceUploadScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(6.dp))
+
+                val skillHint = when (uiState.skillCategory.lowercase()) {
+                    "speaking", "public_speaking" -> "🎙️ Analyses speech clarity, pace (words/min), pauses & posture alignment"
+                    "photography" -> "📷 Analyses rule-of-thirds composition, framing, lighting exposure & contrast"
+                    "drawing", "art" -> "🎨 Analyses line stroke confidence, proportions, perspective & tonal shading"
+                    "coding" -> "💻 Analyses logic hierarchy, algorithmic complexity & syntax cleanliness"
+                    "music" -> "🎵 Analyses pitch accuracy, dynamic expression & vocal timbre warmth"
+                    else -> "⚡ Multi-modal computer vision and acoustic skill decomposition"
+                }
+                Text(
+                    text = skillHint,
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
+                )
+
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // ==========================================
@@ -312,6 +350,7 @@ fun PerformanceUploadScreen(
                             MediaTypeTab.PHOTO -> "Photo Evaluation"
                             MediaTypeTab.VIDEO -> "Movement & Video Tracking"
                             MediaTypeTab.AUDIO -> "Audio & Pitch Decomposition"
+                            MediaTypeTab.LIVE_CAPTURE -> "Live In-App Camera"
                         }
                         Text(
                             text = mediaLabel,
@@ -325,6 +364,7 @@ fun PerformanceUploadScreen(
                                 MediaTypeTab.PHOTO -> "AI Computer Vision analyzes framing, lighting & balance"
                                 MediaTypeTab.VIDEO -> "MediaPipe pose estimation detects 33 anatomical joints"
                                 MediaTypeTab.AUDIO -> "Acoustic AI measures pitch accuracy, cadence & timbre"
+                                MediaTypeTab.LIVE_CAPTURE -> "Direct device camera with live preview, front/rear switch, photo & video recording"
                             },
                             color = TextSecondary,
                             fontSize = 11.sp,
@@ -337,14 +377,25 @@ fun PerformanceUploadScreen(
                         if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
                             // SHOW PREVIEW WITH METADATA & REMOVE/REPLACE CONTROLS
                             when (uiState.selectedTab) {
-                                MediaTypeTab.PHOTO -> {
-                                    PhotoPreviewSection(
-                                        bitmap = previewBitmap,
-                                        fileName = uiState.selectedFileName ?: "photo.jpg",
-                                        fileSizeText = uiState.selectedFileSizeText ?: "",
-                                        onReplace = { photoPickerLauncher.launch("image/*") },
-                                        onRemove = { viewModel.clearSelectedMedia() }
-                                    )
+                                MediaTypeTab.PHOTO, MediaTypeTab.LIVE_CAPTURE -> {
+                                    if (previewBitmap != null) {
+                                        PhotoPreviewSection(
+                                            bitmap = previewBitmap,
+                                            fileName = uiState.selectedFileName ?: "photo.jpg",
+                                            fileSizeText = uiState.selectedFileSizeText ?: "",
+                                            onReplace = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) },
+                                            onRemove = { viewModel.clearSelectedMedia() }
+                                        )
+                                    } else if (uiState.selectedUri != null) {
+                                        VideoPreviewSection(
+                                            uri = uiState.selectedUri!!,
+                                            fileName = uiState.selectedFileName ?: "video.mp4",
+                                            fileSizeText = uiState.selectedFileSizeText ?: "",
+                                            durationText = uiState.selectedDurationText ?: "00:45",
+                                            onReplace = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) },
+                                            onRemove = { viewModel.clearSelectedMedia() }
+                                        )
+                                    }
                                 }
                                 MediaTypeTab.VIDEO -> {
                                     VideoPreviewSection(
@@ -377,6 +428,12 @@ fun PerformanceUploadScreen(
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         SelectMediaButton(
+                                            icon = "📸",
+                                            title = "Capture Live Photo with Camera",
+                                            subtitle = "Live camera viewfinder · Front & rear switch",
+                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
+                                        )
+                                        SelectMediaButton(
                                             icon = "🖼️",
                                             title = "Select Image from Gallery",
                                             subtitle = "JPG, JPEG, PNG, WEBP · Max 15MB",
@@ -384,8 +441,8 @@ fun PerformanceUploadScreen(
                                         )
                                         SelectMediaButton(
                                             icon = "📷",
-                                            title = "Take Photo with Camera",
-                                            subtitle = "Capture posture, art or framing live",
+                                            title = "Take Photo with System Camera",
+                                            subtitle = "Capture using device system camera app",
                                             onClick = { cameraPhotoLauncher.launch(null) }
                                         )
                                     }
@@ -396,10 +453,35 @@ fun PerformanceUploadScreen(
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         SelectMediaButton(
+                                            icon = "🎥",
+                                            title = "Record Live Video with Camera",
+                                            subtitle = "Live camera with pause, resume & timer",
+                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
+                                        )
+                                        SelectMediaButton(
                                             icon = "📁",
-                                            title = "Choose Video File",
+                                            title = "Choose Video File from Storage",
                                             subtitle = "MP4, MOV, WEBM · Max 100MB",
                                             onClick = { videoPickerLauncher.launch("video/*") }
+                                        )
+                                    }
+                                }
+                                MediaTypeTab.LIVE_CAPTURE -> {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        SelectMediaButton(
+                                            icon = "📸",
+                                            title = "Capture Live Photo",
+                                            subtitle = "Direct in-app camera · Retake & Use controls",
+                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
+                                        )
+                                        SelectMediaButton(
+                                            icon = "🎥",
+                                            title = "Record Live Video",
+                                            subtitle = "Live camera with pause, resume & recording timer",
+                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
                                         )
                                     }
                                 }
@@ -591,6 +673,17 @@ fun PerformanceUploadScreen(
             PreviousUploadsDialog(
                 historyList = uiState.historyList,
                 onDismiss = { viewModel.toggleHistorySheet(false) }
+            )
+        }
+
+        // ==========================================
+        // LIVE CAMERA IN-APP OVERLAY VIEWFINDER
+        // ==========================================
+        if (uiState.isLiveCameraOpen) {
+            LiveCameraOverlay(
+                uiState = uiState,
+                viewModel = viewModel,
+                onDismiss = { viewModel.closeLiveCamera() }
             )
         }
     }
@@ -935,6 +1028,43 @@ fun AnalysisResultCard(result: PerformanceUploadItemDto) {
                 lineHeight = 17.sp
             )
 
+            // Skill-Specific Metrics Chips
+            if (!result.metrics.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    result.metrics.forEach { (key, value) ->
+                        val label = key.replace("_", " ").replaceFirstChar { it.uppercase() }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(LightPurple.copy(alpha = 0.5f))
+                                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = label,
+                                    color = TextSecondary,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = value.toString(),
+                                    color = AccentPurple,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // AI Feedback Box
@@ -1102,6 +1232,7 @@ fun UploadTypeCard(
     subtitle: String,
     isSelected: Boolean,
     accentColor: Color,
+    isLiveBadge: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
@@ -1117,7 +1248,26 @@ fun UploadTypeCard(
             .clickable { onClick() }
             .padding(12.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (isLiveBadge) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFFDC2626))
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = "LIVE",
+                    color = Color.White,
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(text = icon, fontSize = 22.sp)
             Spacer(modifier = Modifier.height(6.dp))
             Text(
