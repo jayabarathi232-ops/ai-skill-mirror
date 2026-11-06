@@ -62,10 +62,11 @@ data class DashboardUiState(
     
     // My Core Skills
     val mySkills: List<SkillItem> = listOf(
-        SkillItem("speaking", "Public Speaking", "Speech & Articulation", 86, "Advanced", "🎙️", 0xFF8B5CF6, 0.86f),
+        SkillItem("music", "Music", "Instruments & Vocals", 88, "Pro", "🎵", 0xFFA855F7, 0.88f),
+        SkillItem("photo", "Photography", "Composition & Light", 75, "Intermediate", "📷", 0xFF06B6D4, 0.75f),
+        SkillItem("drawing", "Drawing", "Sketching & Art", 82, "Advanced", "🎨", 0xFFEC4899, 0.82f),
         SkillItem("coding", "Coding", "Algorithms & Logic", 92, "Master", "💻", 0xFF6366F1, 0.92f),
-        SkillItem("music", "Music", "Pitch & Cadence", 88, "Pro", "🎵", 0xFFA855F7, 0.88f),
-        SkillItem("photo", "Photography", "Composition & Light", 75, "Intermediate", "📷", 0xFF06B6D4, 0.75f)
+        SkillItem("speaking", "Public Speaking", "Speech & Articulation", 86, "Advanced", "🎙️", 0xFF8B5CF6, 0.86f)
     ),
 
     // Recent Performance History

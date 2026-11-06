@@ -65,7 +65,8 @@ fun DashboardScreen(
     onContinueTrainingClick: () -> Unit = {},
     onOpenAiCoachClick: () -> Unit = {},
     onUploadPerformanceClick: (String) -> Unit = {},
-    onOpenPublicSpeakingClick: () -> Unit = {}
+    onOpenPublicSpeakingClick: () -> Unit = {},
+    onOpenSkillCategory: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -417,12 +418,7 @@ fun DashboardScreen(
                         MySkillCard(
                             skill = skill,
                             onAssessClick = {
-                                if (skill.id == "speaking") {
-                                    onOpenPublicSpeakingClick()
-                                } else {
-                                    Toast.makeText(context, "Opening ${skill.name} assessment...", Toast.LENGTH_SHORT).show()
-                                    onTabSelected(DashboardTab.ASSESS)
-                                }
+                                onOpenSkillCategory(skill.id)
                             }
                         )
                     }

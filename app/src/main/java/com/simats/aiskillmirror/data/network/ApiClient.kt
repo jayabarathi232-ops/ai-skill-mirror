@@ -139,6 +139,24 @@ data class TrainingLessonItem(
     val isCompleted: Boolean
 )
 
+data class SubcategoryItemData(
+    val id: Int = 0,
+    val mainSkill: String = "",
+    val subcategoryId: String = "",
+    val subcategoryName: String = "",
+    val proficiencyLevel: String = "Beginner",
+    val learningGoal: String = "Master Core Fundamentals",
+    val isActive: Boolean = false,
+    val xpEarned: Int = 0,
+    val lessonsCompleted: Int = 0,
+    val practiceMinutes: Int = 0
+)
+
+data class WeeklyPlanDayData(
+    val day: String = "",
+    val focus: String = ""
+)
+
 data class DailyTrainingData(
     val headerDateText: String,
     val streakBadgeText: String,
@@ -150,7 +168,15 @@ data class DailyTrainingData(
     val upNextCategory: String,
     val upNextMetaText: String,
     val upNextDescription: String,
-    val startButtonText: String
+    val startButtonText: String,
+    val activeSubcategory: SubcategoryItemData? = null,
+    val stepByStepInstructions: List<String> = emptyList(),
+    val beginnerExercises: List<String> = emptyList(),
+    val practiceChallenges: List<String> = emptyList(),
+    val weeklyLearningPlan: List<WeeklyPlanDayData> = emptyList(),
+    val aiTip: String = "",
+    val totalXp: Int = 1240,
+    val pendingPracticeItems: List<TrainingLessonItem> = emptyList()
 )
 
 data class SpeechAnalysisData(
@@ -774,13 +800,137 @@ object ApiClient {
         }
     }
 
-    suspend fun fetchTraining(userId: Int): NetworkResult<DailyTrainingData> = withContext(Dispatchers.IO) {
+    suspend fun saveUserSubcategory(
+        userId: Int,
+        mainSkill: String,
+        subcategoryId: String,
+        subcategoryName: String,
+        proficiencyLevel: String,
+        learningGoal: String
+    ): NetworkResult<SubcategoryItemData> = withContext(Dispatchers.IO) {
         try {
-            val (code, text) = getJson("training/training_fetch.php?user_id=$userId")
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("main_skill", mainSkill)
+                put("subcategory_id", subcategoryId)
+                put("subcategory_name", subcategoryName)
+                put("proficiency_level", proficiencyLevel)
+                put("learning_goal", learningGoal)
+            }
+            val (code, text) = postJson("skills/user_skill_subcategory_save.php", payload)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data").getJSONObject("activeSubcategory")
+                val sub = SubcategoryItemData(
+                    id = d.optInt("id"),
+                    mainSkill = d.optString("mainSkill"),
+                    subcategoryId = d.optString("subcategoryId"),
+                    subcategoryName = d.optString("subcategoryName"),
+                    proficiencyLevel = d.optString("proficiencyLevel"),
+                    learningGoal = d.optString("learningGoal"),
+                    isActive = d.optBoolean("isActive", true),
+                    xpEarned = d.optInt("xpEarned"),
+                    lessonsCompleted = d.optInt("lessonsCompleted"),
+                    practiceMinutes = d.optInt("practiceMinutes")
+                )
+                NetworkResult(true, json.optString("message"), sub)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to save subcategory"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchUserSubcategories(userId: Int): NetworkResult<Pair<SubcategoryItemData?, List<SubcategoryItemData>>> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("skills/user_skill_subcategory_fetch.php?user_id=$userId")
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val d = json.getJSONObject("data")
-                val arr = d.getJSONArray("completedPracticeItems")
+                var active: SubcategoryItemData? = null
+                if (d.has("activeSubcategory") && !d.isNull("activeSubcategory")) {
+                    val a = d.getJSONObject("activeSubcategory")
+                    active = SubcategoryItemData(
+                        id = a.optInt("id"),
+                        mainSkill = a.optString("mainSkill"),
+                        subcategoryId = a.optString("subcategoryId"),
+                        subcategoryName = a.optString("subcategoryName"),
+                        proficiencyLevel = a.optString("proficiencyLevel"),
+                        learningGoal = a.optString("learningGoal"),
+                        isActive = a.optBoolean("isActive", true),
+                        xpEarned = a.optInt("xpEarned"),
+                        lessonsCompleted = a.optInt("lessonsCompleted"),
+                        practiceMinutes = a.optInt("practiceMinutes")
+                    )
+                }
+                val list = mutableListOf<SubcategoryItemData>()
+                val arr = d.optJSONArray("selectedSubcategories")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val s = arr.getJSONObject(i)
+                        list.add(
+                            SubcategoryItemData(
+                                id = s.optInt("id"),
+                                mainSkill = s.optString("mainSkill"),
+                                subcategoryId = s.optString("subcategoryId"),
+                                subcategoryName = s.optString("subcategoryName"),
+                                proficiencyLevel = s.optString("proficiencyLevel"),
+                                learningGoal = s.optString("learningGoal"),
+                                isActive = s.optBoolean("isActive"),
+                                xpEarned = s.optInt("xpEarned"),
+                                lessonsCompleted = s.optInt("lessonsCompleted"),
+                                practiceMinutes = s.optInt("practiceMinutes")
+                            )
+                        )
+                    }
+                }
+                NetworkResult(true, "Subcategories loaded", Pair(active, list))
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch subcategories"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun completeLesson(
+        userId: Int,
+        lessonId: String = "1",
+        durationMinutes: Int = 10,
+        xpPoints: Int = 35
+    ): NetworkResult<DailyTrainingData> = withContext(Dispatchers.IO) {
+        try {
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("lesson_id", lessonId)
+                put("duration_minutes", durationMinutes)
+                put("xp_points", xpPoints)
+            }
+            val (code, text) = postJson("training/lesson_complete.php", payload)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                fetchTraining(userId)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to complete lesson"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchTraining(userId: Int, subcategoryId: String? = null): NetworkResult<DailyTrainingData> = withContext(Dispatchers.IO) {
+        try {
+            val query = if (!subcategoryId.isNullOrBlank()) {
+                "training/training_fetch.php?user_id=$userId&subcategory_id=$subcategoryId"
+            } else {
+                "training/training_fetch.php?user_id=$userId"
+            }
+            val (code, text) = getJson(query)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data")
+                val arr = d.optJSONArray("completedPracticeItems") ?: JSONArray()
                 val completed = mutableListOf<TrainingLessonItem>()
                 for (i in 0 until arr.length()) {
                     val it = arr.getJSONObject(i)
@@ -795,6 +945,72 @@ object ApiClient {
                         )
                     )
                 }
+
+                val pArr = d.optJSONArray("pendingPracticeItems") ?: JSONArray()
+                val pending = mutableListOf<TrainingLessonItem>()
+                for (i in 0 until pArr.length()) {
+                    val it = pArr.getJSONObject(i)
+                    pending.add(
+                        TrainingLessonItem(
+                            id = it.optString("id"),
+                            title = it.optString("title"),
+                            category = it.optString("category"),
+                            durationText = it.optString("durationText"),
+                            xpText = it.optString("xpText"),
+                            isCompleted = false
+                        )
+                    )
+                }
+
+                var activeSub: SubcategoryItemData? = null
+                if (d.has("activeSubcategory") && !d.isNull("activeSubcategory")) {
+                    val asObj = d.getJSONObject("activeSubcategory")
+                    activeSub = SubcategoryItemData(
+                        id = asObj.optInt("id"),
+                        mainSkill = asObj.optString("mainSkill"),
+                        subcategoryId = asObj.optString("subcategoryId"),
+                        subcategoryName = asObj.optString("subcategoryName"),
+                        proficiencyLevel = asObj.optString("proficiencyLevel"),
+                        learningGoal = asObj.optString("learningGoal"),
+                        isActive = true,
+                        xpEarned = asObj.optInt("xpEarned"),
+                        lessonsCompleted = asObj.optInt("lessonsCompleted"),
+                        practiceMinutes = asObj.optInt("practiceMinutes")
+                    )
+                }
+
+                val stepsList = mutableListOf<String>()
+                val sArr = d.optJSONArray("stepByStepInstructions")
+                if (sArr != null) {
+                    for (i in 0 until sArr.length()) stepsList.add(sArr.getString(i))
+                }
+
+                val exercisesList = mutableListOf<String>()
+                val eArr = d.optJSONArray("beginnerExercises")
+                if (eArr != null) {
+                    for (i in 0 until eArr.length()) exercisesList.add(eArr.getString(i))
+                }
+
+                val challengesList = mutableListOf<String>()
+                val cArr = d.optJSONArray("practiceChallenges")
+                if (cArr != null) {
+                    for (i in 0 until cArr.length()) challengesList.add(cArr.getString(i))
+                }
+
+                val weeklyPlan = mutableListOf<WeeklyPlanDayData>()
+                val wArr = d.optJSONArray("weeklyLearningPlan")
+                if (wArr != null) {
+                    for (i in 0 until wArr.length()) {
+                        val wObj = wArr.getJSONObject(i)
+                        weeklyPlan.add(
+                            WeeklyPlanDayData(
+                                day = wObj.optString("day"),
+                                focus = wObj.optString("focus")
+                            )
+                        )
+                    }
+                }
+
                 val data = DailyTrainingData(
                     headerDateText = d.optString("headerDateText"),
                     streakBadgeText = d.optString("streakBadgeText"),
@@ -806,7 +1022,15 @@ object ApiClient {
                     upNextCategory = d.optString("upNextCategory"),
                     upNextMetaText = d.optString("upNextMetaText"),
                     upNextDescription = d.optString("upNextDescription"),
-                    startButtonText = d.optString("startButtonText")
+                    startButtonText = d.optString("startButtonText"),
+                    activeSubcategory = activeSub,
+                    stepByStepInstructions = stepsList,
+                    beginnerExercises = exercisesList,
+                    practiceChallenges = challengesList,
+                    weeklyLearningPlan = weeklyPlan,
+                    aiTip = d.optString("aiTip"),
+                    totalXp = d.optInt("totalXp", 1240),
+                    pendingPracticeItems = pending
                 )
                 NetworkResult(true, "Training fetched", data)
             } else {

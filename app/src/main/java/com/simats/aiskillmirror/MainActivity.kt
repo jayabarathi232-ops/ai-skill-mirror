@@ -311,7 +311,12 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.PERFORMANCE_UPLOAD)
                                     },
                                     onOpenPublicSpeakingClick = {
-                                        navigateTo(AppScreen.SPEECH_STUDIO)
+                                        skillSelectionViewModel.selectCategory("speaking")
+                                        navigateTo(AppScreen.SKILL_SELECTION)
+                                    },
+                                    onOpenSkillCategory = { catId ->
+                                        skillSelectionViewModel.selectCategory(catId)
+                                        navigateTo(AppScreen.SKILL_SELECTION)
                                     }
                                 )
                             }
@@ -347,6 +352,10 @@ class MainActivity : ComponentActivity() {
                                 SkillSelectionScreen(
                                     viewModel = skillSelectionViewModel,
                                     onTabSelected = ::handleTabSelected,
+                                    onStartTraining = { mainSkill, subcatId ->
+                                        dailyTrainingViewModel.loadTraining(subcatId)
+                                        navigateTo(AppScreen.DAILY_TRAINING)
+                                    },
                                     onStartAssessmentClick = {
                                         navigateTo(AppScreen.ASSESSMENT)
                                     },
@@ -407,7 +416,10 @@ class MainActivity : ComponentActivity() {
                                     viewModel = dailyTrainingViewModel,
                                     onTabSelected = ::handleTabSelected,
                                     onStartPracticeClick = {
-                                        navigateTo(AppScreen.SPEECH_STUDIO)
+                                        Toast.makeText(this@MainActivity, "Daily practice session recorded! +35 XP", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onSwitchSubcategoryClick = {
+                                        navigateTo(AppScreen.SKILL_SELECTION)
                                     },
                                     onCalendarClick = {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
