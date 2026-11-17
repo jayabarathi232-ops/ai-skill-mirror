@@ -64,6 +64,7 @@ fun DashboardScreen(
     onViewPlanClick: () -> Unit = {},
     onContinueTrainingClick: () -> Unit = {},
     onOpenAiCoachClick: () -> Unit = {},
+    onOpenSkillGapDetectorClick: () -> Unit = {},
     onUploadPerformanceClick: (String) -> Unit = {},
     onOpenPublicSpeakingClick: () -> Unit = {},
     onOpenSkillCategory: (String) -> Unit = {}
@@ -602,6 +603,100 @@ fun DashboardScreen(
                         ) {
                             Text(
                                 text = "Start AI Coaching Session →",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // ==========================================
+                // 5B. AI SKILL GAP DETECTOR HERO CARD
+                // ==========================================
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(22.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Color.White)
+                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
+                        .clickable { onOpenSkillGapDetectorClick() }
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFFEDE7F6)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚡", fontSize = 22.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "AI Skill Gap Detector",
+                                        color = HeadingPurple,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(Color(0xFFF3E8FF))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "DIAGNOSTIC",
+                                            color = AccentPurple,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Identify Strengths, Weaknesses & Blind Spots",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "Detect where your performance excels and where critical skill gaps exist across practical tests, recordings, code, and quizzes.",
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                    )
+                                )
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "⚡ Open AI Skill Gap Report →",
                                 color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold

@@ -40,6 +40,7 @@ fun ProgressAnalyticsScreen(
     viewModel: ProgressAnalyticsViewModel,
     onTabSelected: (DashboardTab) -> Unit = {},
     onViewReportClick: () -> Unit = {},
+    onOpenSkillGapDetectorClick: () -> Unit = {},
     onCalendarClick: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
@@ -121,7 +122,7 @@ fun ProgressAnalyticsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Timeframe Segment Tabs
                 TimeframeSegmentedTabs(
@@ -287,6 +288,54 @@ fun ProgressAnalyticsScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // AI Skill Gap Detector Quick Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(3.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFFEDE7F6), Color(0xFFF3E8FF))
+                            )
+                        )
+                        .border(1.dp, CardBorder, RoundedCornerShape(18.dp))
+                        .clickable { onOpenSkillGapDetectorClick() }
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚡", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "AI Skill Gap Detector",
+                                    color = HeadingPurple,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "View weak areas & missing curriculum skills",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Analyse →",
+                            color = AccentPurple,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
 

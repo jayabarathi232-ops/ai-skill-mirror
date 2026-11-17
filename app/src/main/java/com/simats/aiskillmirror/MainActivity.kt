@@ -69,6 +69,8 @@ import com.simats.aiskillmirror.ui.upload.LiveCameraMode
 import com.simats.aiskillmirror.ui.upload.MediaTypeTab
 import com.simats.aiskillmirror.ui.upload.PerformanceUploadScreen
 import com.simats.aiskillmirror.ui.upload.PerformanceUploadViewModel
+import com.simats.aiskillmirror.ui.gap.SkillGapScreen
+import com.simats.aiskillmirror.ui.gap.SkillGapViewModel
 
 enum class AppScreen {
     SPLASH,
@@ -92,7 +94,8 @@ enum class AppScreen {
     NOTIFICATIONS,
     AI_COACH,
     SETTINGS,
-    PERFORMANCE_UPLOAD
+    PERFORMANCE_UPLOAD,
+    SKILL_GAP_DETECTOR
 }
 
 class MainActivity : ComponentActivity() {
@@ -118,6 +121,7 @@ class MainActivity : ComponentActivity() {
     private val aiCoachViewModel: AiCoachViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val performanceUploadViewModel: PerformanceUploadViewModel by viewModels()
+    private val skillGapViewModel: SkillGapViewModel by viewModels()
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -299,6 +303,10 @@ class MainActivity : ComponentActivity() {
                                     onOpenAiCoachClick = {
                                         navigateTo(AppScreen.AI_COACH)
                                     },
+                                    onOpenSkillGapDetectorClick = {
+                                        skillGapViewModel.loadGapData()
+                                        navigateTo(AppScreen.SKILL_GAP_DETECTOR)
+                                    },
                                     onUploadPerformanceClick = { type ->
                                         when (type.lowercase()) {
                                             "video" -> performanceUploadViewModel.selectTab(MediaTypeTab.VIDEO)
@@ -469,6 +477,10 @@ class MainActivity : ComponentActivity() {
                                     onViewReportClick = {
                                         navigateTo(AppScreen.GROWTH_REPORT)
                                     },
+                                    onOpenSkillGapDetectorClick = {
+                                        skillGapViewModel.loadGapData()
+                                        navigateTo(AppScreen.SKILL_GAP_DETECTOR)
+                                    },
                                     onCalendarClick = {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
@@ -560,6 +572,31 @@ class MainActivity : ComponentActivity() {
                                         navigateBack()
                                     },
                                     onTabSelected = ::handleTabSelected
+                                )
+                            }
+                            AppScreen.SKILL_GAP_DETECTOR -> {
+                                SkillGapScreen(
+                                    viewModel = skillGapViewModel,
+                                    onTabSelected = ::handleTabSelected,
+                                    onAskAiCoachClick = { topic ->
+                                        navigateTo(AppScreen.AI_COACH)
+                                    },
+                                    onStartPracticeClick = { subcatId ->
+                                        dailyTrainingViewModel.loadTraining(subcatId.ifBlank { null })
+                                        navigateTo(AppScreen.DAILY_TRAINING)
+                                    },
+                                    onOpenRoadmapClick = {
+                                        navigateTo(AppScreen.ROADMAP)
+                                    },
+                                    onViewProgressClick = {
+                                        navigateTo(AppScreen.PROGRESS_ANALYTICS)
+                                    },
+                                    onSwitchSkillClick = {
+                                        navigateTo(AppScreen.SKILL_SELECTION)
+                                    },
+                                    onBackClick = {
+                                        navigateBack()
+                                    }
                                 )
                             }
                         }

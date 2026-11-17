@@ -443,6 +443,89 @@ data class UserSettingsData(
     val appVersionText: String
 )
 
+data class SkillAreaItem(
+    val name: String,
+    val score: Int = 0,
+    val gapDelta: Int = 0,
+    val status: String = "",
+    val detail: String = ""
+)
+
+data class MissingTopicItem(
+    val topic: String,
+    val reason: String = ""
+)
+
+data class SkillRecommendationItem(
+    val title: String,
+    val description: String,
+    val actionType: String = "",
+    val actionLabel: String = "Start"
+)
+
+data class SkillCompetencyItem(
+    val key: String,
+    val name: String,
+    val description: String,
+    val score: Int,
+    val gapDelta: Int,
+    val targetScore: Int = 100
+)
+
+data class SkillGapComparison(
+    val previousScore: Int,
+    val scoreDelta: Int,
+    val previousDate: String,
+    val summary: String
+)
+
+data class SkillGapReportData(
+    val reportId: Int? = null,
+    val status: String = "success",
+    val dataSufficiency: String = "sufficient",
+    val userId: Int = 1,
+    val mainSkill: String = "music",
+    val subcategoryId: String = "singing",
+    val subcategoryName: String = "Singing / Vocal Training",
+    val proficiencyLevel: String = "Beginner",
+    val overallCompetencyScore: Int = 0,
+    val gapSeverity: String = "Moderate Gap",
+    val assessmentCount: Int = 0,
+    val aiSummary: String = "",
+    val strongAreas: List<SkillAreaItem> = emptyList(),
+    val weakAreas: List<SkillAreaItem> = emptyList(),
+    val needsImprovement: List<SkillAreaItem> = emptyList(),
+    val missingTopics: List<MissingTopicItem> = emptyList(),
+    val recommendations: List<SkillRecommendationItem> = emptyList(),
+    val competencies: List<SkillCompetencyItem> = emptyList(),
+    val previousComparison: SkillGapComparison? = null
+)
+
+data class AvailableSkillItem(
+    val id: Int,
+    val mainSkill: String,
+    val subcategoryId: String,
+    val subcategoryName: String,
+    val proficiencyLevel: String,
+    val isActive: Boolean = false,
+    val lessonsCompleted: Int = 0,
+    val xpEarned: Int = 0
+)
+
+data class SkillGapHistoryItem(
+    val reportId: Int,
+    val score: Int,
+    val gapSeverity: String,
+    val assessmentCount: Int,
+    val dateFormatted: String
+)
+
+data class SkillGapResponseData(
+    val currentReport: SkillGapReportData,
+    val availableSkills: List<AvailableSkillItem> = emptyList(),
+    val history: List<SkillGapHistoryItem> = emptyList()
+)
+
 object ApiClient {
     // 10.0.2.2 reaches localhost on Android Emulator.
     // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.49.166/skillmirrorbackend"
@@ -1993,6 +2076,223 @@ object ApiClient {
                 NetworkResult(true, "Analytics fetched successfully", result)
             } else {
                 NetworkResult(false, json.optString("message", "Failed to fetch analytics"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    private fun parseSkillGapReport(o: JSONObject): SkillGapReportData {
+        val strongList = mutableListOf<SkillAreaItem>()
+        o.optJSONArray("strong_areas")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                strongList.add(
+                    SkillAreaItem(
+                        name = itm.optString("name"),
+                        score = itm.optInt("score", 0),
+                        gapDelta = itm.optInt("gap_delta", 0),
+                        status = itm.optString("status"),
+                        detail = itm.optString("detail")
+                    )
+                )
+            }
+        }
+
+        val weakList = mutableListOf<SkillAreaItem>()
+        o.optJSONArray("weak_areas")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                weakList.add(
+                    SkillAreaItem(
+                        name = itm.optString("name"),
+                        score = itm.optInt("score", 0),
+                        gapDelta = itm.optInt("gap_delta", 0),
+                        status = itm.optString("status"),
+                        detail = itm.optString("detail")
+                    )
+                )
+            }
+        }
+
+        val needsList = mutableListOf<SkillAreaItem>()
+        o.optJSONArray("needs_improvement")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                needsList.add(
+                    SkillAreaItem(
+                        name = itm.optString("name"),
+                        score = itm.optInt("score", 0),
+                        gapDelta = itm.optInt("gap_delta", 0),
+                        status = itm.optString("status"),
+                        detail = itm.optString("detail")
+                    )
+                )
+            }
+        }
+
+        val missingList = mutableListOf<MissingTopicItem>()
+        o.optJSONArray("missing_topics")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                missingList.add(
+                    MissingTopicItem(
+                        topic = itm.optString("topic"),
+                        reason = itm.optString("reason")
+                    )
+                )
+            }
+        }
+
+        val recList = mutableListOf<SkillRecommendationItem>()
+        o.optJSONArray("recommendations")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                recList.add(
+                    SkillRecommendationItem(
+                        title = itm.optString("title"),
+                        description = itm.optString("description"),
+                        actionType = itm.optString("action_type"),
+                        actionLabel = itm.optString("action_label", "Start")
+                    )
+                )
+            }
+        }
+
+        val compList = mutableListOf<SkillCompetencyItem>()
+        o.optJSONArray("competencies")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val itm = arr.getJSONObject(i)
+                compList.add(
+                    SkillCompetencyItem(
+                        key = itm.optString("key"),
+                        name = itm.optString("name"),
+                        description = itm.optString("description"),
+                        score = itm.optInt("score"),
+                        gapDelta = itm.optInt("gap_delta"),
+                        targetScore = itm.optInt("target_score", 100)
+                    )
+                )
+            }
+        }
+
+        val prevComp = o.optJSONObject("previous_comparison")?.let { p ->
+            SkillGapComparison(
+                previousScore = p.optInt("previous_score"),
+                scoreDelta = p.optInt("score_delta"),
+                previousDate = p.optString("previous_date"),
+                summary = p.optString("summary")
+            )
+        }
+
+        return SkillGapReportData(
+            reportId = if (o.isNull("report_id")) null else o.optInt("report_id"),
+            status = o.optString("status", "success"),
+            dataSufficiency = o.optString("data_sufficiency", "sufficient"),
+            userId = o.optInt("user_id", 1),
+            mainSkill = o.optString("main_skill", "music"),
+            subcategoryId = o.optString("subcategory_id", "singing"),
+            subcategoryName = o.optString("subcategory_name", "Singing"),
+            proficiencyLevel = o.optString("proficiency_level", "Beginner"),
+            overallCompetencyScore = o.optInt("overall_competency_score", 0),
+            gapSeverity = o.optString("gap_severity", "Moderate Gap"),
+            assessmentCount = o.optInt("assessment_count", 0),
+            aiSummary = o.optString("ai_summary", ""),
+            strongAreas = strongList,
+            weakAreas = weakList,
+            needsImprovement = needsList,
+            missingTopics = missingList,
+            recommendations = recList,
+            competencies = compList,
+            previousComparison = prevComp
+        )
+    }
+
+    suspend fun fetchSkillGapData(
+        userId: Int,
+        subcategoryId: String? = null
+    ): NetworkResult<SkillGapResponseData> = withContext(Dispatchers.IO) {
+        try {
+            val q = if (!subcategoryId.isNullOrBlank()) {
+                "gap_detector/gap_fetch.php?user_id=$userId&subcategory_id=$subcategoryId"
+            } else {
+                "gap_detector/gap_fetch.php?user_id=$userId"
+            }
+            val (code, text) = getJson(q)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.optJSONObject("data") ?: JSONObject()
+                val curRepObj = d.optJSONObject("current_report") ?: JSONObject()
+                val curReport = parseSkillGapReport(curRepObj)
+
+                val availList = mutableListOf<AvailableSkillItem>()
+                d.optJSONArray("available_skills")?.let { arr ->
+                    for (i in 0 until arr.length()) {
+                        val s = arr.getJSONObject(i)
+                        availList.add(
+                            AvailableSkillItem(
+                                id = s.optInt("id"),
+                                mainSkill = s.optString("main_skill"),
+                                subcategoryId = s.optString("subcategory_id"),
+                                subcategoryName = s.optString("subcategory_name"),
+                                proficiencyLevel = s.optString("proficiency_level", "Beginner"),
+                                isActive = s.optBoolean("is_active", false),
+                                lessonsCompleted = s.optInt("lessons_completed", 0),
+                                xpEarned = s.optInt("xp_earned", 0)
+                            )
+                        )
+                    }
+                }
+
+                val histList = mutableListOf<SkillGapHistoryItem>()
+                d.optJSONArray("history")?.let { arr ->
+                    for (i in 0 until arr.length()) {
+                        val h = arr.getJSONObject(i)
+                        histList.add(
+                            SkillGapHistoryItem(
+                                reportId = h.optInt("report_id"),
+                                score = h.optInt("score"),
+                                gapSeverity = h.optString("gap_severity"),
+                                assessmentCount = h.optInt("assessment_count"),
+                                dateFormatted = h.optString("date_formatted")
+                            )
+                        )
+                    }
+                }
+
+                val res = SkillGapResponseData(
+                    currentReport = curReport,
+                    availableSkills = availList,
+                    history = histList
+                )
+                NetworkResult(true, "Skill gap data retrieved", res)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to retrieve skill gap data"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun analyzeSkillGap(
+        userId: Int,
+        mainSkill: String,
+        subcategoryId: String
+    ): NetworkResult<SkillGapReportData> = withContext(Dispatchers.IO) {
+        try {
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("main_skill", mainSkill)
+                put("subcategory_id", subcategoryId)
+            }
+            val (code, text) = postJson("gap_detector/gap_analyze.php", payload)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.optJSONObject("data") ?: JSONObject()
+                val rep = parseSkillGapReport(d)
+                NetworkResult(true, "Analysis completed", rep)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to analyze skills"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
