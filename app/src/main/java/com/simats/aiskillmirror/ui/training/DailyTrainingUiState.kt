@@ -92,7 +92,17 @@ data class DailyTrainingUiState(
     val isEvaluatingArtifact: Boolean = false,
     val codeSnippetInput: String = "",
     val speechTranscriptInput: String = "",
-    val selectedItemForDetail: PracticeItem? = null
+    val selectedItemForDetail: PracticeItem? = null,
+
+    // Voice & Singing Microphone Recording State (Requirement 4)
+    val isRecordingVoice: Boolean = false,
+    val recordedAudioPath: String? = null,
+    val voiceRecordSeconds: Int = 0,
+    val isPlayingVoice: Boolean = false,
+    val audioRecordError: String? = null,
+    val evaluationError: String? = null,
+    val canRetryAnalysis: Boolean = false,
+    val isAnalysisComplete: Boolean = false
 )
 
 sealed interface DailyTrainingUiEvent {

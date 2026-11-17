@@ -476,7 +476,7 @@ fun ProgressAnalyticsScreen(
                                                     .padding(horizontal = 10.dp, vertical = 5.dp)
                                             ) {
                                                 Text(
-                                                    text = "Score not available",
+                                                    text = "Score Not Available",
                                                     color = Color(0xFFE65100),
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.SemiBold

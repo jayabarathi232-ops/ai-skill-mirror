@@ -43,6 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileOutputStream
 import com.simats.aiskillmirror.ui.assess.SparkleMiniIcon
 import com.simats.aiskillmirror.ui.dashboard.BottomNavigationBar
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
@@ -988,7 +996,7 @@ fun CompletedPracticeCard(item: PracticeItem) {
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = "Score not available",
+                                text = "Score Not Available",
                                 color = Color(0xFFE65100),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -1269,10 +1277,11 @@ fun SessionCompletionDialog(
                                 )
                             } else {
                                 Text(
-                                    text = "Score not available",
+                                    text = "Performance Score Not Available",
                                     color = Color(0xFFE65100),
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
@@ -1440,9 +1449,35 @@ fun PracticeEvaluationModal(
     viewModel: DailyTrainingViewModel,
     onDismiss: () -> Unit
 ) {
-    var q1Answer by remember { mutableStateOf(true) }
-    var q2Answer by remember { mutableStateOf(true) }
-    var q3Answer by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    var permissionDeniedMessage by remember { mutableStateOf<String?>(null) }
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            permissionDeniedMessage = null
+            viewModel.startVoiceRecording(context)
+        } else {
+            permissionDeniedMessage = "Microphone permission is required to record your singing voice."
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val tempFile = File(context.cacheDir, "practice_artifact_${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(tempFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                viewModel.finishAndCompleteSession(imagePath = tempFile.absolutePath)
+            } catch (_: Exception) {}
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1497,7 +1532,7 @@ fun PracticeEvaluationModal(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "Submit your work for real AI scoring across ${uiState.activeSubcategoryName}.",
+                        text = "Submit your practical work for genuine AI scoring across ${uiState.activeSubcategoryName}.",
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
@@ -1510,7 +1545,434 @@ fun PracticeEvaluationModal(
                     val isPhoto = uiState.activeMainSkill.contains("photo", ignoreCase = true)
                     val isMusic = uiState.activeMainSkill.contains("music", ignoreCase = true)
 
-                    if (isCoding) {
+                    // 1. Music / Singing / Vocal Training (Requirement 4)
+                    if (isMusic) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "🎙️ Record Your Singing Voice",
+                                color = HeadingPurple,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Record your singing or vocal drill with the microphone. The AI acoustic analyzer calculates pitch accuracy, rhythm tempo, vowel pronunciation, and vocal clarity.",
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "⚠️ Notice: Background music playback, instrumental audio, or silence will NOT be scored. Please sing clearly into the microphone.",
+                                color = Color(0xFFD84315),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                lineHeight = 15.sp
+                            )
+
+                            if (permissionDeniedMessage != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(text = permissionDeniedMessage!!, color = Color(0xFFC2185B), fontSize = 11.sp)
+                            }
+                            if (uiState.audioRecordError != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(text = uiState.audioRecordError, color = Color(0xFFC2185B), fontSize = 11.sp)
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Stage 1: Assessment Complete - Display Real AI Performance Score & Feedback (Req 6, 7, 8, 14)
+                            if (uiState.isAnalysisComplete && uiState.lastSessionScoreResult != null) {
+                                val res = uiState.lastSessionScoreResult!!
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(Color(0xFFF6F2FF))
+                                            .border(1.dp, AccentPurple.copy(alpha = 0.4f), RoundedCornerShape(18.dp))
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "AI PERFORMANCE SCORE",
+                                                color = AccentPurple,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.6.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(
+                                                verticalAlignment = Alignment.Bottom,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = "${res.score ?: 0}",
+                                                    color = TextPrimary,
+                                                    fontSize = 38.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = " / 100",
+                                                    color = TextSecondary,
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.padding(bottom = 6.dp)
+                                                )
+                                            }
+
+                                            val scoreVal = res.score ?: 0
+                                            val scoreGrade = when {
+                                                scoreVal >= 90 -> "🏆 Exceptional Performance"
+                                                scoreVal >= 80 -> "⭐ High Proficiency"
+                                                scoreVal >= 70 -> "🎯 Solid Progress"
+                                                else -> "📈 Growing & Developing"
+                                            }
+                                            Text(
+                                                text = scoreGrade,
+                                                color = GreenNode,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+
+                                    // Strengths
+                                    if (res.strengths.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Text(text = "Key Strengths:", color = HeadingPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            res.strengths.forEach { str ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                                    verticalAlignment = Alignment.Top
+                                                ) {
+                                                    Text("✓ ", color = GreenNode, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                    Text(str, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Areas for Improvement
+                                    if (res.weaknesses.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Text(text = "Focus Areas:", color = Color(0xFFD84315), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            res.weaknesses.forEach { w ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                                    verticalAlignment = Alignment.Top
+                                                ) {
+                                                    Text("• ", color = Color(0xFFD84315), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                    Text(w, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Mira AI Feedback
+                                    if (res.aiFeedback.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(LightPurple.copy(alpha = 0.5f))
+                                                .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                                                .padding(10.dp)
+                                        ) {
+                                            Text(
+                                                text = "💬 Mira's Feedback: ${res.aiFeedback}",
+                                                color = TextPrimary,
+                                                fontSize = 11.sp,
+                                                lineHeight = 15.sp
+                                            )
+                                        }
+                                    }
+
+                                    // Metrics chips
+                                    if (res.metrics.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            res.metrics.forEach { (key, value) ->
+                                                val label = key.replace("_", " ").replaceFirstChar { it.uppercase() }
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(CardBackground)
+                                                        .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
+                                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                ) {
+                                                    Text("$label: $value", color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Button(
+                                        onClick = { viewModel.finishEvaluationAndDismiss() },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(48.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("✓ Done & Complete Practice (+35 XP)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                            // Stage 2: AI Analysis Running Spinner (Req 10, 11)
+                            else if (uiState.isEvaluatingArtifact) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(LightPurple.copy(alpha = 0.5f))
+                                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        CircularProgressIndicator(
+                                            color = AccentPurple,
+                                            modifier = Modifier.size(36.dp),
+                                            strokeWidth = 3.dp
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        Text(
+                                            text = "Mira AI is analyzing your singing...",
+                                            color = HeadingPurple,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Evaluating pitch stability, rhythmic timing, vowel articulation, and resonance...",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp,
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 15.sp
+                                        )
+                                    }
+                                }
+                            }
+                            // Stage 3: Recording In Progress (Req 2, 3)
+                            else if (uiState.isRecordingVoice) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFFFFEBEE))
+                                        .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(16.dp))
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(10.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color.Red)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "RECORDING IN PROGRESS...",
+                                                color = Color(0xFFC62828),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        val recSec = uiState.voiceRecordSeconds
+                                        Text(
+                                            text = String.format("%02d:%02d", recSec / 60, recSec % 60),
+                                            color = Color(0xFFB71C1C),
+                                            fontSize = 26.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Button(
+                                            onClick = { viewModel.stopVoiceRecording() },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Text("⏹️ Stop Recording", color = Color.White, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                            // Stage 4: Recorded Audio Ready for Preview & Submission (Req 4, 8, 9, 12)
+                            else if (!uiState.recordedAudioPath.isNullOrBlank()) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    // If an evaluation error occurred, show the exact problem and retry button
+                                    if (uiState.evaluationError != null) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .background(Color(0xFFFFEBEE))
+                                                .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
+                                                .padding(12.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = "⚠️ Evaluation Note",
+                                                    color = Color(0xFFC62828),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = uiState.evaluationError!!,
+                                                    color = Color(0xFF4E342E),
+                                                    fontSize = 11.sp,
+                                                    lineHeight = 15.sp
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color(0xFFE8F5E9))
+                                            .border(1.dp, Color(0xFFA5D6A7), RoundedCornerShape(16.dp))
+                                            .padding(14.dp)
+                                    ) {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column {
+                                                    Text(
+                                                        text = "✓ Singing Recorded",
+                                                        color = Color(0xFF2E7D32),
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        text = "${uiState.voiceRecordSeconds}s · Ready for AI evaluation",
+                                                        color = TextSecondary,
+                                                        fontSize = 11.sp
+                                                    )
+                                                }
+                                                Button(
+                                                    onClick = { viewModel.toggleVoicePlayback(context) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = GreenNode),
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (uiState.isPlayingVoice) "⏸️ Pause" else "▶️ Listen",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Button(
+                                                    onClick = { viewModel.clearVoiceRecording() },
+                                                    modifier = Modifier.weight(1f),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text("🔄 Retake", color = TextSecondary, fontSize = 12.sp)
+                                                }
+                                                Button(
+                                                    onClick = {
+                                                        viewModel.submitSingingVoiceForAnalysis()
+                                                    },
+                                                    modifier = Modifier.weight(2f),
+                                                    enabled = !uiState.isEvaluatingArtifact,
+                                                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (uiState.canRetryAnalysis) "🔄 Retry Analysis" else "📊 Submit for AI Analysis",
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Stage 5: Ready to Record (Req 1, 2)
+                            else {
+                                if (uiState.evaluationError != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .background(Color(0xFFFFEBEE))
+                                            .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = uiState.evaluationError!!,
+                                            color = Color(0xFFC62828),
+                                            fontSize = 11.sp,
+                                            lineHeight = 15.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                }
+
+                                Button(
+                                    onClick = {
+                                        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                                        if (hasPerm) {
+                                            permissionDeniedMessage = null
+                                            viewModel.startVoiceRecording(context)
+                                        } else {
+                                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🎙️", fontSize = 18.sp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Tap to Record Singing", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // 2. Coding (Requirement 5)
+                    else if (isCoding) {
                         Text(text = "Enter or paste your code solution:", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
@@ -1531,14 +1993,16 @@ fun PracticeEvaluationModal(
                             onClick = {
                                 viewModel.finishAndCompleteSession(codeSnippet = uiState.codeSnippetInput)
                             },
-                            enabled = !uiState.isCompleting,
+                            enabled = !uiState.isCompleting && uiState.codeSnippetInput.isNotBlank(),
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Assess Code Correctness & Finish", color = Color.White, fontWeight = FontWeight.Bold)
                         }
-                    } else if (isSpeaking) {
+                    }
+                    // 3. Public Speaking (Requirement 5)
+                    else if (isSpeaking) {
                         Text(text = "Enter your speech transcript / notes:", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
@@ -1559,104 +2023,62 @@ fun PracticeEvaluationModal(
                             onClick = {
                                 viewModel.finishAndCompleteSession(transcript = uiState.speechTranscriptInput)
                             },
-                            enabled = !uiState.isCompleting,
+                            enabled = !uiState.isCompleting && uiState.speechTranscriptInput.isNotBlank(),
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Assess Speech Clarity & Pace", color = Color.White, fontWeight = FontWeight.Bold)
                         }
-                    } else {
-                        // Checkpoint Challenge for Music, Drawing, Photography
-                        Text(text = "Skill Checkpoint Challenge:", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val q1 = when {
-                            isMusic -> "Maintained steady tempo rhythm throughout practice?"
-                            isDrawing -> "Proper contour proportion and cross-hatching depth?"
-                            isPhoto -> "Subject positioned along rule-of-thirds grid line?"
-                            else -> "Executed all core warm-up steps accurately?"
-                        }
-                        val q2 = when {
-                            isMusic -> "Clean finger placement with zero fret buzz / muted notes?"
-                            isDrawing -> "Applied variable line weight for depth separation?"
-                            isPhoto -> "Accurately metered exposure without blown-out highlights?"
-                            else -> "Completed minimum 10 uninterrupted repetitions?"
-                        }
-                        val q3 = when {
-                            isMusic -> "Consistent pitch stability across key chord changes?"
-                            isDrawing -> "Balanced overall geometric symmetry and perspective?"
-                            isPhoto -> "Maintained crisp subject sharpness and steady shutter?"
-                            else -> "Verified technique against benchmark standard?"
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { q1Answer = !q1Answer }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(text = if (q1Answer) "☑" else "☐", color = if (q1Answer) GreenNode else TextSecondary, fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = q1, color = TextPrimary, fontSize = 12.sp)
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { q2Answer = !q2Answer }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(text = if (q2Answer) "☑" else "☐", color = if (q2Answer) GreenNode else TextSecondary, fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = q2, color = TextPrimary, fontSize = 12.sp)
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { q3Answer = !q3Answer }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(text = if (q3Answer) "☑" else "☐", color = if (q3Answer) GreenNode else TextSecondary, fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = q3, color = TextPrimary, fontSize = 12.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Button(
-                            onClick = {
-                                val answers = listOf(
-                                    Pair(1, q1Answer),
-                                    Pair(2, q2Answer),
-                                    Pair(3, q3Answer)
-                                )
-                                viewModel.finishAndCompleteSession(quizAnswers = answers)
-                            },
-                            enabled = !uiState.isCompleting,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Submit Checkpoint & Calculate Score", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    // 4. Drawing & Photography (Requirement 5)
+                    else {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = if (isDrawing) "🎨 Upload Drawing Artwork" else "📸 Upload Photograph",
+                                color = HeadingPurple,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isDrawing)
+                                    "Take or select a photo of your sketch to evaluate line strokes, proportion balance, and shading depth."
+                                else
+                                    "Take or select a photograph to evaluate rule-of-thirds composition, lighting balance, and focal sharpness.",
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("📁 Choose Image for AI Analysis", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Option to skip evaluation and finish timer only
-                    Button(
-                        onClick = {
-                            viewModel.finishAndCompleteSession()
-                        },
-                        enabled = !uiState.isCompleting,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Finish Without Score (Log Time & XP Only)", color = TextSecondary, fontSize = 12.sp)
+                    // Option to skip evaluation and finish timer only (Requirements 2, 6, 10)
+                    if (!uiState.isAnalysisComplete && !uiState.isEvaluatingArtifact) {
+                        Button(
+                            onClick = {
+                                viewModel.finishAndCompleteSession()
+                            },
+                            enabled = !uiState.isCompleting,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Finish Without Score (Log Time & XP Only)", color = TextSecondary, fontSize = 12.sp)
+                        }
                     }
                 }
             }

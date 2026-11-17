@@ -1256,8 +1256,28 @@ object ApiClient {
                 if (subcategoryId.isNotBlank()) put("subcategory_id", subcategoryId)
                 if (!codeSnippet.isNullOrBlank()) put("code_snippet", codeSnippet)
                 if (!transcript.isNullOrBlank()) put("transcript", transcript)
-                if (!audioPath.isNullOrBlank()) put("audio_path", audioPath)
-                if (!imagePath.isNullOrBlank()) put("image_path", imagePath)
+                if (!audioPath.isNullOrBlank()) {
+                    put("audio_path", audioPath)
+                    try {
+                        val aFile = java.io.File(audioPath)
+                        if (aFile.exists() && aFile.length() > 0) {
+                            val bytes = aFile.readBytes()
+                            val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                            put("audio_base64", b64)
+                        }
+                    } catch (_: Exception) {}
+                }
+                if (!imagePath.isNullOrBlank()) {
+                    put("image_path", imagePath)
+                    try {
+                        val iFile = java.io.File(imagePath)
+                        if (iFile.exists() && iFile.length() > 0) {
+                            val bytes = iFile.readBytes()
+                            val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                            put("image_base64", b64)
+                        }
+                    } catch (_: Exception) {}
+                }
                 if (!quizAnswers.isNullOrEmpty()) {
                     val qArr = JSONArray()
                     quizAnswers.forEach { (qId, isCorr) ->
