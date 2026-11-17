@@ -293,6 +293,7 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.ROADMAP)
                                     },
                                     onContinueTrainingClick = {
+                                        dailyTrainingViewModel.loadTraining()
                                         navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onOpenAiCoachClick = {
@@ -401,6 +402,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = roadmapViewModel,
                                     onTabSelected = ::handleTabSelected,
                                     onContinueActiveWeekClick = {
+                                        dailyTrainingViewModel.loadTraining()
                                         navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onFilterClick = {

@@ -62,12 +62,16 @@ class AiCoachViewModel : ViewModel() {
             val optimisticMsg = ChatMessage(
                 id = System.currentTimeMillis().toString(),
                 text = text,
-                isUser = true
+                isUser = true,
+                timestamp = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date())
             )
             val updatedMessages = _uiState.value.messages + optimisticMsg
             _uiState.value = _uiState.value.copy(
                 messages = updatedMessages,
-                currentInputText = ""
+                currentInputText = "",
+                isTyping = true,
+                errorMessage = null,
+                lastFailedMessage = null
             )
 
             viewModelScope.launch {
@@ -85,12 +89,33 @@ class AiCoachViewModel : ViewModel() {
                     )
                     _uiState.value = _uiState.value.copy(
                         messages = _uiState.value.messages + coachReply,
-                        latestAiVoiceResponse = coachReply.text
+                        latestAiVoiceResponse = coachReply.text,
+                        isTyping = false,
+                        errorMessage = null,
+                        lastFailedMessage = null
                     )
+                } else {
+                    val errMsg = result.message?.ifBlank { "Could not connect to AI Coach" } ?: "Could not connect to AI Coach"
+                    _uiState.value = _uiState.value.copy(
+                        isTyping = false,
+                        errorMessage = errMsg,
+                        lastFailedMessage = text
+                    )
+                    _eventChannel.send(AiCoachUiEvent.ShowToast(errMsg))
                 }
                 _eventChannel.send(AiCoachUiEvent.SendMessage)
             }
         }
+    }
+
+    fun onRetryLastMessage() {
+        val failedText = _uiState.value.lastFailedMessage ?: return
+        _uiState.value = _uiState.value.copy(
+            currentInputText = failedText,
+            errorMessage = null,
+            lastFailedMessage = null
+        )
+        onSendMessage()
     }
 
     // Voice Chat Controls

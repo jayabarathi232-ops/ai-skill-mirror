@@ -4,12 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simats.aiskillmirror.data.network.ApiClient
 import com.simats.aiskillmirror.data.network.UserSession
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
 
 class DailyTrainingViewModel : ViewModel() {
 
@@ -18,6 +21,8 @@ class DailyTrainingViewModel : ViewModel() {
 
     private val _eventChannel = Channel<DailyTrainingUiEvent>()
     val events = _eventChannel.receiveAsFlow()
+
+    private var sessionTimerJob: Job? = null
 
     init {
         loadTraining()
@@ -35,7 +40,13 @@ class DailyTrainingViewModel : ViewModel() {
                         category = it.category,
                         durationText = it.durationText,
                         xpText = it.xpText,
-                        isCompleted = it.isCompleted
+                        isCompleted = it.isCompleted,
+                        performanceScore = it.performanceScore,
+                        scoreStatus = it.scoreStatus,
+                        scoreReason = it.scoreReason,
+                        strengths = it.strengths,
+                        weaknesses = it.weaknesses,
+                        aiFeedback = it.aiFeedback
                     )
                 }
 
@@ -73,9 +84,9 @@ class DailyTrainingViewModel : ViewModel() {
                     activeMainSkill = sub?.mainSkill ?: _uiState.value.activeMainSkill,
                     activeProficiencyLevel = sub?.proficiencyLevel ?: _uiState.value.activeProficiencyLevel,
                     activeLearningGoal = sub?.learningGoal ?: _uiState.value.activeLearningGoal,
-                    subcatXp = sub?.xpEarned ?: _uiState.value.subcatXp,
-                    subcatLessonsCount = sub?.lessonsCompleted ?: _uiState.value.subcatLessonsCount,
-                    subcatMinutes = sub?.practiceMinutes ?: _uiState.value.subcatMinutes,
+                    subcatXp = sub?.xpEarned ?: 0,
+                    subcatLessonsCount = sub?.lessonsCompleted ?: 0,
+                    subcatMinutes = sub?.practiceMinutes ?: 0,
                     stepByStepInstructions = if (d.stepByStepInstructions.isNotEmpty()) d.stepByStepInstructions else _uiState.value.stepByStepInstructions,
                     beginnerExercises = if (d.beginnerExercises.isNotEmpty()) d.beginnerExercises else _uiState.value.beginnerExercises,
                     practiceChallenges = if (d.practiceChallenges.isNotEmpty()) d.practiceChallenges else _uiState.value.practiceChallenges,
@@ -86,38 +97,167 @@ class DailyTrainingViewModel : ViewModel() {
         }
     }
 
-    fun completeCurrentLesson(lessonId: String = "1", durationMinutes: Int = 10, xp: Int = 35) {
+    // ==========================================
+    // Real Practice Session Timer Management
+    // ==========================================
+
+    fun startPracticeSession() {
+        sessionTimerJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            isSessionActive = true,
+            isSessionPaused = false,
+            elapsedSeconds = 0,
+            formattedElapsed = "00:00",
+            completionCelebration = null,
+            lastSessionScoreResult = null,
+            showSessionCompletionDialog = false
+        )
+
+        sessionTimerJob = viewModelScope.launch {
+            while (true) {
+                delay(1000L)
+                val current = _uiState.value
+                if (current.isSessionActive && !current.isSessionPaused) {
+                    val nextSec = current.elapsedSeconds + 1
+                    val m = nextSec / 60
+                    val s = nextSec % 60
+                    val formatted = String.format("%02d:%02d", m, s)
+                    _uiState.value = current.copy(
+                        elapsedSeconds = nextSec,
+                        formattedElapsed = formatted
+                    )
+                }
+            }
+        }
+    }
+
+    fun pausePracticeSession() {
+        _uiState.value = _uiState.value.copy(isSessionPaused = true)
+    }
+
+    fun resumePracticeSession() {
+        _uiState.value = _uiState.value.copy(isSessionPaused = false)
+    }
+
+    fun cancelPracticeSession() {
+        sessionTimerJob?.cancel()
+        sessionTimerJob = null
+        _uiState.value = _uiState.value.copy(
+            isSessionActive = false,
+            isSessionPaused = false,
+            elapsedSeconds = 0,
+            formattedElapsed = "00:00"
+        )
+    }
+
+    fun finishAndCompleteSession(
+        codeSnippet: String? = null,
+        transcript: String? = null,
+        quizAnswers: List<Pair<Int, Boolean>>? = null,
+        audioPath: String? = null,
+        imagePath: String? = null
+    ) {
+        sessionTimerJob?.cancel()
+        sessionTimerJob = null
+
+        val current = _uiState.value
+        val actualSeconds = current.elapsedSeconds
+        // Count actual minutes: at least 1 min for completed session
+        val actualMinutes = maxOf(1, ceil(actualSeconds / 60.0).toInt())
+        val lessonId = current.pendingPracticeItems.firstOrNull()?.id ?: "1"
+        val taskTitle = current.upNextTitle
+        val mainSkill = current.activeMainSkill
+        val subcategoryId = current.activeSubcategoryName.lowercase().replace(" ", "_").replace("/", "_")
+
+        val codeToSend = codeSnippet?.takeIf { it.isNotBlank() } ?: current.codeSnippetInput.takeIf { it.isNotBlank() }
+        val transcriptToSend = transcript?.takeIf { it.isNotBlank() } ?: current.speechTranscriptInput.takeIf { it.isNotBlank() }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCompleting = true)
+
+            // Submit actual recorded duration & optional evaluation artifact to backend database
             val result = ApiClient.completeLesson(
                 userId = UserSession.userId,
                 lessonId = lessonId,
-                durationMinutes = durationMinutes,
-                xpPoints = xp
+                taskTitle = taskTitle,
+                durationSeconds = actualSeconds,
+                durationMinutes = actualMinutes,
+                xpPoints = 35,
+                mainSkill = mainSkill,
+                subcategoryId = subcategoryId,
+                codeSnippet = codeToSend,
+                transcript = transcriptToSend,
+                quizAnswers = quizAnswers,
+                audioPath = audioPath,
+                imagePath = imagePath
             )
+
+            val scoreRes = result.data?.performanceScore?.let { ps ->
+                PerformanceScoreResult(
+                    score = ps.score,
+                    scoreStatus = ps.scoreStatus,
+                    scoreReason = ps.scoreReason,
+                    strengths = ps.strengths,
+                    weaknesses = ps.weaknesses,
+                    aiFeedback = ps.aiFeedback,
+                    metrics = ps.metrics,
+                    assessmentType = ps.assessmentType,
+                    taskTitle = ps.taskTitle.ifBlank { taskTitle },
+                    durationMinutes = actualMinutes,
+                    xpEarned = ps.xpEarned
+                )
+            }
+
             _uiState.value = _uiState.value.copy(
                 isCompleting = false,
-                completionCelebration = "Great job! +$xp XP earned & session recorded."
+                isSessionActive = false,
+                isSessionPaused = false,
+                elapsedSeconds = 0,
+                formattedElapsed = "00:00",
+                lastSessionScoreResult = scoreRes,
+                showSessionCompletionDialog = true,
+                showEvaluationModal = false,
+                codeSnippetInput = "",
+                speechTranscriptInput = "",
+                completionCelebration = "🎉 Session completed in ${actualSeconds}s ($actualMinutes min)! +35 XP earned and recorded."
             )
-            // Reload training stats
+
+            // Refresh from database to load real saved metrics
             loadTraining()
         }
     }
 
-    fun clearCelebration() {
-        _uiState.value = _uiState.value.copy(completionCelebration = null)
+    // Evaluation modal helpers
+    fun openEvaluationModal() {
+        _uiState.value = _uiState.value.copy(showEvaluationModal = true)
     }
 
-    fun onStartPracticeClick() {
-        // Complete practice lesson and trigger event
-        completeCurrentLesson(
-            lessonId = "1",
-            durationMinutes = 10,
-            xp = 35
-        )
-        viewModelScope.launch {
-            _eventChannel.send(DailyTrainingUiEvent.StartPracticeSession)
-        }
+    fun closeEvaluationModal() {
+        _uiState.value = _uiState.value.copy(showEvaluationModal = false)
+    }
+
+    fun onCodeSnippetChange(code: String) {
+        _uiState.value = _uiState.value.copy(codeSnippetInput = code)
+    }
+
+    fun onSpeechTranscriptChange(transcript: String) {
+        _uiState.value = _uiState.value.copy(speechTranscriptInput = transcript)
+    }
+
+    fun dismissCompletionDialog() {
+        _uiState.value = _uiState.value.copy(showSessionCompletionDialog = false)
+    }
+
+    fun openItemDetail(item: PracticeItem) {
+        _uiState.value = _uiState.value.copy(selectedItemForDetail = item)
+    }
+
+    fun closeItemDetail() {
+        _uiState.value = _uiState.value.copy(selectedItemForDetail = null)
+    }
+
+    fun clearCelebration() {
+        _uiState.value = _uiState.value.copy(completionCelebration = null)
     }
 
     fun onSwitchSubcategoryClick() {
@@ -136,5 +276,10 @@ class DailyTrainingViewModel : ViewModel() {
         viewModelScope.launch {
             _eventChannel.send(DailyTrainingUiEvent.NavigateBack)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        sessionTimerJob?.cancel()
     }
 }

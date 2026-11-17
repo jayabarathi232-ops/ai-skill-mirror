@@ -1,5 +1,10 @@
 package com.simats.aiskillmirror.ui.roadmap
 
+import com.simats.aiskillmirror.data.network.CompleteTopicResultData
+import com.simats.aiskillmirror.data.network.RoadmapAiFeedbackData
+import com.simats.aiskillmirror.data.network.RoadmapStageData
+import com.simats.aiskillmirror.data.network.SubcategoryItemData
+
 data class UpcomingStepItem(
     val id: String,
     val title: String,
@@ -15,39 +20,49 @@ enum class RoadmapIconType {
 }
 
 data class GrowthRoadmapUiState(
-    val headerTitle: String = "Your growth roadmap",
+    val headerTitle: String = "Your Growth Roadmap",
     val headerCategory: String = "PERSONALIZED BY AI",
-    val currentWeekBadgeText: String = "WEEK 2 OF 4",
-    val planTitle: String = "Your career-ready plan.",
-    val planSubtitle: String = "Built for Maya · 20 min/day · Target score 85",
-    val planProgress: Float = 0.3f,
-    val planProgressText: String = "Week 1 complete · 6 of 20 lessons done",
-    val activeStepTitle: String = "Communicate with impact",
-    val activeStepSubtitle: String = "Week 2 · 3 of 5 lessons complete",
-    val activeStepProgressPercentage: String = "60%",
-    val activeStepDescription: String = "Build clarity with structured answers.",
-    val activeStepTags: List<String> = listOf("AI recommended", "Communication 72"),
-    val upcomingSteps: List<UpcomingStepItem> = listOf(
-        UpcomingStepItem(
-            id = "w3",
-            title = "Think through challenges",
-            subtitle = "Week 3 · Logic & problem solving",
-            lessonCountText = "5 lessons",
-            iconType = RoadmapIconType.LOGIC
-        ),
-        UpcomingStepItem(
-            id = "w4",
-            title = "Own your interview",
-            subtitle = "Week 4 · Mock interviews & review",
-            lessonCountText = "5 lessons",
-            iconType = RoadmapIconType.INTERVIEW
-        )
-    ),
-    val continueButtonText: String = "Continue week 2"
+    val activeSubcategory: SubcategoryItemData? = null,
+    val availableSubcategories: List<SubcategoryItemData> = emptyList(),
+    val stages: List<RoadmapStageData> = emptyList(),
+    val activeStage: RoadmapStageData? = null,
+    val completedStagesCount: Int = 0,
+    val totalStagesCount: Int = 5,
+    val roadmapProgressFraction: Float = 0.0f,
+    val roadmapProgressPercentage: Int = 0,
+    val roadmapProgressText: String = "0 of 5 Stages Completed · 0%",
+    val totalPracticeMinutes: Int = 0,
+    val aiFeedback: RoadmapAiFeedbackData? = null,
+    val isLoading: Boolean = false,
+    val statusMessage: String? = null,
+
+    // Stage Assessment Quiz Modal State
+    val isQuizDialogOpen: Boolean = false,
+    val quizStage: RoadmapStageData? = null,
+    val quizAnswers: Map<Int, Int> = emptyMap(),
+    val quizResult: CompleteTopicResultData? = null,
+    val isSubmittingQuiz: Boolean = false,
+    val quizError: String? = null,
+
+    // Legacy backward-compatibility fields
+    val currentWeekBadgeText: String = "BEGINNER LEVEL",
+    val planTitle: String = "Personalized Learning Plan",
+    val planSubtitle: String = "Built for you · 0 min practiced",
+    val planProgress: Float = 0.0f,
+    val planProgressText: String = "0 of 5 lessons completed",
+    val activeStepTitle: String = "Stage 1 Practice",
+    val activeStepSubtitle: String = "Beginner · 15 mins",
+    val activeStepProgressPercentage: String = "0%",
+    val activeStepDescription: String = "Start your structured learning path.",
+    val activeStepTags: List<String> = listOf("AI Guided", "Beginner Track"),
+    val upcomingSteps: List<UpcomingStepItem> = emptyList(),
+    val continueButtonText: String = "Start Learning"
 )
 
 sealed interface GrowthRoadmapUiEvent {
     object ContinueActiveWeek : GrowthRoadmapUiEvent
+    data class StartPracticeStage(val stage: RoadmapStageData) : GrowthRoadmapUiEvent
     object OpenFilterSettings : GrowthRoadmapUiEvent
     object NavigateBack : GrowthRoadmapUiEvent
+    data class ShowToast(val message: String) : GrowthRoadmapUiEvent
 }

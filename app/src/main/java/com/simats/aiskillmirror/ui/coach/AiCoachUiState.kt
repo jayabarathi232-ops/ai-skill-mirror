@@ -9,35 +9,28 @@ data class ChatMessage(
 
 data class AiCoachUiState(
     val coachName: String = "Mira, your AI coach",
-    val statusText: String = "ONLINE · PERSONALISED FOR MAYA",
+    val statusText: String = "ONLINE · PERSONALISED AI COACH",
     val bannerNoticeText: String = "Guided by your skills, goals, and learning plan",
-    val timestampHeader: String = "Today · 9:41 AM",
-    val messages: List<ChatMessage> = listOf(
-        ChatMessage(
-            id = "1",
-            text = "Morning, Maya! Your technical score is 86. Let's help your communication catch up. What would you like to work on?",
-            isUser = false
-        ),
-        ChatMessage(
-            id = "2",
-            text = "How can I explain my project better in an interview?",
-            isUser = true
-        ),
-        ChatMessage(
-            id = "3",
-            text = "Try the STAR method. It keeps your answer focused and easy to follow:\n\nS - Set the scene\nT - Explain your responsibility\nA - Describe what you did\nR - Share a measurable result\n\nFor your study app, lead with the problem it solved. Want to practice a 60-second answer?",
-            isUser = false
-        )
+    val timestampHeader: String = "Today",
+    val messages: List<ChatMessage> = emptyList(),
+    val suggestionChips: List<String> = listOf(
+        "How can I improve my skills?",
+        "Give me a daily practice task",
+        "Explain Python basics",
+        "How can I improve my photography?",
+        "Tamil Coaching"
     ),
-    val suggestionChips: List<String> = listOf("Let's practice", "Show me an example", "Tamil Coaching"),
     val currentInputText: String = "",
+    val isTyping: Boolean = false,
+    val errorMessage: String? = null,
+    val lastFailedMessage: String? = null,
     // Voice Chat State
     val isVoiceModeActive: Boolean = false,
     val voiceState: VoiceCoachState = VoiceCoachState.IDLE,
     val voiceLanguage: VoiceLanguage = VoiceLanguage.ENGLISH,
     val userSpokenText: String = "",
     val isEditingSpokenText: Boolean = false,
-    val latestAiVoiceResponse: String = "Hi, I'm Mira! Ask me anything about your sports, dance, singing, photography, coding, drawing, or public speaking progress.",
+    val latestAiVoiceResponse: String = "Hi, I'm Mira! Ask me anything about your coding, photography, drawing, music, or public speaking progress.",
     val audioRmsLevel: Float = 0f,
     val isContinuousMode: Boolean = true,
     val isAudioMuted: Boolean = false,

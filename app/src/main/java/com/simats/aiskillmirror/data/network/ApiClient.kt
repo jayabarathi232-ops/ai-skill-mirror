@@ -115,19 +115,87 @@ data class RoadmapStepData(
     val iconType: String
 )
 
+data class RoadmapTaskData(
+    val id: String,
+    val title: String,
+    val durationText: String = "10 mins",
+    val isDone: Boolean = false
+)
+
+data class RoadmapQuestionData(
+    val id: Int,
+    val question: String,
+    val options: List<String> = emptyList(),
+    val correct: Int = 0,
+    val explanation: String = ""
+)
+
+data class RoadmapStageData(
+    val id: Int,
+    val stageOrder: Int,
+    val stageLevel: String,
+    val topicName: String,
+    val topicDescription: String,
+    val learningObjectives: List<String> = emptyList(),
+    val practiceInstructions: String = "",
+    val estimatedDuration: String = "15 mins",
+    val difficulty: String = "Beginner",
+    val isCompleted: Boolean = false,
+    val isUnlocked: Boolean = false,
+    val scoreAchieved: Int? = null,
+    val needsRemedial: Boolean = false,
+    val remedialFeedback: String = "",
+    val practiceTasks: List<RoadmapTaskData> = emptyList(),
+    val assessmentQuestions: List<RoadmapQuestionData> = emptyList()
+)
+
+data class RoadmapAiFeedbackData(
+    val coachAdvice: String = "",
+    val hasRemedialAlert: Boolean = false,
+    val remedialFeedback: String = "",
+    val strengths: List<String> = emptyList(),
+    val nextGoal: String = ""
+)
+
+data class CompleteTopicResultData(
+    val passed: Boolean,
+    val score: Int,
+    val xpAwarded: Int,
+    val message: String,
+    val nextTopicUnlocked: String? = null,
+    val remedialAdvice: String? = null,
+    val remedialFeedback: String? = remedialAdvice,
+    val promotedLevel: String? = null
+)
+
 data class GrowthRoadmapData(
-    val currentWeekBadgeText: String,
-    val planTitle: String,
-    val planSubtitle: String,
-    val planProgress: Double,
-    val planProgressText: String,
-    val activeStepTitle: String,
-    val activeStepSubtitle: String,
-    val activeStepProgressPercentage: String,
-    val activeStepDescription: String,
-    val activeStepTags: List<String>,
-    val upcomingSteps: List<RoadmapStepData>,
-    val continueButtonText: String
+    val userId: Int = 1,
+    val activeSubcategory: SubcategoryItemData? = null,
+    val availableSubcategories: List<SubcategoryItemData> = emptyList(),
+    val roadmapProgress: Float = 0.0f,
+    val roadmapProgressPercentage: Int = 0,
+    val roadmapProgressText: String = "",
+    val completedCount: Int = 0,
+    val totalCount: Int = 5,
+    val totalPracticeMinutes: Int = 0,
+    val currentStageTitle: String = "",
+    val currentStageOrder: Int = 1,
+    val stages: List<RoadmapStageData> = emptyList(),
+    val aiFeedback: RoadmapAiFeedbackData? = null,
+
+    // Legacy fields
+    val currentWeekBadgeText: String = "",
+    val planTitle: String = "",
+    val planSubtitle: String = "",
+    val planProgress: Double = 0.0,
+    val planProgressText: String = "",
+    val activeStepTitle: String = "",
+    val activeStepSubtitle: String = "",
+    val activeStepProgressPercentage: String = "",
+    val activeStepDescription: String = "",
+    val activeStepTags: List<String> = emptyList(),
+    val upcomingSteps: List<RoadmapStepData> = emptyList(),
+    val continueButtonText: String = ""
 )
 
 data class TrainingLessonItem(
@@ -136,7 +204,75 @@ data class TrainingLessonItem(
     val category: String,
     val durationText: String,
     val xpText: String,
-    val isCompleted: Boolean
+    val isCompleted: Boolean,
+    val performanceScore: Int? = null,
+    val scoreStatus: String = "not_available",
+    val scoreReason: String? = null,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = ""
+)
+
+data class PerformanceScoreData(
+    val score: Int? = null,
+    val scoreStatus: String = "not_available",
+    val scoreReason: String? = null,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val assessmentType: String = "none",
+    val taskTitle: String = "",
+    val durationMinutes: Int = 0,
+    val xpEarned: Int = 35
+)
+
+data class LessonCompleteResultData(
+    val lessonId: String?,
+    val minutesToday: Int,
+    val goalMinutesToday: Int,
+    val streakDays: Int,
+    val xpPoints: Int,
+    val activeSubcategory: SubcategoryItemData?,
+    val performanceScore: PerformanceScoreData,
+    val trainingData: DailyTrainingData? = null
+)
+
+data class RecentPracticeScoreData(
+    val id: Int,
+    val taskTitle: String,
+    val mainSkill: String,
+    val subcategoryName: String,
+    val durationMinutes: Int,
+    val durationText: String,
+    val xpAwarded: Int,
+    val score: Int?,
+    val scoreStatus: String,
+    val scoreReason: String?,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val dateText: String
+)
+
+data class ProgressSkillItemData(
+    val name: String,
+    val score: Int,
+    val maxScore: Int = 100,
+    val isTopTier: Boolean = false
+)
+
+data class ProgressAnalyticsData(
+    val overallScore: Int,
+    val pointsGainText: String,
+    val scoreRangeText: String,
+    val totalSessions: Int,
+    val sessionsWeeklyGainText: String,
+    val timeInvestedText: String,
+    val timeWeeklyGainText: String,
+    val skillItems: List<ProgressSkillItemData>,
+    val recentPracticeScores: List<RecentPracticeScoreData> = emptyList()
 )
 
 data class SubcategoryItemData(
@@ -752,13 +888,143 @@ object ApiClient {
         }
     }
 
-    suspend fun fetchRoadmap(userId: Int): NetworkResult<GrowthRoadmapData> = withContext(Dispatchers.IO) {
+    suspend fun fetchRoadmap(userId: Int, subcategoryId: String? = null): NetworkResult<GrowthRoadmapData> = withContext(Dispatchers.IO) {
         try {
-            val (code, text) = getJson("roadmap/roadmap_fetch.php?user_id=$userId")
+            val query = if (!subcategoryId.isNullOrBlank()) {
+                "roadmap/roadmap_fetch.php?user_id=$userId&subcategory_id=$subcategoryId"
+            } else {
+                "roadmap/roadmap_fetch.php?user_id=$userId"
+            }
+            val (code, text) = getJson(query)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val d = json.getJSONObject("data")
-                val arr = d.getJSONArray("upcomingSteps")
+
+                var activeSub: SubcategoryItemData? = null
+                if (d.has("activeSubcategory") && !d.isNull("activeSubcategory")) {
+                    val asObj = d.getJSONObject("activeSubcategory")
+                    activeSub = SubcategoryItemData(
+                        id = asObj.optInt("id"),
+                        mainSkill = asObj.optString("mainSkill"),
+                        subcategoryId = asObj.optString("subcategoryId"),
+                        subcategoryName = asObj.optString("subcategoryName"),
+                        proficiencyLevel = asObj.optString("proficiencyLevel"),
+                        learningGoal = asObj.optString("learningGoal"),
+                        isActive = asObj.optBoolean("isActive", true),
+                        xpEarned = asObj.optInt("xpEarned"),
+                        lessonsCompleted = asObj.optInt("lessonsCompleted"),
+                        practiceMinutes = asObj.optInt("practiceMinutes")
+                    )
+                }
+
+                val availSubs = mutableListOf<SubcategoryItemData>()
+                val avArr = d.optJSONArray("availableSubcategories")
+                if (avArr != null) {
+                    for (i in 0 until avArr.length()) {
+                        val so = avArr.getJSONObject(i)
+                        availSubs.add(
+                            SubcategoryItemData(
+                                id = so.optInt("id"),
+                                mainSkill = so.optString("mainSkill"),
+                                subcategoryId = so.optString("subcategoryId"),
+                                subcategoryName = so.optString("subcategoryName"),
+                                proficiencyLevel = so.optString("proficiencyLevel"),
+                                learningGoal = so.optString("learningGoal"),
+                                isActive = so.optBoolean("isActive", false),
+                                xpEarned = so.optInt("xpEarned"),
+                                lessonsCompleted = so.optInt("lessonsCompleted"),
+                                practiceMinutes = so.optInt("practiceMinutes")
+                            )
+                        )
+                    }
+                }
+
+                val stagesList = mutableListOf<RoadmapStageData>()
+                val stArr = d.optJSONArray("stages")
+                if (stArr != null) {
+                    for (i in 0 until stArr.length()) {
+                        val st = stArr.getJSONObject(i)
+
+                        val objList = mutableListOf<String>()
+                        st.optJSONArray("learningObjectives")?.let { oa ->
+                            for (j in 0 until oa.length()) objList.add(oa.getString(j))
+                        }
+
+                        val taskList = mutableListOf<RoadmapTaskData>()
+                        st.optJSONArray("practiceTasks")?.let { ta ->
+                            for (j in 0 until ta.length()) {
+                                val to = ta.getJSONObject(j)
+                                taskList.add(
+                                    RoadmapTaskData(
+                                        id = to.optString("id"),
+                                        title = to.optString("title"),
+                                        durationText = to.optString("durationText", "10 mins"),
+                                        isDone = to.optBoolean("isDone", false)
+                                    )
+                                )
+                            }
+                        }
+
+                        val questList = mutableListOf<RoadmapQuestionData>()
+                        st.optJSONArray("assessmentQuestions")?.let { qa ->
+                            for (j in 0 until qa.length()) {
+                                val qo = qa.getJSONObject(j)
+                                val optList = mutableListOf<String>()
+                                qo.optJSONArray("options")?.let { opa ->
+                                    for (k in 0 until opa.length()) optList.add(opa.getString(k))
+                                }
+                                questList.add(
+                                    RoadmapQuestionData(
+                                        id = qo.optInt("id"),
+                                        question = qo.optString("question"),
+                                        options = optList,
+                                        correct = qo.optInt("correct", 0),
+                                        explanation = qo.optString("explanation", "")
+                                    )
+                                )
+                            }
+                        }
+
+                        stagesList.add(
+                            RoadmapStageData(
+                                id = st.optInt("id"),
+                                stageOrder = st.optInt("stageOrder", 1),
+                                stageLevel = st.optString("stageLevel", "Beginner"),
+                                topicName = st.optString("topicName"),
+                                topicDescription = st.optString("topicDescription"),
+                                learningObjectives = objList,
+                                practiceInstructions = st.optString("practiceInstructions", ""),
+                                estimatedDuration = st.optString("estimatedDuration", "15 mins"),
+                                difficulty = st.optString("difficulty", "Beginner"),
+                                isCompleted = st.optBoolean("isCompleted", false),
+                                isUnlocked = st.optBoolean("isUnlocked", false),
+                                scoreAchieved = if (st.isNull("scoreAchieved")) null else st.optInt("scoreAchieved"),
+                                needsRemedial = st.optBoolean("needsRemedial", false),
+                                remedialFeedback = st.optString("remedialFeedback", ""),
+                                practiceTasks = taskList,
+                                assessmentQuestions = questList
+                            )
+                        )
+                    }
+                }
+
+                var aiFeedback: RoadmapAiFeedbackData? = null
+                if (d.has("aiFeedback") && !d.isNull("aiFeedback")) {
+                    val fb = d.getJSONObject("aiFeedback")
+                    val strengthsList = mutableListOf<String>()
+                    fb.optJSONArray("strengths")?.let { sa ->
+                        for (i in 0 until sa.length()) strengthsList.add(sa.getString(i))
+                    }
+                    aiFeedback = RoadmapAiFeedbackData(
+                        coachAdvice = fb.optString("coachAdvice", ""),
+                        hasRemedialAlert = fb.optBoolean("hasRemedialAlert", false),
+                        remedialFeedback = fb.optString("remedialFeedback", ""),
+                        strengths = strengthsList,
+                        nextGoal = fb.optString("nextGoal", "")
+                    )
+                }
+
+                val arr = d.optJSONArray("upcomingSteps") ?: JSONArray()
                 val steps = mutableListOf<RoadmapStepData>()
                 for (i in 0 until arr.length()) {
                     val s = arr.getJSONObject(i)
@@ -777,11 +1043,25 @@ object ApiClient {
                 if (tagsArr != null) {
                     for (i in 0 until tagsArr.length()) tags.add(tagsArr.getString(i))
                 }
+
                 val data = GrowthRoadmapData(
+                    userId = d.optInt("userId", userId),
+                    activeSubcategory = activeSub,
+                    availableSubcategories = availSubs,
+                    roadmapProgress = d.optDouble("roadmapProgress", 0.0).toFloat(),
+                    roadmapProgressPercentage = d.optInt("roadmapProgressPercentage", 0),
+                    roadmapProgressText = d.optString("roadmapProgressText", ""),
+                    completedCount = d.optInt("completedCount", 0),
+                    totalCount = d.optInt("totalCount", 5),
+                    totalPracticeMinutes = d.optInt("totalPracticeMinutes", 0),
+                    currentStageTitle = d.optString("currentStageTitle", ""),
+                    currentStageOrder = d.optInt("currentStageOrder", 1),
+                    stages = stagesList,
+                    aiFeedback = aiFeedback,
                     currentWeekBadgeText = d.optString("currentWeekBadgeText"),
                     planTitle = d.optString("planTitle"),
                     planSubtitle = d.optString("planSubtitle"),
-                    planProgress = d.optDouble("planProgress", 0.3),
+                    planProgress = d.optDouble("planProgress", 0.0),
                     planProgressText = d.optString("planProgressText"),
                     activeStepTitle = d.optString("activeStepTitle"),
                     activeStepSubtitle = d.optString("activeStepSubtitle"),
@@ -793,10 +1073,65 @@ object ApiClient {
                 )
                 NetworkResult(true, "Roadmap fetched", data)
             } else {
-                NetworkResult(false, json.optString("message"))
+                NetworkResult(false, json.optString("message", "Failed to fetch roadmap"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun completeRoadmapTopic(
+        userId: Int,
+        stageId: Int,
+        score: Int
+    ): NetworkResult<CompleteTopicResultData> = withContext(Dispatchers.IO) {
+        try {
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("stage_id", stageId)
+                put("score", score)
+            }
+            val (code, text) = postJson("roadmap/roadmap_topic_complete.php", payload)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data")
+                val res = CompleteTopicResultData(
+                    passed = d.optBoolean("passed", true),
+                    score = d.optInt("score", score),
+                    xpAwarded = d.optInt("xpAwarded", 0),
+                    message = json.optString("message", "Topic completed"),
+                    nextTopicUnlocked = if (d.isNull("nextTopicUnlocked")) null else d.optString("nextTopicUnlocked"),
+                    remedialAdvice = if (d.isNull("remedialAdvice")) null else d.optString("remedialAdvice"),
+                    remedialFeedback = if (d.isNull("remedialFeedback")) (if (d.isNull("remedialAdvice")) null else d.optString("remedialAdvice")) else d.optString("remedialFeedback"),
+                    promotedLevel = if (d.isNull("promotedLevel")) null else d.optString("promotedLevel")
+                )
+                NetworkResult(true, json.optString("message"), res)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to complete topic"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun toggleRoadmapTask(
+        userId: Int,
+        stageId: Int,
+        taskId: String,
+        isDone: Boolean
+    ): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("stage_id", stageId)
+                put("task_id", taskId)
+                put("is_done", isDone)
+            }
+            val (code, text) = postJson("roadmap/roadmap_task_toggle.php", payload)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            NetworkResult(code == 200 && json.optString("status") == "success", json.optString("message"), code == 200)
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}", false)
         }
     }
 
@@ -897,20 +1232,101 @@ object ApiClient {
     suspend fun completeLesson(
         userId: Int,
         lessonId: String = "1",
-        durationMinutes: Int = 10,
-        xpPoints: Int = 35
-    ): NetworkResult<DailyTrainingData> = withContext(Dispatchers.IO) {
+        taskTitle: String = "Daily Practice",
+        durationSeconds: Int = 60,
+        durationMinutes: Int = 1,
+        xpPoints: Int = 35,
+        mainSkill: String = "",
+        subcategoryId: String = "",
+        codeSnippet: String? = null,
+        transcript: String? = null,
+        quizAnswers: List<Pair<Int, Boolean>>? = null,
+        audioPath: String? = null,
+        imagePath: String? = null
+    ): NetworkResult<LessonCompleteResultData> = withContext(Dispatchers.IO) {
         try {
             val payload = JSONObject().apply {
                 put("user_id", userId)
                 put("lesson_id", lessonId)
+                put("task_title", taskTitle)
+                put("duration_seconds", durationSeconds)
                 put("duration_minutes", durationMinutes)
                 put("xp_points", xpPoints)
+                if (mainSkill.isNotBlank()) put("main_skill", mainSkill)
+                if (subcategoryId.isNotBlank()) put("subcategory_id", subcategoryId)
+                if (!codeSnippet.isNullOrBlank()) put("code_snippet", codeSnippet)
+                if (!transcript.isNullOrBlank()) put("transcript", transcript)
+                if (!audioPath.isNullOrBlank()) put("audio_path", audioPath)
+                if (!imagePath.isNullOrBlank()) put("image_path", imagePath)
+                if (!quizAnswers.isNullOrEmpty()) {
+                    val qArr = JSONArray()
+                    quizAnswers.forEach { (qId, isCorr) ->
+                        qArr.put(JSONObject().apply {
+                            put("question_id", qId)
+                            put("is_correct", isCorr)
+                        })
+                    }
+                    put("quiz_answers", qArr)
+                }
             }
             val (code, text) = postJson("training/lesson_complete.php", payload)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
-                fetchTraining(userId)
+                val dataObj = json.optJSONObject("data") ?: JSONObject()
+                val psObj = dataObj.optJSONObject("performanceScore") ?: JSONObject()
+
+                val strengthsList = mutableListOf<String>()
+                val strArr = psObj.optJSONArray("strengths")
+                if (strArr != null) {
+                    for (i in 0 until strArr.length()) {
+                        strengthsList.add(strArr.getString(i))
+                    }
+                }
+
+                val weaknessesList = mutableListOf<String>()
+                val weakArr = psObj.optJSONArray("weaknesses")
+                if (weakArr != null) {
+                    for (i in 0 until weakArr.length()) {
+                        weaknessesList.add(weakArr.getString(i))
+                    }
+                }
+
+                val metricsMap = mutableMapOf<String, Any>()
+                val metObj = psObj.optJSONObject("metrics")
+                if (metObj != null) {
+                    metObj.keys().forEach { k ->
+                        metricsMap[k] = metObj.get(k)
+                    }
+                }
+
+                val perfScore = PerformanceScoreData(
+                    score = if (psObj.isNull("score")) null else psObj.optInt("score"),
+                    scoreStatus = psObj.optString("scoreStatus", "not_available"),
+                    scoreReason = if (psObj.isNull("scoreReason")) null else psObj.optString("scoreReason"),
+                    strengths = strengthsList,
+                    weaknesses = weaknessesList,
+                    aiFeedback = psObj.optString("aiFeedback", ""),
+                    metrics = metricsMap,
+                    assessmentType = psObj.optString("assessmentType", "none"),
+                    taskTitle = psObj.optString("taskTitle", taskTitle),
+                    durationMinutes = psObj.optInt("durationMinutes", durationMinutes),
+                    xpEarned = psObj.optInt("xpEarned", xpPoints)
+                )
+
+                val refreshedTraining = fetchTraining(userId, if (subcategoryId.isNotBlank()) subcategoryId else null).data
+
+                val resultData = LessonCompleteResultData(
+                    lessonId = dataObj.optString("lesson_id"),
+                    minutesToday = dataObj.optInt("minutesToday", durationMinutes),
+                    goalMinutesToday = dataObj.optInt("goalMinutesToday", 20),
+                    streakDays = dataObj.optInt("streakDays", 1),
+                    xpPoints = dataObj.optInt("xpPoints", xpPoints),
+                    activeSubcategory = null,
+                    performanceScore = perfScore,
+                    trainingData = refreshedTraining
+                )
+
+                NetworkResult(true, json.optString("message", "Practice completed"), resultData)
             } else {
                 NetworkResult(false, json.optString("message", "Failed to complete lesson"))
             }
@@ -934,6 +1350,15 @@ object ApiClient {
                 val completed = mutableListOf<TrainingLessonItem>()
                 for (i in 0 until arr.length()) {
                     val it = arr.getJSONObject(i)
+                    val strList = mutableListOf<String>()
+                    it.optJSONArray("strengths")?.let { sa ->
+                        for (j in 0 until sa.length()) strList.add(sa.getString(j))
+                    }
+                    val weakList = mutableListOf<String>()
+                    it.optJSONArray("weaknesses")?.let { wa ->
+                        for (j in 0 until wa.length()) weakList.add(wa.getString(j))
+                    }
+
                     completed.add(
                         TrainingLessonItem(
                             id = it.optString("id"),
@@ -941,7 +1366,13 @@ object ApiClient {
                             category = it.optString("category"),
                             durationText = it.optString("durationText"),
                             xpText = it.optString("xpText"),
-                            isCompleted = it.optBoolean("isCompleted", true)
+                            isCompleted = it.optBoolean("isCompleted", true),
+                            performanceScore = if (it.isNull("performanceScore")) null else it.optInt("performanceScore"),
+                            scoreStatus = it.optString("scoreStatus", "not_available"),
+                            scoreReason = if (it.isNull("scoreReason")) null else it.optString("scoreReason"),
+                            strengths = strList,
+                            weaknesses = weakList,
+                            aiFeedback = it.optString("aiFeedback", "")
                         )
                     )
                 }
@@ -1469,5 +1900,83 @@ object ApiClient {
             NetworkResult(false, "Network error: ${e.localizedMessage}", false)
         }
     }
+
+    suspend fun fetchAnalytics(userId: Int): NetworkResult<ProgressAnalyticsData> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("progress/analytics_fetch.php?user_id=$userId")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val d = json.getJSONObject("data")
+                val skillArr = d.optJSONArray("skillItems") ?: JSONArray()
+                val skills = mutableListOf<ProgressSkillItemData>()
+                for (i in 0 until skillArr.length()) {
+                    val s = skillArr.getJSONObject(i)
+                    skills.add(
+                        ProgressSkillItemData(
+                            name = s.optString("name"),
+                            score = s.optInt("score", 70),
+                            maxScore = s.optInt("maxScore", 100),
+                            isTopTier = s.optBoolean("isTopTier", false)
+                        )
+                    )
+                }
+
+                val recentArr = d.optJSONArray("recentPracticeScores") ?: JSONArray()
+                val recentScores = mutableListOf<RecentPracticeScoreData>()
+                for (i in 0 until recentArr.length()) {
+                    val r = recentArr.getJSONObject(i)
+                    val strList = mutableListOf<String>()
+                    r.optJSONArray("strengths")?.let { sa ->
+                        for (j in 0 until sa.length()) strList.add(sa.getString(j))
+                    }
+                    val weakList = mutableListOf<String>()
+                    r.optJSONArray("weaknesses")?.let { wa ->
+                        for (j in 0 until wa.length()) weakList.add(wa.getString(j))
+                    }
+                    val metMap = mutableMapOf<String, Any>()
+                    r.optJSONObject("metrics")?.let { mo ->
+                        mo.keys().forEach { k -> metMap[k] = mo.get(k) }
+                    }
+
+                    recentScores.add(
+                        RecentPracticeScoreData(
+                            id = r.optInt("id"),
+                            taskTitle = r.optString("taskTitle"),
+                            mainSkill = r.optString("mainSkill"),
+                            subcategoryName = r.optString("subcategoryName"),
+                            durationMinutes = r.optInt("durationMinutes", 10),
+                            durationText = r.optString("durationText", "10 min"),
+                            xpAwarded = r.optInt("xpAwarded", 35),
+                            score = if (r.isNull("score")) null else r.optInt("score"),
+                            scoreStatus = r.optString("scoreStatus", "not_available"),
+                            scoreReason = if (r.isNull("scoreReason")) null else r.optString("scoreReason"),
+                            strengths = strList,
+                            weaknesses = weakList,
+                            aiFeedback = r.optString("aiFeedback", ""),
+                            metrics = metMap,
+                            dateText = r.optString("dateText", "Today")
+                        )
+                    )
+                }
+
+                val result = ProgressAnalyticsData(
+                    overallScore = d.optInt("overallScore", 78),
+                    pointsGainText = d.optString("pointsGainText", "↑ 14 points"),
+                    scoreRangeText = d.optString("scoreRangeText", ""),
+                    totalSessions = d.optInt("totalSessions", 0),
+                    sessionsWeeklyGainText = d.optString("sessionsWeeklyGainText", "↑ 0 this week"),
+                    timeInvestedText = d.optString("timeInvestedText", "0 h"),
+                    timeWeeklyGainText = d.optString("timeWeeklyGainText", "↑ 0h this week"),
+                    skillItems = skills,
+                    recentPracticeScores = recentScores
+                )
+                NetworkResult(true, "Analytics fetched successfully", result)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch analytics"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
     }
+}
 

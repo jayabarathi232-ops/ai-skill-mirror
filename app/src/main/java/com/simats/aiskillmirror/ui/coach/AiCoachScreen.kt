@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -114,6 +116,11 @@ fun AiCoachScreen(
         if (uiState.isVoiceModeActive && uiState.latestAiVoiceResponse.isNotBlank() && !uiState.isAudioMuted) {
             voiceManager.speak(uiState.latestAiVoiceResponse)
         }
+    }
+
+    // Auto-scroll on new messages or typing state
+    LaunchedEffect(uiState.messages.size, uiState.isTyping) {
+        scrollState.animateScrollTo(scrollState.maxValue)
     }
 
     // Handle Toast events
@@ -474,6 +481,100 @@ fun AiCoachScreen(
                     }
                 }
 
+                // AI Coach typing indicator
+                if (uiState.isTyping) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(CenterCardGradientStart, CenterCardGradientEnd)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            MirrorLogoIcon(size = 18.dp, color = Color.White)
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .shadow(2.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+                                .background(CardBackground)
+                                .border(1.dp, CardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = AccentPurple
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "AI Coach is typing...",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp,
+                                    fontStyle = FontStyle.Italic
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Error message banner with Retry option
+                if (uiState.errorMessage != null && uiState.lastFailedMessage != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFFFF0F0))
+                            .border(1.dp, Color(0xFFFFCDD2), RoundedCornerShape(12.dp))
+                            .padding(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = uiState.errorMessage ?: "Message failed to send",
+                                color = Color(0xFFD32F2F),
+                                fontSize = 12.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AccentPurple)
+                                    .clickable {
+                                        viewModel.onRetryLastMessage()
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "Retry",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -537,13 +638,22 @@ fun AiCoachScreen(
                                 .clip(CircleShape)
                                 .background(
                                     brush = Brush.linearGradient(
-                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                        colors = if (uiState.isTyping) listOf(Color(0xFFD0BCFF), Color(0xFFCCC2DC))
+                                        else listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                     )
                                 )
-                                .clickable { viewModel.onSendMessage() },
+                                .clickable(enabled = !uiState.isTyping) { viewModel.onSendMessage() },
                             contentAlignment = Alignment.Center
                         ) {
-                            UpArrowIcon(size = 16.dp, color = Color.White)
+                            if (uiState.isTyping) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                            } else {
+                                UpArrowIcon(size = 16.dp, color = Color.White)
+                            }
                         }
                     }
                 }

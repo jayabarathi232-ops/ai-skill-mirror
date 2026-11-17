@@ -6,7 +6,13 @@ data class PracticeItem(
     val category: String,
     val durationText: String,
     val xpText: String,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val performanceScore: Int? = null,
+    val scoreStatus: String = "not_available",
+    val scoreReason: String? = null,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = ""
 )
 
 data class WeeklyPlanItem(
@@ -14,49 +20,46 @@ data class WeeklyPlanItem(
     val focus: String
 )
 
+data class PerformanceScoreResult(
+    val score: Int?,
+    val scoreStatus: String, // "available" or "not_available"
+    val scoreReason: String?,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val assessmentType: String = "none",
+    val taskTitle: String = "",
+    val durationMinutes: Int = 0,
+    val xpEarned: Int = 35
+)
+
 data class DailyTrainingUiState(
     val headerTitle: String = "Daily AI Training",
     val headerCategory: String = "MICRO-LEARNING SESSIONS",
     val headerDateText: String = "TODAY",
-    val streakBadgeText: String = "7-day streak",
-    val weekDayText: String = "Week 2 · Day 2",
+    val streakBadgeText: String = "0-day streak",
+    val weekDayText: String = "Week 1 · Day 1",
     val goalLabel: String = "Daily training goal",
-    val currentMinutes: Int = 14,
+    val currentMinutes: Int = 0,
     val targetMinutes: Int = 20,
-    val totalXp: Int = 1240,
-    val goalSubtitle: String = "Complete today's session to keep your momentum.",
-    val practiceProgressText: String = "2 of 3 done",
+    val totalXp: Int = 0,
+    val goalSubtitle: String = "Start today's session to build your streak and earn XP.",
+    val practiceProgressText: String = "0 of 0 done",
     val activeSubcategoryName: String = "Guitar",
     val activeMainSkill: String = "music",
     val activeProficiencyLevel: String = "Beginner",
-    val activeLearningGoal: String = "Master Core Chords & Rhythms",
-    val subcatXp: Int = 140,
-    val subcatLessonsCount: Int = 4,
-    val subcatMinutes: Int = 35,
-    val completedPracticeItems: List<PracticeItem> = listOf(
-        PracticeItem(
-            id = "1",
-            title = "Active listening essentials",
-            category = "Communication · 6 min",
-            durationText = "6 min",
-            xpText = "+30 XP",
-            isCompleted = true
-        ),
-        PracticeItem(
-            id = "2",
-            title = "Think in patterns",
-            category = "Problem solving · 8 min",
-            durationText = "8 min",
-            xpText = "+40 XP",
-            isCompleted = true
-        )
-    ),
+    val activeLearningGoal: String = "Master Core Fundamentals",
+    val subcatXp: Int = 0,
+    val subcatLessonsCount: Int = 0,
+    val subcatMinutes: Int = 0,
+    val completedPracticeItems: List<PracticeItem> = emptyList(),
     val pendingPracticeItems: List<PracticeItem> = emptyList(),
-    val upNextTitle: String = "Daily Guitar Practice · Fretboard Transition",
+    val upNextTitle: String = "Daily Practice · Fretboard Transition",
     val upNextCategory: String = "Music · Guitar Practice",
     val upNextMetaText: String = "10 min · +35 XP",
     val upNextDescription: String = "Keep your fretting wrist slightly curved. Press right behind the fret wire for minimum finger fatigue and zero fret buzz.",
-    val startButtonText: String = "Start 10-minute practice",
+    val startButtonText: String = "Start Practice Session",
     val stepByStepInstructions: List<String> = listOf(
         "Tune all 6 strings (E-A-D-G-B-e) using a standard 440Hz reference.",
         "Warm up finger tips with 1-2-3-4 chromatic crawl across frets 1 to 4.",
@@ -71,18 +74,25 @@ data class DailyTrainingUiState(
         "60-Second Strum Sprint: Execute 40 clean, unmuted chord switches in 60 seconds.",
         "Rhythm Recording Test: Record a 4-bar rhythm track and submit for AI tempo analysis."
     ),
-    val weeklyLearningPlan: List<WeeklyPlanItem> = listOf(
-        WeeklyPlanItem("Day 1", "Fretboard Familiarity & Tuning Accuracy"),
-        WeeklyPlanItem("Day 2", "Open Chords (Em, G, C, D) Clean Fretting"),
-        WeeklyPlanItem("Day 3", "Strumming Patterns & Down-Up Accents"),
-        WeeklyPlanItem("Day 4", "Metronome Synchronization at 80 BPM"),
-        WeeklyPlanItem("Day 5", "Fingerstyle Basics (P-I-M-A Technique)"),
-        WeeklyPlanItem("Day 6", "Transition Speed Drills"),
-        WeeklyPlanItem("Day 7", "Full Acoustic Song Performance Review")
-    ),
-    val aiTip: String = "Keep your fretting wrist slightly curved. Press right behind the fret wire for minimum finger fatigue and zero fret buzz.",
+    val weeklyLearningPlan: List<WeeklyPlanItem> = emptyList(),
+    val aiTip: String = "Focus on slow, perfect repetitions. Speed and fluency are natural side-effects of precision.",
+    
+    // Active Live Practice Session Timer
+    val isSessionActive: Boolean = false,
+    val isSessionPaused: Boolean = false,
+    val elapsedSeconds: Int = 0,
+    val formattedElapsed: String = "00:00",
     val isCompleting: Boolean = false,
-    val completionCelebration: String? = null
+    val completionCelebration: String? = null,
+
+    // Real Performance Score & Session Completion Dialog State
+    val lastSessionScoreResult: PerformanceScoreResult? = null,
+    val showSessionCompletionDialog: Boolean = false,
+    val showEvaluationModal: Boolean = false,
+    val isEvaluatingArtifact: Boolean = false,
+    val codeSnippetInput: String = "",
+    val speechTranscriptInput: String = "",
+    val selectedItemForDetail: PracticeItem? = null
 )
 
 sealed interface DailyTrainingUiEvent {

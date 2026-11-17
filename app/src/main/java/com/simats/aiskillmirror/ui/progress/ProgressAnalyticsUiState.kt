@@ -13,6 +13,23 @@ data class ProgressSkillItem(
     val isTopTier: Boolean = false
 )
 
+data class RecentPracticeScoreItem(
+    val id: Int,
+    val taskTitle: String,
+    val mainSkill: String,
+    val subcategoryName: String,
+    val durationText: String,
+    val xpText: String,
+    val score: Int?,
+    val scoreStatus: String,
+    val scoreReason: String?,
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList(),
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val dateText: String
+)
+
 data class ProgressAnalyticsUiState(
     val headerTitle: String = "Progress you can see",
     val headerCategory: String = "YOUR GROWTH, IN FOCUS",
@@ -20,16 +37,14 @@ data class ProgressAnalyticsUiState(
     val overallScore: Int = 78,
     val pointsGainText: String = "↑ 14 points",
     val scoreRangeText: String = "From 64 to 78 · Sep 29 – Oct 20",
-    val totalSessions: Int = 24,
-    val sessionsWeeklyGainText: String = "↑ 8 this week",
-    val timeInvestedText: String = "6.2 h",
-    val timeWeeklyGainText: String = "↑ 1.2h this week",
-    val skillItems: List<ProgressSkillItem> = listOf(
-        ProgressSkillItem("Technical skills", 86, isTopTier = true),
-        ProgressSkillItem("Problem solving", 80, isTopTier = true),
-        ProgressSkillItem("Interview readiness", 74, isTopTier = false),
-        ProgressSkillItem("Communication", 72, isTopTier = false)
-    )
+    val totalSessions: Int = 0,
+    val sessionsWeeklyGainText: String = "↑ 0 this week",
+    val timeInvestedText: String = "0.0 h",
+    val timeWeeklyGainText: String = "↑ 0h this week",
+    val skillItems: List<ProgressSkillItem> = emptyList(),
+    val recentPracticeScores: List<RecentPracticeScoreItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val selectedScoreDetail: RecentPracticeScoreItem? = null
 )
 
 sealed interface ProgressAnalyticsUiEvent {

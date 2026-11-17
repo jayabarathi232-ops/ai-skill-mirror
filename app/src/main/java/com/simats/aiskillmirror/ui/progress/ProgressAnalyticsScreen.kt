@@ -344,6 +344,246 @@ fun ProgressAnalyticsScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Previous Practice Performance Scores Header (Requirement 11)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Practice Session Scores",
+                            color = HeadingPurple,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "TRACK IMPROVEMENT OVER TIME",
+                            color = TextSecondary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    Text(
+                        text = "${uiState.recentPracticeScores.size} sessions",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                if (uiState.recentPracticeScores.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                            .padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "🎯", fontSize = 28.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No Practice Sessions Recorded Yet",
+                                color = TextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Start a Daily Training session to earn real AI Performance Scores and track improvement.",
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        uiState.recentPracticeScores.forEach { session ->
+                            val isSelected = uiState.selectedScoreDetail?.id == session.id
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(2.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(CardBackground)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) AccentPurple else CardBorder,
+                                        RoundedCornerShape(18.dp)
+                                    )
+                                    .clickable {
+                                        if (isSelected) viewModel.selectScoreDetail(null)
+                                        else viewModel.selectScoreDetail(session)
+                                    }
+                                    .padding(16.dp)
+                            ) {
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = session.taskTitle,
+                                                color = TextPrimary,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${session.subcategoryName} · ${session.durationText} · ${session.xpText}",
+                                                color = TextSecondary,
+                                                fontSize = 11.sp
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Real Performance Score Badge (or "Score not available")
+                                        if (session.score != null) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(100.dp))
+                                                    .background(Color(0xFFE8F5E9))
+                                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${session.score} / 100",
+                                                    color = GreenNode,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(100.dp))
+                                                    .background(Color(0xFFFFF3E0))
+                                                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Score not available",
+                                                    color = Color(0xFFE65100),
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = session.dateText,
+                                        color = TextSecondary.copy(alpha = 0.8f),
+                                        fontSize = 10.sp
+                                    )
+
+                                    // Expandable Details (Strengths, Weaknesses, Feedback)
+                                    if (isSelected) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        if (session.score == null && !session.scoreReason.isNullOrBlank()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(Color(0xFFFFF8E1))
+                                                    .padding(10.dp)
+                                            ) {
+                                                Text(
+                                                    text = session.scoreReason,
+                                                    color = Color(0xFF8D6E63),
+                                                    fontSize = 11.sp,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+
+                                        if (session.strengths.isNotEmpty()) {
+                                            Text(
+                                                text = "Strengths:",
+                                                color = Color(0xFF2E7D32),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            session.strengths.forEach { s ->
+                                                Text(
+                                                    text = "• $s",
+                                                    color = TextPrimary,
+                                                    fontSize = 11.sp,
+                                                    lineHeight = 15.sp,
+                                                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+
+                                        if (session.weaknesses.isNotEmpty()) {
+                                            Text(
+                                                text = "Areas for Improvement:",
+                                                color = Color(0xFFC2185B),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            session.weaknesses.forEach { w ->
+                                                Text(
+                                                    text = "• $w",
+                                                    color = TextPrimary,
+                                                    fontSize = 11.sp,
+                                                    lineHeight = 15.sp,
+                                                    modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+
+                                        if (session.aiFeedback.isNotBlank()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(TaglineBackground)
+                                                    .padding(10.dp)
+                                            ) {
+                                                Column {
+                                                    Text(
+                                                        text = "💡 AI Coach Feedback:",
+                                                        color = TaglineText,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = session.aiFeedback,
+                                                        color = TextPrimary,
+                                                        fontSize = 11.sp,
+                                                        lineHeight = 16.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 

@@ -41,35 +41,25 @@ class ProgressRepository {
         }
     }
 
-    suspend fun getRoadmap(userId: Int = UserSession.userId): NetworkResult<GrowthRoadmapData> {
-        return try {
-            val response = RetrofitClient.apiService.getRoadmap(userId)
-            if (response.isSuccessful && response.body()?.status == "success" && response.body()?.data != null) {
-                val d = response.body()!!.data!!
-                val steps = d.upcomingSteps.map {
-                    RoadmapStepData(it.id, it.title, it.subtitle, it.lessonCountText, it.iconType)
-                }
-                val data = GrowthRoadmapData(
-                    currentWeekBadgeText = d.currentWeekBadgeText,
-                    planTitle = d.planTitle,
-                    planSubtitle = d.planSubtitle,
-                    planProgress = d.planProgress,
-                    planProgressText = d.planProgressText,
-                    activeStepTitle = d.activeStepTitle,
-                    activeStepSubtitle = d.activeStepSubtitle,
-                    activeStepProgressPercentage = d.activeStepProgressPercentage,
-                    activeStepDescription = d.activeStepDescription,
-                    activeStepTags = d.activeStepTags,
-                    upcomingSteps = steps,
-                    continueButtonText = d.continueButtonText
-                )
-                NetworkResult(true, response.body()?.message, data)
-            } else {
-                ApiClient.fetchRoadmap(userId)
-            }
-        } catch (e: Exception) {
-            ApiClient.fetchRoadmap(userId)
-        }
+    suspend fun getRoadmap(userId: Int = UserSession.userId, subcategoryId: String? = null): NetworkResult<GrowthRoadmapData> {
+        return ApiClient.fetchRoadmap(userId, subcategoryId)
+    }
+
+    suspend fun completeRoadmapTopic(
+        userId: Int = UserSession.userId,
+        stageId: Int,
+        score: Int
+    ): NetworkResult<com.simats.aiskillmirror.data.network.CompleteTopicResultData> {
+        return ApiClient.completeRoadmapTopic(userId, stageId, score)
+    }
+
+    suspend fun toggleRoadmapTask(
+        userId: Int = UserSession.userId,
+        stageId: Int,
+        taskId: String,
+        isDone: Boolean
+    ): NetworkResult<Boolean> {
+        return ApiClient.toggleRoadmapTask(userId, stageId, taskId, isDone)
     }
 
     suspend fun getMilestones(userId: Int = UserSession.userId): NetworkResult<MilestonesData> {
