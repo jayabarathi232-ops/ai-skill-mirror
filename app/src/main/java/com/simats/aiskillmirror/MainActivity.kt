@@ -210,10 +210,12 @@ class MainActivity : ComponentActivity() {
                                 SplashScreen(
                                     viewModel = splashViewModel,
                                     onNavigateToHome = {
+                                        profileViewModel.loadProfile(this@MainActivity)
+                                        dashboardViewModel.loadDashboard()
                                         replaceWith(AppScreen.DASHBOARD)
                                     },
                                     onNavigateToLogin = {
-                                        navigateTo(AppScreen.LOGIN)
+                                        replaceWith(AppScreen.LOGIN)
                                     }
                                 )
                             }
@@ -242,7 +244,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.LOGIN)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -267,7 +273,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.REGISTER)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -333,7 +343,11 @@ class MainActivity : ComponentActivity() {
                                 EditProfileScreen(
                                     viewModel = profileViewModel,
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     },
                                     onProfileSaved = {
                                         profileViewModel.loadProfile(this@MainActivity)
@@ -369,7 +383,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.ASSESSMENT)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -386,7 +404,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.SKILL_MIRROR)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -401,7 +423,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Skill Mirror Results...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -417,7 +443,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Opening Filter Settings...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -435,7 +465,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -448,7 +482,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.SPEECH_ANALYSIS)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -466,7 +504,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Sharing Speech Analysis...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -485,7 +527,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -497,7 +543,11 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Report exported to PDF successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -509,7 +559,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.NOTIFICATIONS)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -532,7 +586,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -544,7 +602,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.SPEECH_STUDIO)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -561,7 +623,11 @@ class MainActivity : ComponentActivity() {
                                         replaceWith(AppScreen.LOGIN)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }
@@ -569,7 +635,11 @@ class MainActivity : ComponentActivity() {
                                 PerformanceUploadScreen(
                                     viewModel = performanceUploadViewModel,
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     },
                                     onTabSelected = ::handleTabSelected
                                 )
@@ -595,7 +665,11 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.SKILL_SELECTION)
                                     },
                                     onBackClick = {
-                                        navigateBack()
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            finish()
+                                        }
                                     }
                                 )
                             }

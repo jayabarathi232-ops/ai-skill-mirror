@@ -1,11 +1,6 @@
 package com.simats.aiskillmirror.ui.splash
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,15 +8,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -30,17 +21,33 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
 import com.simats.aiskillmirror.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.sin
 
+/**
+ * Animated Premium Splash Screen for AI Skill Mirror
+ *
+ * Features:
+ * - Premium purple & lavender gradient background with ambient light orbs
+ * - Central AI Skill Mirror logo enclosed in a rich gradient tile
+ * - Dual harmonic orbital ripple rings and revolving satellite particles
+ * - Logo pulse & starlight twinkle animations
+ * - App title "AI SKILL MIRROR" with tracked typography
+ * - Tagline: "Discover Your Skills. Improve Your Future."
+ * - Sleek modern indeterminate shimmer loading indicator
+ * - 2.5 second automatic timer navigating to Home (if authenticated) or Login
+ * - Fully responsive across mobile, tablet, and desktop aspect ratios
+ */
 @Composable
 fun SplashScreen(
     viewModel: SplashViewModel,
@@ -49,180 +56,424 @@ fun SplashScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(
+    // Automatic Navigation Timer (2.5 seconds)
+    LaunchedEffect(Unit) {
+        delay(2500L)
+        if (UserSession.isLoggedIn) {
+            onNavigateToHome()
+        } else {
+            onNavigateToLogin()
+        }
+    }
+
+    // AI Pulse & Orbit Animations
+    val infiniteTransition = rememberInfiniteTransition(label = "splash_infinite")
+
+    // Outer ripple pulse (expands and fades out)
+    val rippleScale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ripple_scale"
+    )
+
+    val rippleAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ripple_alpha"
+    )
+
+    // Secondary inner harmonic ring
+    val harmonicScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "harmonic_scale"
+    )
+
+    val harmonicAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "harmonic_alpha"
+    )
+
+    // Center logo subtle breathing
+    val logoScale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logo_scale"
+    )
+
+    // Satellite orbital particles rotation angle (0 to 360 deg)
+    val orbitAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "orbit_angle"
+    )
+
+    // Sparkle twinkle alpha
+    val sparkleAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "sparkle_alpha"
+    )
+
+    // Shimmer sweep for the loader bar (-1f to 1f)
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = -1.2f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer_offset"
+    )
+
+    // Luxury Dark Purple & Lavender Gradient Palette
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF150729), // Ultra deep violet midnight
+            Color(0xFF260D49), // Deep royal purple
+            Color(0xFF3F1675), // Brand purple core
+            Color(0xFF240C45), // Rich twilight
+            Color(0xFF130625)  // Grounded deep purple base
+        )
+    )
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .background(backgroundBrush)
     ) {
+        val screenHeight = maxHeight
+        val screenWidth = maxWidth
+        val isTablet = screenWidth > 600.dp
+
+        // Ambient glowing decorative background orbs
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            // Top-right lilac ambient glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF9353E2).copy(alpha = 0.22f), Color.Transparent),
+                    center = Offset(w * 0.85f, h * 0.15f),
+                    radius = w * 0.55f
+                ),
+                radius = w * 0.55f,
+                center = Offset(w * 0.85f, h * 0.15f)
+            )
+
+            // Center purple energy aura
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF7545C8).copy(alpha = 0.28f), Color.Transparent),
+                    center = Offset(w * 0.5f, h * 0.45f),
+                    radius = w * 0.50f
+                ),
+                radius = w * 0.50f,
+                center = Offset(w * 0.5f, h * 0.45f)
+            )
+
+            // Bottom-left soft lavender glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFFB794F6).copy(alpha = 0.18f), Color.Transparent),
+                    center = Offset(w * 0.15f, h * 0.85f),
+                    radius = w * 0.60f
+                ),
+                radius = w * 0.60f,
+                center = Offset(w * 0.15f, h * 0.85f)
+            )
+        }
+
+        // Main Centered Content Container
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.Start,
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Bar
-            TopBarHeader(appName = uiState.appTitle)
+            // Top spacing placeholder for optical balance
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Central Graphic (Orbital system with animated pulse)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                OrbitalGraphic()
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Bottom Content Section
+            // Center Branding Cluster: Animated Logo + App Name + Tagline
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
+                modifier = Modifier
+                    .widthIn(max = if (isTablet) 520.dp else 380.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Tagline Pill
+                // ==========================================
+                // 1. AI-INSPIRED ANIMATED LOGO
+                // ==========================================
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(TaglineBackground)
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .size(if (isTablet) 230.dp else 190.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = uiState.tagline,
-                        color = TaglineText,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-                }
+                    // Outer Ripple Pulse Ring
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(rippleScale)
+                            .alpha(rippleAlpha)
+                    ) {
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFFB794F6), Color(0xFF7545C8).copy(alpha = 0.4f)),
+                                center = center,
+                                radius = size.minDimension / 2
+                            ),
+                            style = Stroke(width = 2.5.dp.toPx())
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    // Secondary Inner Harmonic Ring
+                    Canvas(
+                        modifier = Modifier
+                            .size(if (isTablet) 180.dp else 150.dp)
+                            .scale(harmonicScale)
+                            .alpha(harmonicAlpha)
+                    ) {
+                        drawCircle(
+                            color = Color(0xFFE9DDFF),
+                            style = Stroke(width = 1.8.dp.toPx())
+                        )
+                    }
 
-                // Title Headline
-                Text(
-                    text = uiState.headlineLine1,
-                    color = HeadingPurple,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 38.sp
-                )
-                Text(
-                    text = uiState.headlineLine2,
-                    color = HeadingPurple,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 38.sp
-                )
+                    // Satellite Orbital Particles (Circling around logo)
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val cx = size.width / 2
+                        val cy = size.height / 2
+                        val orbitRadius = (size.minDimension / 2) * 0.78f
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        // Draw subtle dotted orbital track
+                        drawCircle(
+                            color = Color(0xFFD8C7F8).copy(alpha = 0.25f),
+                            radius = orbitRadius,
+                            style = Stroke(width = 1.2.dp.toPx())
+                        )
 
-                // Subtitle Description
-                Text(
-                    text = uiState.description,
-                    color = TextSecondary,
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
-                    fontWeight = FontWeight.Normal
-                )
+                        // Satellite Node 1 (Luminous Cyan)
+                        val rad1 = Math.toRadians(orbitAngle.toDouble())
+                        val px1 = cx + (orbitRadius * cos(rad1)).toFloat()
+                        val py1 = cy + (orbitRadius * sin(rad1)).toFloat()
+                        drawCircle(
+                            color = Color(0xFF38BDF8),
+                            radius = 4.5.dp.toPx(),
+                            center = Offset(px1, py1)
+                        )
+                        drawCircle(
+                            color = Color(0xFF38BDF8).copy(alpha = 0.35f),
+                            radius = 9.dp.toPx(),
+                            center = Offset(px1, py1)
+                        )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                        // Satellite Node 2 (Glowing Lavender, 180 deg offset)
+                        val rad2 = Math.toRadians((orbitAngle + 180f).toDouble())
+                        val px2 = cx + (orbitRadius * cos(rad2)).toFloat()
+                        val py2 = cy + (orbitRadius * sin(rad2)).toFloat()
+                        drawCircle(
+                            color = Color(0xFFE9DDFF),
+                            radius = 3.5.dp.toPx(),
+                            center = Offset(px2, py2)
+                        )
+                    }
 
-                // Get Started Primary Gradient Button
-                Button(
-                    onClick = {
-                        viewModel.onGetStartedClick()
-                        onNavigateToHome()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart, ambientColor = PrimaryGradientStart),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
+                    // Subtle Accent Sparkle Icons
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 14.dp, top = 8.dp)
+                                .alpha(sparkleAlpha)
+                        ) {
+                            SparkleIcon(size = 18.dp, color = Color(0xFFE9DDFF))
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = 10.dp)
+                                .alpha(1.3f - sparkleAlpha)
+                        ) {
+                            SparkleIcon(size = 15.dp, color = Color(0xFF38BDF8))
+                        }
+                    }
+
+                    // Central App Logo Card
+                    Box(
+                        modifier = Modifier
+                            .size(if (isTablet) 116.dp else 98.dp)
+                            .scale(logoScale)
+                            .shadow(
+                                elevation = 20.dp,
+                                shape = RoundedCornerShape(28.dp),
+                                spotColor = Color(0xFF7545C8),
+                                ambientColor = Color(0xFF9353E2)
+                            )
+                            .clip(RoundedCornerShape(28.dp))
                             .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF8A3FFC), // Bright vibrant violet
+                                        Color(0xFF7545C8), // Brand deep purple
+                                        Color(0xFF5B2C9D)  // Deep royal accent
+                                    )
                                 )
+                            )
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color(0xFFE9DDFF).copy(alpha = 0.25f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(28.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            // Arrow icon
-                            Canvas(modifier = Modifier.size(16.dp)) {
-                                val strokeWidth = 2.dp.toPx()
-                                drawPath(
-                                    path = Path().apply {
-                                        moveTo(2.dp.toPx(), 8.dp.toPx())
-                                        lineTo(14.dp.toPx(), 8.dp.toPx())
-                                        moveTo(9.dp.toPx(), 3.dp.toPx())
-                                        lineTo(14.dp.toPx(), 8.dp.toPx())
-                                        lineTo(9.dp.toPx(), 13.dp.toPx())
-                                    },
-                                    color = Color.White,
-                                    style = Stroke(width = strokeWidth)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = uiState.getStartedButtonText,
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Footer Text: Already have an account? Log in
-                val annotatedString = buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = TextSecondary, fontSize = 14.sp)) {
-                        append(uiState.loginPromptText)
-                    }
-                    withStyle(
-                        style = SpanStyle(
-                            color = TaglineText,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                        MirrorLogoIcon(
+                            size = if (isTablet) 56.dp else 46.dp,
+                            color = Color.White
                         )
-                    ) {
-                        append(uiState.loginLinkText)
                     }
                 }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ==========================================
+                // 2. APP NAME: AI SKILL MIRROR
+                // ==========================================
                 Text(
-                    text = annotatedString,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            viewModel.onLoginClick()
-                            onNavigateToLogin()
-                        }
-                        .padding(vertical = 8.dp),
+                    text = "AI SKILL MIRROR",
+                    color = Color.White,
+                    fontSize = if (isTablet) 30.sp else 25.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 4.5.sp,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // ==========================================
+                // 3. TAGLINE
+                // ==========================================
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color.White.copy(alpha = 0.09f))
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFFE9DDFF).copy(alpha = 0.22f),
+                            shape = RoundedCornerShape(100.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        text = "Discover Your Skills. Improve Your Future.",
+                        color = Color(0xFFE9DDFF),
+                        fontSize = if (isTablet) 14.sp else 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.4.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            // ==========================================
+            // 4. SMOOTH MODERN AI LOADING ANIMATION
+            // ==========================================
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 36.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Sleek Indeterminate Gradient Shimmer Bar
+                Box(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .height(3.5.dp)
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val barWidth = size.width
+                        val shimmerWidth = barWidth * 0.5f
+                        val startX = (barWidth + shimmerWidth) * (shimmerOffset + 1.2f) / 2.4f - shimmerWidth
+
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0xFFE9DDFF),
+                                    Color(0xFF9353E2),
+                                    Color.White,
+                                    Color.Transparent
+                                ),
+                                startX = startX,
+                                endX = startX + shimmerWidth
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "INITIALIZING AI MIRROR",
+                    color = Color(0xFFD8C7F8).copy(alpha = 0.75f),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 2.4.sp,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
 }
+
+// ====================================================================
+// REUSABLE BRAND ICONS & HEADERS (PRESERVED FOR CODEBASE COMPATIBILITY)
+// ====================================================================
 
 @Composable
 fun TopBarHeader(
@@ -230,9 +481,10 @@ fun TopBarHeader(
     onBackClick: (() -> Unit)? = null
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
-        modifier = Modifier.padding(top = 8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBackClick != null) {
             Box(
@@ -272,122 +524,6 @@ fun TopBarHeader(
             color = TextPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-fun OrbitalGraphic() {
-    val infiniteTransition = rememberInfiniteTransition(label = "orbital_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.03f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(280.dp)
-            .scale(pulseScale),
-        contentAlignment = Alignment.Center
-    ) {
-        // Canvas for Orbit Rings & Soft Glow
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2, size.height / 2)
-
-            // Radial background glow
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        CenterCardGradientStart.copy(alpha = 0.12f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = size.width / 2
-                ),
-                radius = size.width / 2,
-                center = center
-            )
-
-            // Outer Orbit Ring
-            drawCircle(
-                color = OrbitRing,
-                radius = 125.dp.toPx(),
-                center = center,
-                style = Stroke(width = 1.2.dp.toPx())
-            )
-
-            // Inner Orbit Ring
-            drawCircle(
-                color = OrbitRing,
-                radius = 85.dp.toPx(),
-                center = center,
-                style = Stroke(width = 1.2.dp.toPx())
-            )
-        }
-
-        // Central Card Icon
-        Box(
-            modifier = Modifier
-                .size(90.dp)
-                .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = CenterCardGradientStart)
-                .clip(RoundedCornerShape(26.dp))
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(CenterCardGradientStart, CenterCardGradientEnd)
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            MirrorLogoIcon(size = 42.dp, color = Color.White)
-        }
-
-        // Orbit Node 1: Green Dot (Top Left on Inner Ring)
-        Box(
-            modifier = Modifier
-                .offset(x = (-62).dp, y = (-58).dp)
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(GreenNode)
-        )
-
-        // Orbit Node 2: Sparkle Badge (Top Right on Outer Ring)
-        Box(
-            modifier = Modifier
-                .offset(x = 68.dp, y = (-72).dp)
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(BadgeBackground)
-                .border(1.dp, BadgeBorder, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            SparkleIcon(size = 18.dp, color = TaglineText)
-        }
-
-        // Orbit Node 3: Chart Badge (Bottom Left on Outer Ring)
-        Box(
-            modifier = Modifier
-                .offset(x = (-76).dp, y = 58.dp)
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE8F5E9))
-                .border(1.dp, Color(0xFFC8E6C9), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            ChartIcon(size = 18.dp, color = GreenNode)
-        }
-
-        // Orbit Node 4: Cyan Dot (Bottom Right on Outer Ring)
-        Box(
-            modifier = Modifier
-                .offset(x = 88.dp, y = 48.dp)
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(CyanNode)
         )
     }
 }

@@ -1,15 +1,15 @@
 package com.simats.aiskillmirror.ui.splash
 
 data class SplashUiState(
-    val appTitle: String = "AI Skills Mirror",
-    val tagline: String = "YOUR POTENTIAL, REFLECTED",
-    val headlineLine1: String = "See your skills.",
-    val headlineLine2: String = "Shape your future.",
+    val appTitle: String = "AI SKILL MIRROR",
+    val tagline: String = "Discover Your Skills. Improve Your Future.",
+    val headlineLine1: String = "Discover Your Skills.",
+    val headlineLine2: String = "Improve Your Future.",
     val description: String = "Meet your intelligent guide to skill assessment, personalized learning, and real progress.",
     val getStartedButtonText: String = "Get Started",
     val loginPromptText: String = "Already have an account? ",
     val loginLinkText: String = "Log in",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = true
 )
 
 sealed interface SplashUiEvent {

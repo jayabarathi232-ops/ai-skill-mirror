@@ -9,14 +9,24 @@ object UserSession {
     private const val KEY_USER_NAME = "current_user_name"
     private const val KEY_USER_EMAIL = "current_user_email"
     private const val KEY_PROFILE_PIC_PREFIX = "profile_picture_user_"
+    private const val KEY_IS_LOGGED_IN = "is_logged_in"
+
+    private var appContext: Context? = null
 
     var userId: Int = 1
     var userName: String = "Test Student"
     var userEmail: String = "teststudent@example.com"
     var profilePictureUrl: String = ""
+    var isLoggedIn: Boolean = false
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        isLoggedIn = if (prefs.contains(KEY_IS_LOGGED_IN)) {
+            prefs.getBoolean(KEY_IS_LOGGED_IN, false)
+        } else {
+            prefs.contains(KEY_USER_ID) && prefs.getInt(KEY_USER_ID, 0) > 0
+        }
         userId = prefs.getInt(KEY_USER_ID, 1)
         userName = prefs.getString(KEY_USER_NAME, "Test Student") ?: "Test Student"
         userEmail = prefs.getString(KEY_USER_EMAIL, "teststudent@example.com") ?: "teststudent@example.com"
@@ -24,32 +34,37 @@ object UserSession {
     }
 
     fun update(id: Int, name: String, email: String, pictureUrl: String = "") {
-        userId = id
+        userId = if (id > 0) id else 1
         userName = name
         userEmail = email
         if (pictureUrl.isNotBlank()) {
             profilePictureUrl = pictureUrl
         }
+        isLoggedIn = id > 0
+        appContext?.let { ctx ->
+            val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val editor = prefs.edit()
+                .putBoolean(KEY_IS_LOGGED_IN, isLoggedIn)
+                .putInt(KEY_USER_ID, id)
+                .putString(KEY_USER_NAME, name)
+                .putString(KEY_USER_EMAIL, email)
+            if (pictureUrl.isNotBlank()) {
+                editor.putString("$KEY_PROFILE_PIC_PREFIX$id", pictureUrl)
+            }
+            editor.apply()
+        }
     }
 
     fun updateWithContext(context: Context, id: Int, name: String, email: String, pictureUrl: String = "") {
+        appContext = context.applicationContext
         update(id, name, email, pictureUrl)
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val editor = prefs.edit()
-            .putInt(KEY_USER_ID, id)
-            .putString(KEY_USER_NAME, name)
-            .putString(KEY_USER_EMAIL, email)
-        
-        if (pictureUrl.isNotBlank()) {
-            editor.putString("$KEY_PROFILE_PIC_PREFIX$id", pictureUrl)
-        }
-        editor.apply()
     }
 
     fun setProfilePicture(context: Context?, url: String) {
         profilePictureUrl = url
-        if (context != null) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val ctx = context ?: appContext
+        if (ctx != null) {
+            val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
                 .putString("$KEY_PROFILE_PIC_PREFIX$userId", url)
                 .apply()
@@ -61,11 +76,13 @@ object UserSession {
         return prefs.getString("$KEY_PROFILE_PIC_PREFIX$uid", "") ?: ""
     }
 
-    fun clear(context: Context?) {
+    fun clear(context: Context? = null) {
         userId = 1
         userName = "Test Student"
         userEmail = "teststudent@example.com"
         profilePictureUrl = ""
-        context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+        isLoggedIn = false
+        val ctx = context ?: appContext
+        ctx?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
     }
 }

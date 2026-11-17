@@ -2,6 +2,7 @@ package com.simats.aiskillmirror.ui.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simats.aiskillmirror.data.network.UserSession
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,16 @@ class SplashViewModel : ViewModel() {
 
     private val _eventChannel = Channel<SplashUiEvent>()
     val events = _eventChannel.receiveAsFlow()
+
+    fun onSplashFinished() {
+        viewModelScope.launch {
+            if (UserSession.isLoggedIn) {
+                _eventChannel.send(SplashUiEvent.NavigateToHome)
+            } else {
+                _eventChannel.send(SplashUiEvent.NavigateToLogin)
+            }
+        }
+    }
 
     fun onGetStartedClick() {
         viewModelScope.launch {
