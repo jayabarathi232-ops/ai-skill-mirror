@@ -62,6 +62,7 @@ fun NotificationsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.checkPermission(context)
+        viewModel.initLocalSettings(context)
         viewModel.events.collect { event ->
             when (event) {
                 is NotificationsUiEvent.ShowToast -> {
@@ -70,6 +71,20 @@ fun NotificationsScreen(
                 is NotificationsUiEvent.NavigateBack -> onBackClick()
                 is NotificationsUiEvent.NavigateToPractice -> onStartPracticeClick()
                 is NotificationsUiEvent.RequestPermission -> onRequestPermission()
+                is NotificationsUiEvent.OpenAppSettings -> {
+                    val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = android.net.Uri.fromParts("package", context.packageName, null)
+                    }
+                    context.startActivity(intent)
+                }
+                is NotificationsUiEvent.OpenExactAlarmSettings -> {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                        }
+                        context.startActivity(intent)
+                    }
+                }
             }
         }
     }
@@ -314,6 +329,56 @@ private fun NotificationsTabContent(
             .fillMaxSize()
             .verticalScroll(scrollState)
     ) {
+        // Permission Status / Rationale Banner
+        if (!uiState.hasNotificationPermission) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFED7AA))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "🔔", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Notification Permission Disabled",
+                            color = Color(0xFF9A3412),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Android requires notification permission to trigger your daily skill reminders. Please enable it so you don't miss scheduled practice.",
+                        color = Color(0xFF7C2D12),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { viewModel.onRequestPermissionClick() },
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text("Grant Permission", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.onOpenAppSettingsClick() },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text("App Settings", fontSize = 12.sp, color = AccentPurple)
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. DAILY PRACTICE REMINDER CARD
         DailyPracticeReminderCard(
             uiState = uiState,
@@ -609,7 +674,106 @@ private fun DailyPracticeReminderCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Live Timezone & Next Scheduled Status Pill
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(LightPurple.copy(alpha = 0.45f))
+                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "⏰", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (uiState.nextScheduledTimeFormatted.isNotEmpty()) uiState.nextScheduledTimeFormatted else "Scheduled daily",
+                        color = HeadingPurple,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Text(
+                    text = java.util.TimeZone.getDefault().id,
+                    color = TextSecondary,
+                    fontSize = 10.5.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Save Reminder Button
+            Button(
+                onClick = { viewModel.saveReminderSettings(context) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CheckmarkIcon(size = 14.dp, color = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (uiState.isSavingReminder) "Saving Reminder..." else "Save Reminder Time",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Real Push Notification Testing Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { viewModel.triggerInstantTest(context) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = CardBackground)
+                ) {
+                    Text(
+                        text = "⚡ Test Now",
+                        fontSize = 11.5.sp,
+                        color = AccentPurple,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = { viewModel.scheduleTestReminderTwoMinutes(context) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = CardBackground)
+                ) {
+                    Text(
+                        text = "⏱ Test (2 Mins)",
+                        fontSize = 11.5.sp,
+                        color = AccentPurple,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Start Practice Button (Direct navigation to training)
             Button(
@@ -619,24 +783,25 @@ private fun DailyPracticeReminderCard(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(46.dp),
+                    .height(44.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentPurple,
-                    contentColor = Color.White
+                    containerColor = LightPurple,
+                    contentColor = AccentPurple
                 ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    PlayTriangleIcon(size = 14.dp, color = Color.White)
+                    PlayTriangleIcon(size = 14.dp, color = AccentPurple)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Start Practice",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentPurple
                     )
                 }
             }

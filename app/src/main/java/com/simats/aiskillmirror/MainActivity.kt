@@ -129,10 +129,21 @@ class MainActivity : ComponentActivity() {
         notificationsViewModel.checkPermission(this)
     }
 
+    private val pendingNavigation = androidx.compose.runtime.mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra("navigateTo")?.let {
+            pendingNavigation.value = it
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         UserSession.init(this)
         SmartNotificationManager.initNotificationChannel(this)
+        SmartNotificationManager.rescheduleSavedReminders(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -157,6 +168,18 @@ class MainActivity : ComponentActivity() {
                     fun navigateTo(screen: AppScreen) {
                         if (backStack.lastOrNull() != screen) {
                             backStack.add(screen)
+                        }
+                    }
+
+                    androidx.compose.runtime.LaunchedEffect(pendingNavigation.value) {
+                        pendingNavigation.value?.let { target ->
+                            when (target) {
+                                "SPEECH_STUDIO" -> navigateTo(AppScreen.SPEECH_STUDIO)
+                                "NOTIFICATIONS" -> navigateTo(AppScreen.NOTIFICATIONS)
+                                "DAILY_TRAINING" -> navigateTo(AppScreen.DAILY_TRAINING)
+                                "SKILL_GAP_DETECTOR" -> navigateTo(AppScreen.SKILL_GAP_DETECTOR)
+                            }
+                            pendingNavigation.value = null
                         }
                     }
 
@@ -583,7 +606,7 @@ class MainActivity : ComponentActivity() {
                                         notificationsViewModel.openSettingsDialog()
                                     },
                                     onStartPracticeClick = {
-                                        navigateTo(AppScreen.SPEECH_STUDIO)
+                                        navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onBackClick = {
                                         if (backStack.size > 1) {

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -38,7 +39,26 @@ class NotificationsViewModel : ViewModel() {
 
     fun checkPermission(context: Context) {
         val hasPermission = SmartNotificationManager.hasNotificationPermission(context)
-        _uiState.value = _uiState.value.copy(hasNotificationPermission = hasPermission)
+        val hasExact = SmartNotificationManager.canScheduleExactAlarms(context)
+        _uiState.value = _uiState.value.copy(
+            hasNotificationPermission = hasPermission,
+            hasExactAlarmPermission = hasExact
+        )
+    }
+
+    fun initLocalSettings(context: Context) {
+        val userId = getUserId()
+        val prefs = SmartNotificationManager.getReminderPreferences(context, userId)
+        val nextText = formatNextTrigger(prefs.hour, prefs.minute, prefs.isEnabled)
+        _uiState.value = _uiState.value.copy(
+            isDailyReminderEnabled = prefs.isEnabled,
+            reminderHour = prefs.hour,
+            reminderMinute = prefs.minute,
+            reminderTimeText = prefs.timeText,
+            selectedSkill = prefs.skillName,
+            selectedDays = prefs.daysText.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
+            nextScheduledTimeFormatted = nextText
+        )
     }
 
     fun loadNotifications() {
@@ -52,11 +72,25 @@ class NotificationsViewModel : ViewModel() {
                 val yesterday = data.yesterdayNotifications.map { it.toUiItem() }
                 val older = data.olderNotifications.map { it.toUiItem() }
 
+                val (parsedHour, parsedMinute) = parseTimeString(data.reminderTimeText)
+                val resolvedHour = if (parsedHour >= 0) parsedHour else _uiState.value.reminderHour
+                val resolvedMinute = if (parsedMinute >= 0) parsedMinute else _uiState.value.reminderMinute
+                val resolvedTimeText = if (data.reminderTimeText.isNotEmpty() && !data.reminderTimeText.contains("Every day at", ignoreCase = true)) {
+                    data.reminderTimeText
+                } else {
+                    formatDisplayTime(resolvedHour, resolvedMinute)
+                }
+
+                val nextText = formatNextTrigger(resolvedHour, resolvedMinute, data.isDailyReminderEnabled)
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     unreadCount = data.unreadCount,
                     isDailyReminderEnabled = data.isDailyReminderEnabled,
-                    reminderTimeText = if (data.reminderTimeText.isNotEmpty()) data.reminderTimeText else _uiState.value.reminderTimeText,
+                    reminderTimeText = resolvedTimeText,
+                    reminderHour = resolvedHour,
+                    reminderMinute = resolvedMinute,
+                    nextScheduledTimeFormatted = nextText,
                     todayNotifications = today,
                     yesterdayNotifications = yesterday,
                     olderNotifications = older
@@ -67,6 +101,53 @@ class NotificationsViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
+    }
+
+    private fun parseTimeString(rawText: String): Pair<Int, Int> {
+        return try {
+            val clean = rawText.replace("Every day at", "", ignoreCase = true).trim()
+            val parts = clean.split(" ", ":")
+            if (parts.size >= 2) {
+                var h = parts[0].toIntOrNull() ?: -1
+                val m = parts[1].toIntOrNull() ?: 0
+                val amPm = parts.getOrNull(2)
+                if (amPm != null) {
+                    if (amPm.equals("PM", ignoreCase = true) && h < 12) h += 12
+                    if (amPm.equals("AM", ignoreCase = true) && h == 12) h = 0
+                }
+                Pair(h, m)
+            } else {
+                Pair(-1, -1)
+            }
+        } catch (_: Exception) {
+            Pair(-1, -1)
+        }
+    }
+
+    private fun formatDisplayTime(hour: Int, minute: Int): String {
+        val amPm = if (hour >= 12) "PM" else "AM"
+        val displayHour = if (hour % 12 == 0) 12 else hour % 12
+        return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, amPm)
+    }
+
+    private fun formatNextTrigger(hour: Int, minute: Int, isEnabled: Boolean): String {
+        if (!isEnabled) return "Reminders currently paused"
+        val now = Calendar.getInstance()
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= now.timeInMillis) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+        val isToday = cal.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) &&
+                cal.get(Calendar.YEAR) == now.get(Calendar.YEAR)
+        val prefix = if (isToday) "Today at" else "Tomorrow at"
+        val amPm = if (hour >= 12) "PM" else "AM"
+        val h = if (hour % 12 == 0) 12 else hour % 12
+        return "Next alarm: $prefix " + String.format(Locale.US, "%02d:%02d %s", h, minute, amPm)
     }
 
     private fun seedDefaultNotificationsIfEmpty() {
@@ -150,7 +231,11 @@ class NotificationsViewModel : ViewModel() {
     }
 
     fun onToggleDailyReminder(enabled: Boolean, context: Context? = null) {
-        _uiState.value = _uiState.value.copy(isDailyReminderEnabled = enabled)
+        val nextText = formatNextTrigger(_uiState.value.reminderHour, _uiState.value.reminderMinute, enabled)
+        _uiState.value = _uiState.value.copy(
+            isDailyReminderEnabled = enabled,
+            nextScheduledTimeFormatted = nextText
+        )
         val userId = getUserId()
         val timeText = _uiState.value.reminderTimeText
         val daysText = _uiState.value.selectedDays.joinToString(", ")
@@ -160,11 +245,17 @@ class NotificationsViewModel : ViewModel() {
                 context = context,
                 hourOfDay = _uiState.value.reminderHour,
                 minute = _uiState.value.reminderMinute,
-                title = "Daily Practice Reminder",
-                message = "It's $timeText! Time for your ${_uiState.value.selectedSkill} practice."
+                skillName = _uiState.value.selectedSkill,
+                userId = userId
             )
+            viewModelScope.launch {
+                _eventChannel.send(NotificationsUiEvent.ShowToast("Daily practice reminder enabled for $timeText"))
+            }
         } else if (!enabled && context != null) {
-            SmartNotificationManager.cancelPracticeReminder(context)
+            SmartNotificationManager.cancelPracticeReminder(context, userId)
+            viewModelScope.launch {
+                _eventChannel.send(NotificationsUiEvent.ShowToast("Daily practice reminder paused"))
+            }
         }
 
         viewModelScope.launch {
@@ -175,41 +266,163 @@ class NotificationsViewModel : ViewModel() {
                 days = daysText,
                 isEnabled = enabled
             )
+            ApiClient.updateSettings(
+                userId = userId,
+                reminders = enabled
+            )
         }
     }
 
     fun onSetReminderTime(hour: Int, minute: Int, context: Context? = null) {
-        val amPm = if (hour >= 12) "PM" else "AM"
-        val displayHour = if (hour % 12 == 0) 12 else hour % 12
-        val timeText = String.format(Locale.US, "%02d:%02d %s", displayHour, minute, amPm)
+        val timeText = formatDisplayTime(hour, minute)
+        val nextText = formatNextTrigger(hour, minute, _uiState.value.isDailyReminderEnabled)
 
         _uiState.value = _uiState.value.copy(
             reminderHour = hour,
             reminderMinute = minute,
-            reminderTimeText = timeText
+            reminderTimeText = timeText,
+            nextScheduledTimeFormatted = nextText
         )
+    }
 
+    /**
+     * Explicit Save Reminder Action
+     * Locks in the chosen time, schedules with AlarmManager, saves locally and syncs to backend.
+     */
+    fun saveReminderSettings(context: Context) {
         val userId = getUserId()
+        val timeText = _uiState.value.reminderTimeText
         val daysText = _uiState.value.selectedDays.joinToString(", ")
+        val isEnabled = _uiState.value.isDailyReminderEnabled
+        val hour = _uiState.value.reminderHour
+        val minute = _uiState.value.reminderMinute
+        val skill = _uiState.value.selectedSkill
 
-        if (_uiState.value.isDailyReminderEnabled && context != null) {
+        _uiState.value = _uiState.value.copy(isSavingReminder = true)
+
+        if (isEnabled) {
             SmartNotificationManager.scheduleDailyPracticeReminder(
                 context = context,
                 hourOfDay = hour,
                 minute = minute,
                 title = "Daily Practice Reminder",
-                message = "It's $timeText! Time for your ${_uiState.value.selectedSkill} practice."
+                message = "It's $timeText! Time for your $skill practice.",
+                skillName = skill,
+                userId = userId
             )
+        } else {
+            SmartNotificationManager.cancelPracticeReminder(context, userId)
         }
+
+        val nextText = formatNextTrigger(hour, minute, isEnabled)
 
         viewModelScope.launch {
             ApiClient.saveReminder(
                 userId = userId,
-                title = "${_uiState.value.selectedSkill} Practice",
+                title = "$skill Practice",
                 time = timeText,
                 days = daysText,
-                isEnabled = _uiState.value.isDailyReminderEnabled
+                isEnabled = isEnabled
             )
+            ApiClient.updateSettings(
+                userId = userId,
+                reminders = isEnabled
+            )
+            _uiState.value = _uiState.value.copy(
+                isSavingReminder = false,
+                isSettingsDialogOpen = false,
+                nextScheduledTimeFormatted = nextText
+            )
+            val msg = if (isEnabled) "Reminder saved for $timeText daily!" else "Reminder preferences saved."
+            _eventChannel.send(NotificationsUiEvent.ShowToast(msg))
+        }
+    }
+
+    /**
+     * Immediately triggers a high-priority test push notification
+     */
+    fun triggerInstantTest(context: Context) {
+        val title = "AI Skill Mirror Practice Test"
+        val message = SmartNotificationManager.MOTIVATIONAL_MESSAGES.random()
+        val currentTs = SimpleDateFormat("h:mm a", Locale.US).format(Date())
+
+        SmartNotificationManager.showLocalNotification(
+            context = context,
+            title = title,
+            message = message,
+            targetScreen = "DAILY_TRAINING"
+        )
+
+        val newItem = NotificationItem(
+            id = System.currentTimeMillis().toString(),
+            title = title,
+            description = message,
+            timestampText = "Today, $currentTs",
+            badgeText = "TEST",
+            isGreenBadge = true,
+            iconType = NotificationIconType.ALARM,
+            category = "PRACTICE",
+            isRead = false
+        )
+        _uiState.value = _uiState.value.copy(
+            todayNotifications = listOf(newItem) + _uiState.value.todayNotifications,
+            unreadCount = _uiState.value.unreadCount + 1
+        )
+
+        viewModelScope.launch {
+            ApiClient.createNotification(
+                userId = getUserId(),
+                title = title,
+                description = message,
+                badgeText = "TEST",
+                iconType = "ALARM",
+                category = "PRACTICE"
+            )
+            _eventChannel.send(NotificationsUiEvent.ShowToast("Test notification sent! Check your notification shade."))
+        }
+    }
+
+    /**
+     * Schedules a test reminder for exactly 2 minutes ahead using AlarmManager
+     */
+    fun scheduleTestReminderTwoMinutes(context: Context) {
+        val userId = getUserId()
+        val triggerEpoch = SmartNotificationManager.scheduleDailyPracticeReminder(
+            context = context,
+            hourOfDay = _uiState.value.reminderHour,
+            minute = _uiState.value.reminderMinute,
+            title = "Daily Practice Test (2-Min)",
+            message = "Hey! Your 2-minute test practice reminder just fired. Notifications are fully working!",
+            skillName = _uiState.value.selectedSkill,
+            userId = userId,
+            delayMinutes = 2
+        )
+
+        val triggerTimeText = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date(triggerEpoch))
+        viewModelScope.launch {
+            _eventChannel.send(
+                NotificationsUiEvent.ShowToast(
+                    "Test reminder scheduled for $triggerTimeText (2 mins). You can lock your phone or close the app to test!"
+                )
+            )
+        }
+    }
+
+    fun onRequestPermissionClick() {
+        viewModelScope.launch {
+            _eventChannel.send(NotificationsUiEvent.RequestPermission)
+        }
+    }
+
+    fun onOpenAppSettingsClick() {
+        viewModelScope.launch {
+            _eventChannel.send(NotificationsUiEvent.OpenAppSettings)
+        }
+    }
+
+    fun onOpenExactAlarmSettingsClick() {
+        viewModelScope.launch {
+            _eventChannel.send(NotificationsUiEvent.OpenExactAlarmSettings)
         }
     }
 
@@ -264,7 +477,6 @@ class NotificationsViewModel : ViewModel() {
                         todayNotifications = listOf(alertItem) + _uiState.value.todayNotifications,
                         unreadCount = _uiState.value.unreadCount + 1
                     )
-                    // Persist to backend
                     launch {
                         ApiClient.createNotification(
                             userId = getUserId(),
@@ -283,7 +495,6 @@ class NotificationsViewModel : ViewModel() {
                 )
 
                 if (newSeconds <= 0) {
-                    // Practice session completed!
                     SmartNotificationManager.showSessionCompleted(context)
                     val finishTs = SimpleDateFormat("h:mm a", Locale.US).format(Date())
                     val finishItem = NotificationItem(
@@ -303,7 +514,6 @@ class NotificationsViewModel : ViewModel() {
                         todayNotifications = listOf(finishItem) + _uiState.value.todayNotifications,
                         unreadCount = _uiState.value.unreadCount + 1
                     )
-                    // Persist to backend
                     launch {
                         ApiClient.createNotification(
                             userId = getUserId(),
@@ -321,26 +531,27 @@ class NotificationsViewModel : ViewModel() {
         }
     }
 
-    fun pauseTimer() {
-        if (_uiState.value.isTimerRunning && !_uiState.value.isTimerPaused) {
-            timerJob?.cancel()
-            _uiState.value = _uiState.value.copy(isTimerPaused = true)
-        }
+    fun resumeTimer(context: Context) {
+        startTimer(context)
     }
 
-    fun resumeTimer(context: Context) {
-        if (_uiState.value.isTimerRunning && _uiState.value.isTimerPaused) {
-            startTimer(context)
-        }
+    fun pauseTimer() {
+        if (!_uiState.value.isTimerRunning) return
+        timerJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            isTimerRunning = false,
+            isTimerPaused = true
+        )
     }
 
     fun resetTimer() {
         timerJob?.cancel()
         val totalSec = _uiState.value.timerSelectedMinutes * 60
         _uiState.value = _uiState.value.copy(
+            remainingSeconds = totalSec,
+            totalSeconds = totalSec,
             isTimerRunning = false,
             isTimerPaused = false,
-            remainingSeconds = totalSec,
             hasShownFiveMinuteWarning = false,
             showCompletionDialog = false
         )
@@ -350,7 +561,6 @@ class NotificationsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(showCompletionDialog = false)
     }
 
-    // Smart notifications triggering helper (for instant delivery and testing)
     fun triggerSmartNotification(context: Context, type: String) {
         val userId = getUserId()
         val timeText = _uiState.value.reminderTimeText
@@ -359,7 +569,7 @@ class NotificationsViewModel : ViewModel() {
         val (title, message, badge, icon, category, isGreen) = when (type) {
             "DAILY_PRACTICE" -> Tuple6(
                 "Daily Practice Reminder",
-                "It's $timeText! Time for your Public Speaking practice.",
+                "It's $timeText! Time for your ${_uiState.value.selectedSkill} practice.",
                 "REMINDER",
                 NotificationIconType.ALARM,
                 "LEARNING",
@@ -398,8 +608,8 @@ class NotificationsViewModel : ViewModel() {
                 false
             )
             else -> Tuple6(
-                "Public Speaking Training",
-                "Speech Studio is ready for your next delivery practice.",
+                "Daily Training",
+                "Your training studio is ready for your next practice.",
                 "PRACTICE",
                 NotificationIconType.MIC,
                 "LEARNING",
@@ -407,15 +617,13 @@ class NotificationsViewModel : ViewModel() {
             )
         }
 
-        // Show local Android notification with High Priority
         SmartNotificationManager.showLocalNotification(
             context = context,
             title = title,
             message = message,
-            targetScreen = "SPEECH_STUDIO"
+            targetScreen = "DAILY_TRAINING"
         )
 
-        // Add to UI state
         val newItem = NotificationItem(
             id = System.currentTimeMillis().toString(),
             title = title,
@@ -432,7 +640,6 @@ class NotificationsViewModel : ViewModel() {
             unreadCount = _uiState.value.unreadCount + 1
         )
 
-        // Save to database
         viewModelScope.launch {
             ApiClient.createNotification(
                 userId = userId,
@@ -477,38 +684,7 @@ class NotificationsViewModel : ViewModel() {
     }
 
     fun saveSettings(context: Context) {
-        val userId = getUserId()
-        val timeText = _uiState.value.reminderTimeText
-        val daysText = _uiState.value.selectedDays.joinToString(", ")
-        val isEnabled = _uiState.value.isDailyReminderEnabled
-
-        if (isEnabled) {
-            SmartNotificationManager.scheduleDailyPracticeReminder(
-                context = context,
-                hourOfDay = _uiState.value.reminderHour,
-                minute = _uiState.value.reminderMinute,
-                title = "Daily Practice Reminder",
-                message = "It's $timeText! Time for your ${_uiState.value.selectedSkill} practice."
-            )
-        } else {
-            SmartNotificationManager.cancelPracticeReminder(context)
-        }
-
-        viewModelScope.launch {
-            ApiClient.saveReminder(
-                userId = userId,
-                title = "${_uiState.value.selectedSkill} Practice",
-                time = timeText,
-                days = daysText,
-                isEnabled = isEnabled
-            )
-            ApiClient.updateSettings(
-                userId = userId,
-                reminders = isEnabled
-            )
-            _uiState.value = _uiState.value.copy(isSettingsDialogOpen = false)
-            _eventChannel.send(NotificationsUiEvent.ShowToast("Notification settings saved successfully!"))
-        }
+        saveReminderSettings(context)
     }
 
     // Mark single notification as read

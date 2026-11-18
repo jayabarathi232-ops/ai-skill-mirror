@@ -50,6 +50,8 @@ data class NotificationsUiState(
     val selectedSkill: String = "Public Speaking",
     val selectedFrequency: String = "Daily",
     val selectedDays: Set<String> = setOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+    val nextScheduledTimeFormatted: String = "",
+    val isSavingReminder: Boolean = false,
     
     // Settings Dialog Modal
     val isSettingsDialogOpen: Boolean = false,
@@ -77,7 +79,8 @@ data class NotificationsUiState(
     val olderNotifications: List<NotificationItem> = emptyList(),
     
     val bannerMessage: String? = null,
-    val hasNotificationPermission: Boolean = true
+    val hasNotificationPermission: Boolean = true,
+    val hasExactAlarmPermission: Boolean = true
 )
 
 sealed interface NotificationsUiEvent {
@@ -85,4 +88,6 @@ sealed interface NotificationsUiEvent {
     object NavigateBack : NotificationsUiEvent
     object NavigateToPractice : NotificationsUiEvent
     object RequestPermission : NotificationsUiEvent
+    object OpenAppSettings : NotificationsUiEvent
+    object OpenExactAlarmSettings : NotificationsUiEvent
 }

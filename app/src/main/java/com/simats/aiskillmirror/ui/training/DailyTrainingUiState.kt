@@ -1,5 +1,12 @@
 package com.simats.aiskillmirror.ui.training
 
+enum class VocalAnalysisState {
+    IDLE,
+    ANALYSIS_PENDING,
+    ANALYSIS_SUCCESS,
+    ANALYSIS_FAILED
+}
+
 data class PracticeItem(
     val id: String,
     val title: String,
@@ -12,7 +19,9 @@ data class PracticeItem(
     val scoreReason: String? = null,
     val strengths: List<String> = emptyList(),
     val weaknesses: List<String> = emptyList(),
-    val aiFeedback: String = ""
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val assessmentType: String = ""
 )
 
 data class WeeklyPlanItem(
@@ -92,18 +101,44 @@ data class DailyTrainingUiState(
     val isEvaluatingArtifact: Boolean = false,
     val codeSnippetInput: String = "",
     val speechTranscriptInput: String = "",
+    val selectedImagePath: String? = null,
     val selectedItemForDetail: PracticeItem? = null,
+    val showItemDetailDialog: Boolean = false,
 
-    // Voice & Singing Microphone Recording State (Requirement 4)
+    // Voice & Singing Microphone Recording State (Music Vocal Practice)
     val isRecordingVoice: Boolean = false,
+    val isRecordingPaused: Boolean = false,
     val recordedAudioPath: String? = null,
     val voiceRecordSeconds: Int = 0,
     val isPlayingVoice: Boolean = false,
     val audioRecordError: String? = null,
     val evaluationError: String? = null,
     val canRetryAnalysis: Boolean = false,
-    val isAnalysisComplete: Boolean = false
-)
+    val isAnalysisComplete: Boolean = false,
+    val showVocalReviewDialog: Boolean = false,
+    val vocalAnalysisState: VocalAnalysisState = VocalAnalysisState.IDLE,
+    val liveAmplitudeWaveforms: List<Float> = listOf(0.2f, 0.5f, 0.8f, 0.4f, 0.9f, 0.6f, 0.3f, 0.7f)
+) {
+    val isVocalSkill: Boolean
+        get() {
+            val skill = activeMainSkill.lowercase().trim()
+            val sub = activeSubcategoryName.lowercase().trim()
+            val title = upNextTitle.lowercase().trim()
+            val cat = upNextCategory.lowercase().trim()
+            val isMusic = skill.contains("music") || cat.contains("music")
+            val hasVocal = sub.contains("sing") || sub.contains("vocal") || sub.contains("voice") ||
+                    title.contains("sing") || title.contains("vocal") || title.contains("voice") ||
+                    cat.contains("sing") || cat.contains("vocal")
+            return isMusic && hasVocal
+        }
+
+    val formattedVoiceRecordDuration: String
+        get() {
+            val m = voiceRecordSeconds / 60
+            val s = voiceRecordSeconds % 60
+            return String.format("%02d:%02d", m, s)
+        }
+}
 
 sealed interface DailyTrainingUiEvent {
     object StartPracticeSession : DailyTrainingUiEvent

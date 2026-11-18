@@ -8,14 +8,42 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * ReminderBroadcastReceiver
+ *
+ * Receives:
+ * 1. AlarmManager exact reminder alarms -> displays notification, records into DB, chains next day.
+ * 2. System boot / package replace / timezone change broadcasts -> restores scheduled alarms.
+ */
 class ReminderBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val title = intent.getStringExtra("reminder_title") ?: "Daily Practice Reminder"
-        val message = intent.getStringExtra("reminder_message") ?: "Time for your Public Speaking practice. Keep your streak alive!"
-        val targetScreen = intent.getStringExtra("target_screen") ?: "SPEECH_STUDIO"
+        val action = intent.action
 
-        // 1. Show the local Android push notification
+        // 1. Handle Device Reboot, Timezone Changes, or App Updates
+        if (action == Intent.ACTION_BOOT_COMPLETED ||
+            action == "android.intent.action.QUICKBOOT_POWERON" ||
+            action == "com.htc.intent.action.QUICKBOOT_POWERON" ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == Intent.ACTION_TIME_CHANGED ||
+            action == "android.intent.action.TIME_SET" ||
+            action == Intent.ACTION_TIMEZONE_CHANGED
+        ) {
+            SmartNotificationManager.rescheduleSavedReminders(context)
+            return
+        }
+
+        // 2. Handle Practice Reminder Alarm Trigger
+        val title = intent.getStringExtra("reminder_title") ?: "Daily Practice Reminder"
+        val message = intent.getStringExtra("reminder_message") ?: "Your AI Skill Mirror practice session is waiting!"
+        val targetScreen = intent.getStringExtra("target_screen") ?: "DAILY_TRAINING"
+        val skillName = intent.getStringExtra("skill_name") ?: "Public Speaking"
+        val userId = intent.getIntExtra("user_id", 1)
+        val hour = intent.getIntExtra("reminder_hour", 18)
+        val minute = intent.getIntExtra("reminder_minute", 0)
+        val isTest = intent.getBooleanExtra("is_test", false)
+
+        // Show local Android notification with High Priority
         SmartNotificationManager.showLocalNotification(
             context = context,
             title = title,
@@ -23,12 +51,24 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
             targetScreen = targetScreen
         )
 
-        // 2. Persist notification into backend database asynchronously
+        // If this was a regular daily reminder (not a one-off test), chain and reschedule next day's exact alarm
+        if (!isTest) {
+            SmartNotificationManager.scheduleDailyPracticeReminder(
+                context = context,
+                hourOfDay = hour,
+                minute = minute,
+                skillName = skillName,
+                userId = userId,
+                targetScreen = targetScreen
+            )
+        }
+
+        // Asynchronously persist notification into backend database
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 ApiClient.createNotification(
-                    userId = 1,
+                    userId = userId,
                     title = title,
                     description = message,
                     badgeText = "REMINDER",

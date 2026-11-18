@@ -55,7 +55,9 @@ class DailyTrainingViewModel : ViewModel() {
                         scoreReason = it.scoreReason,
                         strengths = it.strengths,
                         weaknesses = it.weaknesses,
-                        aiFeedback = it.aiFeedback
+                        aiFeedback = it.aiFeedback,
+                        metrics = it.metrics,
+                        assessmentType = it.assessmentType
                     )
                 }
 
@@ -110,7 +112,7 @@ class DailyTrainingViewModel : ViewModel() {
     // Real Practice Session Timer Management
     // ==========================================
 
-    fun startPracticeSession() {
+    fun startPracticeSession(context: Context? = null, autoRecordVoice: Boolean = false) {
         sessionTimerJob?.cancel()
         _uiState.value = _uiState.value.copy(
             isSessionActive = true,
@@ -119,7 +121,11 @@ class DailyTrainingViewModel : ViewModel() {
             formattedElapsed = "00:00",
             completionCelebration = null,
             lastSessionScoreResult = null,
-            showSessionCompletionDialog = false
+            showSessionCompletionDialog = false,
+            showVocalReviewDialog = false,
+            vocalAnalysisState = VocalAnalysisState.IDLE,
+            recordedAudioPath = null,
+            voiceRecordSeconds = 0
         )
 
         sessionTimerJob = viewModelScope.launch {
@@ -138,25 +144,73 @@ class DailyTrainingViewModel : ViewModel() {
                 }
             }
         }
+
+        if (context != null && autoRecordVoice && _uiState.value.isVocalSkill) {
+            startVoiceRecording(context)
+        }
     }
 
     fun pausePracticeSession() {
         _uiState.value = _uiState.value.copy(isSessionPaused = true)
+        if (_uiState.value.isRecordingVoice) {
+            pauseVoiceRecording()
+        }
     }
 
     fun resumePracticeSession() {
         _uiState.value = _uiState.value.copy(isSessionPaused = false)
+        if (_uiState.value.isRecordingVoice && _uiState.value.isRecordingPaused) {
+            resumeVoiceRecording()
+        }
     }
 
     fun cancelPracticeSession() {
         sessionTimerJob?.cancel()
         sessionTimerJob = null
+        stopVoiceRecording()
+        clearVoiceRecording()
         _uiState.value = _uiState.value.copy(
             isSessionActive = false,
             isSessionPaused = false,
             elapsedSeconds = 0,
-            formattedElapsed = "00:00"
+            formattedElapsed = "00:00",
+            showVocalReviewDialog = false
         )
+    }
+
+    /**
+     * Called when user presses Finish on the practice session.
+     * In Music Vocal sessions, stops recording, preserves audio, and opens preview/analysis.
+     * In other skills, completes normally.
+     */
+    fun onFinishSessionClick(context: Context) {
+        val current = _uiState.value
+        if (current.isVocalSkill) {
+            if (current.isRecordingVoice) {
+                stopVoiceRecording()
+            }
+            sessionTimerJob?.cancel()
+            sessionTimerJob = null
+
+            val audioPath = _uiState.value.recordedAudioPath
+            val audioFile = audioPath?.let { File(it) }
+            if (audioFile != null && audioFile.exists() && audioFile.length() >= 400) {
+                // Show Vocal Review & AI Analysis preview (Requirements 4, 7, 10)
+                _uiState.value = _uiState.value.copy(
+                    isSessionActive = false,
+                    isSessionPaused = false,
+                    showVocalReviewDialog = true,
+                    vocalAnalysisState = VocalAnalysisState.IDLE,
+                    evaluationError = null,
+                    canRetryAnalysis = false
+                )
+            } else {
+                // No vocal recording provided -> Award XP with "Score Not Available" (Requirement 11)
+                finishAndCompleteSession(audioPath = null)
+            }
+        } else {
+            finishAndCompleteSession()
+        }
     }
 
     fun finishAndCompleteSession(
@@ -168,10 +222,12 @@ class DailyTrainingViewModel : ViewModel() {
     ) {
         sessionTimerJob?.cancel()
         sessionTimerJob = null
+        if (_uiState.value.isRecordingVoice) {
+            stopVoiceRecording()
+        }
 
         val current = _uiState.value
         val actualSeconds = current.elapsedSeconds
-        // Count actual minutes: at least 1 min for completed session
         val actualMinutes = maxOf(1, ceil(actualSeconds / 60.0).toInt())
         val lessonId = current.pendingPracticeItems.firstOrNull()?.id ?: "1"
         val taskTitle = current.upNextTitle
@@ -185,7 +241,6 @@ class DailyTrainingViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCompleting = true)
 
-            // Submit actual recorded duration & optional evaluation artifact to backend database
             val result = ApiClient.completeLesson(
                 userId = UserSession.userId,
                 lessonId = lessonId,
@@ -227,6 +282,7 @@ class DailyTrainingViewModel : ViewModel() {
                 lastSessionScoreResult = scoreRes,
                 showSessionCompletionDialog = true,
                 showEvaluationModal = false,
+                showVocalReviewDialog = false,
                 codeSnippetInput = "",
                 speechTranscriptInput = "",
                 recordedAudioPath = null,
@@ -235,7 +291,6 @@ class DailyTrainingViewModel : ViewModel() {
                 completionCelebration = "🎉 Session completed in ${actualSeconds}s ($actualMinutes min)! +35 XP earned and recorded."
             )
 
-            // Refresh from database to load real saved metrics
             loadTraining()
         }
     }
@@ -255,11 +310,19 @@ class DailyTrainingViewModel : ViewModel() {
     }
 
     fun onCodeSnippetChange(code: String) {
-        _uiState.value = _uiState.value.copy(codeSnippetInput = code)
+        _uiState.value = _uiState.value.copy(codeSnippetInput = code, evaluationError = null)
     }
 
     fun onSpeechTranscriptChange(transcript: String) {
-        _uiState.value = _uiState.value.copy(speechTranscriptInput = transcript)
+        _uiState.value = _uiState.value.copy(speechTranscriptInput = transcript, evaluationError = null)
+    }
+
+    fun onImageSelected(path: String?) {
+        _uiState.value = _uiState.value.copy(selectedImagePath = path, evaluationError = null)
+    }
+
+    fun clearSelectedImage() {
+        _uiState.value = _uiState.value.copy(selectedImagePath = null)
     }
 
     fun dismissCompletionDialog() {
@@ -267,11 +330,17 @@ class DailyTrainingViewModel : ViewModel() {
     }
 
     fun openItemDetail(item: PracticeItem) {
-        _uiState.value = _uiState.value.copy(selectedItemForDetail = item)
+        _uiState.value = _uiState.value.copy(
+            selectedItemForDetail = item,
+            showItemDetailDialog = true
+        )
     }
 
     fun closeItemDetail() {
-        _uiState.value = _uiState.value.copy(selectedItemForDetail = null)
+        _uiState.value = _uiState.value.copy(
+            selectedItemForDetail = null,
+            showItemDetailDialog = false
+        )
     }
 
     fun clearCelebration() {
@@ -296,7 +365,10 @@ class DailyTrainingViewModel : ViewModel() {
         }
     }
 
-    // Microphone Voice Recording for Singing / Practice (Requirement 4)
+    // ==========================================
+    // Live Voice Recording (Music Vocal Practice)
+    // ==========================================
+
     fun startVoiceRecording(context: Context) {
         try {
             stopVoicePlayback()
@@ -313,6 +385,8 @@ class DailyTrainingViewModel : ViewModel() {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(128000)
+                setAudioSamplingRate(44100)
                 setOutputFile(file.absolutePath)
                 prepare()
                 start()
@@ -320,23 +394,61 @@ class DailyTrainingViewModel : ViewModel() {
             mediaRecorder = recorder
             _uiState.value = _uiState.value.copy(
                 isRecordingVoice = true,
+                isRecordingPaused = false,
                 voiceRecordSeconds = 0,
                 audioRecordError = null,
                 evaluationError = null,
                 canRetryAnalysis = false,
-                isAnalysisComplete = false
+                isAnalysisComplete = false,
+                liveAmplitudeWaveforms = listOf(0.2f, 0.4f, 0.6f, 0.3f, 0.7f, 0.5f, 0.8f, 0.4f)
             )
+
             voiceTimerJob?.cancel()
             voiceTimerJob = viewModelScope.launch {
+                var quarterTicks = 0
                 while (_uiState.value.isRecordingVoice) {
-                    delay(1000)
-                    _uiState.value = _uiState.value.copy(
-                        voiceRecordSeconds = _uiState.value.voiceRecordSeconds + 1
-                    )
+                    delay(250L)
+                    quarterTicks++
+                    if (quarterTicks % 4 == 0 && !_uiState.value.isRecordingPaused) {
+                        _uiState.value = _uiState.value.copy(
+                            voiceRecordSeconds = _uiState.value.voiceRecordSeconds + 1
+                        )
+                    }
+                    if (!_uiState.value.isRecordingPaused) {
+                        val amp = try {
+                            (mediaRecorder?.maxAmplitude ?: 0) / 32767f
+                        } catch (_: Exception) {
+                            0.25f
+                        }
+                        val oldList = _uiState.value.liveAmplitudeWaveforms
+                        val newList = (oldList.drop(1) + listOf(amp.coerceIn(0.1f, 1.0f)))
+                        _uiState.value = _uiState.value.copy(liveAmplitudeWaveforms = newList)
+                    }
                 }
             }
         } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(audioRecordError = "Microphone error: ${e.message}. Please check audio permissions.")
+            _uiState.value = _uiState.value.copy(
+                isRecordingVoice = false,
+                audioRecordError = "Microphone error: ${e.message}. Please check audio permissions."
+            )
+        }
+    }
+
+    fun pauseVoiceRecording() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                mediaRecorder?.pause()
+                _uiState.value = _uiState.value.copy(isRecordingPaused = true)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun resumeVoiceRecording() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                mediaRecorder?.resume()
+                _uiState.value = _uiState.value.copy(isRecordingPaused = false)
+            } catch (_: Exception) {}
         }
     }
 
@@ -352,6 +464,7 @@ class DailyTrainingViewModel : ViewModel() {
             if (file != null && file.exists() && file.length() >= 400) {
                 _uiState.value = _uiState.value.copy(
                     isRecordingVoice = false,
+                    isRecordingPaused = false,
                     recordedAudioPath = file.absolutePath,
                     audioRecordError = null,
                     evaluationError = null,
@@ -360,6 +473,7 @@ class DailyTrainingViewModel : ViewModel() {
             } else {
                 _uiState.value = _uiState.value.copy(
                     isRecordingVoice = false,
+                    isRecordingPaused = false,
                     recordedAudioPath = null,
                     audioRecordError = "Recording was too short or empty. Please sing clearly into your microphone."
                 )
@@ -367,6 +481,7 @@ class DailyTrainingViewModel : ViewModel() {
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isRecordingVoice = false,
+                isRecordingPaused = false,
                 audioRecordError = "Stop error: ${e.message}"
             )
         }
@@ -413,31 +528,43 @@ class DailyTrainingViewModel : ViewModel() {
         audioRecordingFile = null
         _uiState.value = _uiState.value.copy(
             isRecordingVoice = false,
+            isRecordingPaused = false,
             recordedAudioPath = null,
             voiceRecordSeconds = 0,
             isPlayingVoice = false,
             audioRecordError = null,
             evaluationError = null,
             canRetryAnalysis = false,
-            isAnalysisComplete = false
+            isAnalysisComplete = false,
+            vocalAnalysisState = VocalAnalysisState.IDLE
         )
     }
 
     /**
-     * Submit recorded singing voice for genuine AI Performance Evaluation (Requirements 1, 5, 6, 10, 11, 13)
-     * - Evaluates the recording only ONCE
-     * - Shows loading spinner while evaluating
-     * - Prevents duplicate clicks while processing
-     * - Saves result to database
-     * - Leaves the audio path intact so the user does NOT have to re-record if a network retry is needed
+     * Retake voice recording in review dialog
+     */
+    fun retakeVoiceRecording(context: Context) {
+        stopVoicePlayback()
+        clearVoiceRecording()
+        _uiState.value = _uiState.value.copy(
+            showVocalReviewDialog = false,
+            isSessionActive = true,
+            isSessionPaused = false
+        )
+        startVoiceRecording(context)
+    }
+
+    /**
+     * Submit recorded singing voice for genuine AI Performance Evaluation (Requirements 1, 4-10)
      */
     fun submitSingingVoiceForAnalysis() {
         val current = _uiState.value
-        if (current.isEvaluatingArtifact) return // Prevent duplicate submissions
+        if (current.isEvaluatingArtifact || current.vocalAnalysisState == VocalAnalysisState.ANALYSIS_PENDING) return
 
         val audioPath = current.recordedAudioPath
         if (audioPath.isNullOrBlank()) {
             _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                 evaluationError = "No audio recording found. Please tap record to sing first.",
                 canRetryAnalysis = false
             )
@@ -447,6 +574,7 @@ class DailyTrainingViewModel : ViewModel() {
         val file = File(audioPath)
         if (!file.exists() || file.length() < 400) {
             _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                 evaluationError = "Recording is empty or too short. Please record at least 3 seconds of singing.",
                 canRetryAnalysis = false
             )
@@ -463,6 +591,7 @@ class DailyTrainingViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isEvaluatingArtifact = true,
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
                 evaluationError = null,
                 canRetryAnalysis = false
             )
@@ -499,11 +628,14 @@ class DailyTrainingViewModel : ViewModel() {
                 if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
                         lastSessionScoreResult = scoreRes,
                         isAnalysisComplete = true,
                         evaluationError = null,
                         canRetryAnalysis = false
                     )
+                    // Refresh from database to immediately update "Completed Sessions" card with real score (Requirement 9)
+                    loadTraining()
                 } else {
                     val reason = scoreRes?.scoreReason
                         ?: scoreRes?.aiFeedback
@@ -511,6 +643,7 @@ class DailyTrainingViewModel : ViewModel() {
                         ?: "Performance score could not be calculated from this recording."
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                         evaluationError = reason,
                         canRetryAnalysis = true,
                         isAnalysisComplete = false,
@@ -520,7 +653,8 @@ class DailyTrainingViewModel : ViewModel() {
             } else {
                 _uiState.value = _uiState.value.copy(
                     isEvaluatingArtifact = false,
-                    evaluationError = result.message ?: "Failed to connect to AI evaluation backend. You can retry without recording again.",
+                    vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                    evaluationError = result.message ?: "Failed to connect to AI evaluation backend. You can retry analysis with your recording.",
                     canRetryAnalysis = true,
                     isAnalysisComplete = false
                 )
@@ -529,14 +663,367 @@ class DailyTrainingViewModel : ViewModel() {
     }
 
     /**
-     * Retry AI analysis using the existing recorded audio file without asking user to re-record (Requirement 12)
+     * Submit source code for AI compiler analysis and unit test assertion scoring
+     */
+    fun submitCodingPractice() {
+        val current = _uiState.value
+        val code = current.codeSnippetInput.trim()
+        if (code.isBlank() || code.length < 10) {
+            _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                evaluationError = "Please enter or paste your code solution (minimum 10 characters) to evaluate.",
+                canRetryAnalysis = false
+            )
+            return
+        }
+
+        val actualSeconds = current.elapsedSeconds
+        val actualMinutes = maxOf(1, ceil(actualSeconds / 60.0).toInt())
+        val lessonId = current.pendingPracticeItems.firstOrNull()?.id ?: "1"
+        val taskTitle = current.upNextTitle
+        val mainSkill = current.activeMainSkill.ifBlank { "coding" }
+        val subcategoryId = current.activeSubcategoryName.lowercase().replace(" ", "_").replace("/", "_")
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isEvaluatingArtifact = true,
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
+                evaluationError = null,
+                canRetryAnalysis = false
+            )
+
+            val result = ApiClient.completeLesson(
+                userId = UserSession.userId,
+                lessonId = lessonId,
+                taskTitle = taskTitle,
+                durationSeconds = actualSeconds,
+                durationMinutes = actualMinutes,
+                xpPoints = 35,
+                mainSkill = mainSkill,
+                subcategoryId = subcategoryId,
+                codeSnippet = code
+            )
+
+            if (result.isSuccess && result.data != null) {
+                val scoreRes = result.data.performanceScore?.let { ps ->
+                    PerformanceScoreResult(
+                        score = ps.score,
+                        scoreStatus = ps.scoreStatus,
+                        scoreReason = ps.scoreReason,
+                        strengths = ps.strengths,
+                        weaknesses = ps.weaknesses,
+                        aiFeedback = ps.aiFeedback,
+                        metrics = ps.metrics,
+                        assessmentType = ps.assessmentType,
+                        taskTitle = ps.taskTitle.ifBlank { taskTitle },
+                        durationMinutes = actualMinutes,
+                        xpEarned = ps.xpEarned
+                    )
+                }
+
+                if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
+                        lastSessionScoreResult = scoreRes,
+                        isAnalysisComplete = true,
+                        evaluationError = null,
+                        canRetryAnalysis = false
+                    )
+                    loadTraining()
+                } else {
+                    val reason = scoreRes?.scoreReason
+                        ?: scoreRes?.aiFeedback
+                        ?: result.message
+                        ?: "Code performance score could not be calculated."
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                        evaluationError = reason,
+                        canRetryAnalysis = true,
+                        isAnalysisComplete = false,
+                        lastSessionScoreResult = scoreRes
+                    )
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isEvaluatingArtifact = false,
+                    vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                    evaluationError = result.message ?: "Failed to connect to AI evaluation backend. You can retry analysis with your code.",
+                    canRetryAnalysis = true,
+                    isAnalysisComplete = false
+                )
+            }
+        }
+    }
+
+    /**
+     * Submit artwork or photo for AI visual composition, lighting, and sharpness analysis
+     */
+    fun submitImagePractice(isDrawing: Boolean) {
+        val current = _uiState.value
+        val imagePath = current.selectedImagePath
+        if (imagePath.isNullOrBlank()) {
+            _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                evaluationError = "Please select or take a photo of your ${if (isDrawing) "drawing artwork" else "photograph"} first.",
+                canRetryAnalysis = false
+            )
+            return
+        }
+
+        val file = File(imagePath)
+        if (!file.exists() || file.length() < 200) {
+            _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                evaluationError = "Image file is invalid or empty. Please select a valid picture file.",
+                canRetryAnalysis = false
+            )
+            return
+        }
+
+        val actualSeconds = current.elapsedSeconds
+        val actualMinutes = maxOf(1, ceil(actualSeconds / 60.0).toInt())
+        val lessonId = current.pendingPracticeItems.firstOrNull()?.id ?: "1"
+        val taskTitle = current.upNextTitle
+        val mainSkill = if (isDrawing) "drawing" else "photography"
+        val subcategoryId = current.activeSubcategoryName.lowercase().replace(" ", "_").replace("/", "_")
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isEvaluatingArtifact = true,
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
+                evaluationError = null,
+                canRetryAnalysis = false
+            )
+
+            val result = ApiClient.completeLesson(
+                userId = UserSession.userId,
+                lessonId = lessonId,
+                taskTitle = taskTitle,
+                durationSeconds = actualSeconds,
+                durationMinutes = actualMinutes,
+                xpPoints = 35,
+                mainSkill = mainSkill,
+                subcategoryId = subcategoryId,
+                imagePath = imagePath
+            )
+
+            if (result.isSuccess && result.data != null) {
+                val scoreRes = result.data.performanceScore?.let { ps ->
+                    PerformanceScoreResult(
+                        score = ps.score,
+                        scoreStatus = ps.scoreStatus,
+                        scoreReason = ps.scoreReason,
+                        strengths = ps.strengths,
+                        weaknesses = ps.weaknesses,
+                        aiFeedback = ps.aiFeedback,
+                        metrics = ps.metrics,
+                        assessmentType = ps.assessmentType,
+                        taskTitle = ps.taskTitle.ifBlank { taskTitle },
+                        durationMinutes = actualMinutes,
+                        xpEarned = ps.xpEarned
+                    )
+                }
+
+                if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
+                        lastSessionScoreResult = scoreRes,
+                        isAnalysisComplete = true,
+                        evaluationError = null,
+                        canRetryAnalysis = false
+                    )
+                    loadTraining()
+                } else {
+                    val reason = scoreRes?.scoreReason
+                        ?: scoreRes?.aiFeedback
+                        ?: result.message
+                        ?: "Visual performance score could not be calculated."
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                        evaluationError = reason,
+                        canRetryAnalysis = true,
+                        isAnalysisComplete = false,
+                        lastSessionScoreResult = scoreRes
+                    )
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isEvaluatingArtifact = false,
+                    vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                    evaluationError = result.message ?: "Failed to connect to AI vision evaluation backend. You can retry analysis with your image.",
+                    canRetryAnalysis = true,
+                    isAnalysisComplete = false
+                )
+            }
+        }
+    }
+
+    /**
+     * Submit speech audio or transcript for AI pacing (WPM), clarity, and delivery analysis
+     */
+    fun submitSpeechPractice() {
+        val current = _uiState.value
+        val audioPath = current.recordedAudioPath
+        val transcript = current.speechTranscriptInput.trim()
+
+        if (audioPath.isNullOrBlank() && transcript.isBlank()) {
+            _uiState.value = current.copy(
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                evaluationError = "Please record your speech or enter a speech transcript/notes to evaluate.",
+                canRetryAnalysis = false
+            )
+            return
+        }
+
+        val actualSeconds = current.elapsedSeconds
+        val actualMinutes = maxOf(1, ceil(actualSeconds / 60.0).toInt())
+        val lessonId = current.pendingPracticeItems.firstOrNull()?.id ?: "1"
+        val taskTitle = current.upNextTitle
+        val mainSkill = "speaking"
+        val subcategoryId = current.activeSubcategoryName.lowercase().replace(" ", "_").replace("/", "_")
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isEvaluatingArtifact = true,
+                vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
+                evaluationError = null,
+                canRetryAnalysis = false
+            )
+
+            val result = ApiClient.completeLesson(
+                userId = UserSession.userId,
+                lessonId = lessonId,
+                taskTitle = taskTitle,
+                durationSeconds = actualSeconds,
+                durationMinutes = actualMinutes,
+                xpPoints = 35,
+                mainSkill = mainSkill,
+                subcategoryId = subcategoryId,
+                audioPath = audioPath,
+                transcript = transcript.ifBlank { null }
+            )
+
+            if (result.isSuccess && result.data != null) {
+                val scoreRes = result.data.performanceScore?.let { ps ->
+                    PerformanceScoreResult(
+                        score = ps.score,
+                        scoreStatus = ps.scoreStatus,
+                        scoreReason = ps.scoreReason,
+                        strengths = ps.strengths,
+                        weaknesses = ps.weaknesses,
+                        aiFeedback = ps.aiFeedback,
+                        metrics = ps.metrics,
+                        assessmentType = ps.assessmentType,
+                        taskTitle = ps.taskTitle.ifBlank { taskTitle },
+                        durationMinutes = actualMinutes,
+                        xpEarned = ps.xpEarned
+                    )
+                }
+
+                if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
+                        lastSessionScoreResult = scoreRes,
+                        isAnalysisComplete = true,
+                        evaluationError = null,
+                        canRetryAnalysis = false
+                    )
+                    loadTraining()
+                } else {
+                    val reason = scoreRes?.scoreReason
+                        ?: scoreRes?.aiFeedback
+                        ?: result.message
+                        ?: "Speech performance score could not be calculated."
+                    _uiState.value = _uiState.value.copy(
+                        isEvaluatingArtifact = false,
+                        vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                        evaluationError = reason,
+                        canRetryAnalysis = true,
+                        isAnalysisComplete = false,
+                        lastSessionScoreResult = scoreRes
+                    )
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isEvaluatingArtifact = false,
+                    vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
+                    evaluationError = result.message ?: "Failed to connect to AI speech evaluation backend. You can retry analysis.",
+                    canRetryAnalysis = true,
+                    isAnalysisComplete = false
+                )
+            }
+        }
+    }
+
+    /**
+     * Retry AI analysis for the active skill without asking user to re-record or re-upload
+     */
+    fun retryAnalysisForCurrentSkill() {
+        val skill = _uiState.value.activeMainSkill.lowercase()
+        when {
+            skill.contains("coding") || skill.contains("prog") -> submitCodingPractice()
+            skill.contains("draw") || skill.contains("art") -> submitImagePractice(isDrawing = true)
+            skill.contains("photo") -> submitImagePractice(isDrawing = false)
+            skill.contains("speak") -> submitSpeechPractice()
+            else -> submitSingingVoiceForAnalysis()
+        }
+    }
+
+    /**
+     * Retry AI analysis using the existing recorded audio file without asking user to re-record (Requirement 10)
      */
     fun retryVoiceAnalysis() {
         submitSingingVoiceForAnalysis()
     }
 
     /**
-     * Finalizes practice session once evaluation is verified and user clicks Done (Requirement 14)
+     * Skip analysis and complete session, awarding XP without score (Requirement 11)
+     */
+    fun skipVocalAnalysisAndComplete() {
+        stopVoicePlayback()
+        _uiState.value = _uiState.value.copy(
+            showVocalReviewDialog = false,
+            vocalAnalysisState = VocalAnalysisState.IDLE
+        )
+        finishAndCompleteSession(audioPath = null)
+    }
+
+    /**
+     * Dismiss vocal review dialog when complete
+     */
+    fun dismissVocalReview() {
+        val current = _uiState.value
+        val score = current.lastSessionScoreResult?.score
+        val celebration = if (score != null) {
+            "🎉 Vocal practice evaluated! Score: $score/100 · +35 XP earned!"
+        } else {
+            "🎉 Vocal practice recorded! +35 XP earned."
+        }
+
+        stopVoicePlayback()
+        _uiState.value = current.copy(
+            showVocalReviewDialog = false,
+            vocalAnalysisState = VocalAnalysisState.IDLE,
+            isAnalysisComplete = false,
+            isEvaluatingArtifact = false,
+            evaluationError = null,
+            canRetryAnalysis = false,
+            recordedAudioPath = null,
+            voiceRecordSeconds = 0,
+            elapsedSeconds = 0,
+            formattedElapsed = "00:00",
+            completionCelebration = celebration
+        )
+        loadTraining()
+    }
+
+    /**
+     * Finalizes practice session once evaluation modal is done
      */
     fun finishEvaluationAndDismiss() {
         val current = _uiState.value
@@ -554,6 +1041,7 @@ class DailyTrainingViewModel : ViewModel() {
         _uiState.value = current.copy(
             showEvaluationModal = false,
             showSessionCompletionDialog = false,
+            showVocalReviewDialog = false,
             isSessionActive = false,
             isSessionPaused = false,
             elapsedSeconds = 0,
@@ -564,6 +1052,9 @@ class DailyTrainingViewModel : ViewModel() {
             canRetryAnalysis = false,
             recordedAudioPath = null,
             voiceRecordSeconds = 0,
+            codeSnippetInput = "",
+            speechTranscriptInput = "",
+            selectedImagePath = null,
             completionCelebration = celebration
         )
 

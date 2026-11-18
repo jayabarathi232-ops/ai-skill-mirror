@@ -210,7 +210,9 @@ data class TrainingLessonItem(
     val scoreReason: String? = null,
     val strengths: List<String> = emptyList(),
     val weaknesses: List<String> = emptyList(),
-    val aiFeedback: String = ""
+    val aiFeedback: String = "",
+    val metrics: Map<String, Any> = emptyMap(),
+    val assessmentType: String = ""
 )
 
 data class PerformanceScoreData(
@@ -544,7 +546,12 @@ object ApiClient {
     }
 
 
-    private fun postJson(endpoint: String, bodyJson: JSONObject): Pair<Int, String> {
+    private fun postJson(
+        endpoint: String,
+        bodyJson: JSONObject,
+        connectTimeoutMs: Int = 30000,
+        readTimeoutMs: Int = 60000
+    ): Pair<Int, String> {
         val url = URL("$BASE_URL/$endpoint")
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -552,8 +559,8 @@ object ApiClient {
             setRequestProperty("Accept", "application/json")
             doOutput = true
             doInput = true
-            connectTimeout = 8000
-            readTimeout = 8000
+            connectTimeout = connectTimeoutMs
+            readTimeout = readTimeoutMs
         }
         OutputStreamWriter(conn.outputStream).use { writer ->
             writer.write(bodyJson.toString())
@@ -566,13 +573,17 @@ object ApiClient {
         return Pair(code, text)
     }
 
-    private fun getJson(endpointWithQuery: String): Pair<Int, String> {
+    private fun getJson(
+        endpointWithQuery: String,
+        connectTimeoutMs: Int = 20000,
+        readTimeoutMs: Int = 30000
+    ): Pair<Int, String> {
         val url = URL("$BASE_URL/$endpointWithQuery")
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             setRequestProperty("Accept", "application/json")
-            connectTimeout = 8000
-            readTimeout = 8000
+            connectTimeout = connectTimeoutMs
+            readTimeout = readTimeoutMs
         }
         val code = conn.responseCode
         val stream = if (code in 200..299) conn.inputStream else conn.errorStream
@@ -1355,7 +1366,23 @@ object ApiClient {
                     try {
                         val iFile = java.io.File(imagePath)
                         if (iFile.exists() && iFile.length() > 0) {
-                            val bytes = iFile.readBytes()
+                            val bytes = if (iFile.length() > 600 * 1024) {
+                                val bmp = android.graphics.BitmapFactory.decodeFile(iFile.absolutePath)
+                                if (bmp != null) {
+                                    val maxDim = 1200
+                                    val scaled = if (bmp.width > maxDim || bmp.height > maxDim) {
+                                        val ratio = minOf(maxDim.toFloat() / bmp.width, maxDim.toFloat() / bmp.height)
+                                        android.graphics.Bitmap.createScaledBitmap(bmp, (bmp.width * ratio).toInt(), (bmp.height * ratio).toInt(), true)
+                                    } else bmp
+                                    val baos = java.io.ByteArrayOutputStream()
+                                    scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, baos)
+                                    baos.toByteArray()
+                                } else {
+                                    iFile.readBytes()
+                                }
+                            } else {
+                                iFile.readBytes()
+                            }
                             val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
                             put("image_base64", b64)
                         }
@@ -1372,7 +1399,7 @@ object ApiClient {
                     put("quiz_answers", qArr)
                 }
             }
-            val (code, text) = postJson("training/lesson_complete.php", payload)
+            val (code, text) = postJson("training/lesson_complete.php", payload, connectTimeoutMs = 30000, readTimeoutMs = 60000)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val dataObj = json.optJSONObject("data") ?: JSONObject()
@@ -1462,6 +1489,12 @@ object ApiClient {
                         for (j in 0 until wa.length()) weakList.add(wa.getString(j))
                     }
 
+                    val metMap = mutableMapOf<String, Any>()
+                    it.optJSONObject("metrics")?.let { mo ->
+                        mo.keys().forEach { k -> metMap[k] = mo.get(k) }
+                    }
+                    val assessType = it.optString("assessmentType", "")
+
                     completed.add(
                         TrainingLessonItem(
                             id = it.optString("id"),
@@ -1475,7 +1508,9 @@ object ApiClient {
                             scoreReason = if (it.isNull("scoreReason")) null else it.optString("scoreReason"),
                             strengths = strList,
                             weaknesses = weakList,
-                            aiFeedback = it.optString("aiFeedback", "")
+                            aiFeedback = it.optString("aiFeedback", ""),
+                            metrics = metMap,
+                            assessmentType = assessType
                         )
                     )
                 }
