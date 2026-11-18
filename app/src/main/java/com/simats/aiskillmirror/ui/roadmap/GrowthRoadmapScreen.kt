@@ -576,6 +576,8 @@ fun GrowthRoadmapScreen(
         if (uiState.isQuizDialogOpen && uiState.quizStage != null) {
             StageQuizDialog(
                 stage = uiState.quizStage!!,
+                currentQuestionIndex = uiState.currentQuestionIndex,
+                isReviewMode = uiState.isReviewMode,
                 selectedAnswers = uiState.quizAnswers,
                 result = uiState.quizResult,
                 isSubmitting = uiState.isSubmittingQuiz,
@@ -583,8 +585,26 @@ fun GrowthRoadmapScreen(
                 onSelectOption = { qIdx, optIdx ->
                     viewModel.selectQuizAnswer(qIdx, optIdx)
                 },
+                onNextQuestion = {
+                    viewModel.nextQuestion()
+                },
+                onPreviousQuestion = {
+                    viewModel.previousQuestion()
+                },
+                onJumpToQuestion = { idx ->
+                    viewModel.jumpToQuestion(idx)
+                },
                 onSubmit = {
                     viewModel.submitStageQuiz()
+                },
+                onOpenReview = {
+                    viewModel.openReviewMode()
+                },
+                onCloseReview = {
+                    viewModel.closeReviewMode()
+                },
+                onRetake = {
+                    viewModel.retakeQuiz()
                 },
                 onDismiss = {
                     viewModel.closeQuizDialog()
@@ -981,12 +1001,20 @@ fun TimelineStageItemView(
 @Composable
 fun StageQuizDialog(
     stage: RoadmapStageData,
+    currentQuestionIndex: Int,
+    isReviewMode: Boolean,
     selectedAnswers: Map<Int, Int>,
     result: com.simats.aiskillmirror.data.network.CompleteTopicResultData?,
     isSubmitting: Boolean,
     errorMessage: String?,
     onSelectOption: (Int, Int) -> Unit,
+    onNextQuestion: () -> Unit,
+    onPreviousQuestion: () -> Unit,
+    onJumpToQuestion: (Int) -> Unit,
     onSubmit: () -> Unit,
+    onOpenReview: () -> Unit,
+    onCloseReview: () -> Unit,
+    onRetake: () -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -1004,7 +1032,7 @@ fun StageQuizDialog(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start
             ) {
-                // Header
+                // Header Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1012,7 +1040,7 @@ fun StageQuizDialog(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Stage Assessment",
+                            text = if (isReviewMode) "Assessment Review" else "Stage Assessment Quiz",
                             color = HeadingPurple,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -1030,7 +1058,13 @@ fun StageQuizDialog(
                             .size(28.dp)
                             .clip(CircleShape)
                             .background(Color(0xFFEDE5FA))
-                            .clickable { onDismiss() },
+                            .clickable {
+                                if (isReviewMode) {
+                                    onCloseReview()
+                                } else {
+                                    onDismiss()
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = "✕", color = HeadingPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -1039,34 +1073,266 @@ fun StageQuizDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // If Result is available, display Pass/Fail Feedback
-                if (result != null) {
+                // =================================================================
+                // 1. REVIEW MODE: Display all questions with explanations & answers
+                // =================================================================
+                if (isReviewMode) {
+                    val reviewList = result?.reviewQuestions ?: emptyList()
+                    val total = if (reviewList.isNotEmpty()) reviewList.size else stage.assessmentQuestions.size
+                    val correct = result?.correctAnswers ?: 0
+                    val score = result?.score ?: 0
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF3EDFD))
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Score: $score% ($correct of $total Correct)",
+                                    color = HeadingPurple,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (score >= 70) "Passing Score Achieved (70% required)" else "Below 70% threshold · Review explanations below",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            TextButton(onClick = onCloseReview) {
+                                Text("← Summary", color = HeadingPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (reviewList.isNotEmpty()) {
+                        reviewList.forEachIndexed { qIdx, item ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFFFCFBFE))
+                                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                                    .padding(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Question ${qIdx + 1} of $total",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (item.isCorrect) Color(0xFFE8F5E9) else Color(0xFFFFEBEE))
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (item.isCorrect) "✓ Correct" else "✗ Incorrect",
+                                            color = if (item.isCorrect) Color(0xFF2E7D32) else Color(0xFFC62828),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Text(
+                                    text = item.question,
+                                    color = HeadingPurple,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 18.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                item.options.forEachIndexed { optIdx, optText ->
+                                    val isCorrectChoice = optIdx == item.correctChoice
+                                    val isUserChoice = optIdx == item.userChoice
+
+                                    val bgColor = when {
+                                        isCorrectChoice -> Color(0xFFE8F8F0)
+                                        isUserChoice && !item.isCorrect -> Color(0xFFFFEBEE)
+                                        else -> Color(0xFFF9F7FD)
+                                    }
+
+                                    val borderColor = when {
+                                        isCorrectChoice -> Color(0xFF2E7D32)
+                                        isUserChoice && !item.isCorrect -> Color(0xFFEF5350)
+                                        else -> CardBorder
+                                    }
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 3.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(bgColor)
+                                            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "${('A'.code + optIdx).toChar()}. $optText",
+                                            color = when {
+                                                isCorrectChoice -> Color(0xFF1B5E20)
+                                                isUserChoice && !item.isCorrect -> Color(0xFFB71C1C)
+                                                else -> TextPrimary
+                                            },
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isCorrectChoice || isUserChoice) FontWeight.Bold else FontWeight.Normal,
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        if (isCorrectChoice) {
+                                            Text("✓ Correct", color = Color(0xFF2E7D32), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        } else if (isUserChoice) {
+                                            Text("Your Choice", color = Color(0xFFC62828), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+
+                                if (item.explanation.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFEDE5FA))
+                                            .padding(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "💡 Explanation: ${item.explanation}",
+                                            color = HeadingPurple,
+                                            fontSize = 11.sp,
+                                            lineHeight = 15.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        stage.assessmentQuestions.forEachIndexed { qIdx, question ->
+                            val userChoice = selectedAnswers[qIdx]
+                            val isCorrect = userChoice != null && userChoice == question.correct
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 14.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFFBF9FE))
+                                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                                    .padding(10.dp)
+                            ) {
+                                Text(
+                                    text = "Q${qIdx + 1}. ${question.question}",
+                                    color = HeadingPurple,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                question.options.forEachIndexed { optIdx, optText ->
+                                    val isCorrectChoice = optIdx == question.correct
+                                    val isUserChoice = optIdx == userChoice
+
+                                    val bg = when {
+                                        isCorrectChoice -> Color(0xFFE8F8F0)
+                                        isUserChoice && !isCorrect -> Color(0xFFFFEBEE)
+                                        else -> Color(0xFFF9F7FD)
+                                    }
+                                    Text(
+                                        text = "${('A'.code + optIdx).toChar()}. $optText" +
+                                                (if (isCorrectChoice) "  [✓ Correct Answer]" else "") +
+                                                (if (isUserChoice && !isCorrectChoice) "  [✗ Your Choice]" else ""),
+                                        color = if (isCorrectChoice) Color(0xFF2E7D32) else if (isUserChoice) Color(0xFFC62828) else TextPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isCorrectChoice || isUserChoice) FontWeight.Bold else FontWeight.Normal,
+                                        modifier = Modifier.padding(vertical = 2.dp)
+                                    )
+                                }
+                                if (question.explanation.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "💡 ${question.explanation}",
+                                        color = HeadingPurple,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = onCloseReview,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = HeadingPurple)
+                    ) {
+                        Text(text = "← Back to Result Summary", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                // =================================================================
+                // 2. RESULT SUMMARY: Displays score, pass/fail, and action buttons
+                // =================================================================
+                } else if (result != null) {
                     val passed = result.passed
+                    val totalQ = if (result.totalQuestions > 0) result.totalQuestions else stage.assessmentQuestions.size
+                    val correctCount = result.correctAnswers
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (passed) Color(0xFFE8F5E9) else Color(0xFFFFEBEE))
-                            .border(1.dp, if (passed) GreenNode else Color(0xFFEF5350), RoundedCornerShape(16.dp))
+                            .background(if (passed) Color(0xFFE8F5E9) else Color(0xFFFFF3E0))
+                            .border(1.dp, if (passed) GreenNode else Color(0xFFFFB74D), RoundedCornerShape(16.dp))
                             .padding(16.dp)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = if (passed) "🎉 Stage Cleared!" else "⚠️ Practice Recommended",
-                                color = if (passed) Color(0xFF2E7D32) else Color(0xFFC62828),
-                                fontSize = 16.sp,
+                                color = if (passed) Color(0xFF2E7D32) else Color(0xFFE65100),
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "Your Score: ${result.score}%  (Threshold: 70%)",
                                 color = TextPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "$correctCount of $totalQ Questions Correct",
+                                color = TextSecondary,
+                                fontSize = 12.sp
                             )
 
                             if (passed) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = "+${result.xpAwarded} XP Earned! Next Stage Unlocked.",
                                     color = GreenNode,
@@ -1083,18 +1349,57 @@ fun StageQuizDialog(
                                     )
                                 }
                             } else if (result.remedialFeedback != null) {
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = result.remedialFeedback,
                                     color = Color(0xFF5D4037),
                                     fontSize = 11.sp,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 15.sp
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Review Answers & Explanations Button
+                    OutlinedButton(
+                        onClick = onOpenReview,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, HeadingPurple)
+                    ) {
+                        Text(
+                            text = "📖 Review Answers & Explanations",
+                            color = HeadingPurple,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Retake Quiz Button
+                    OutlinedButton(
+                        onClick = onRetake,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                    ) {
+                        Text(
+                            text = "🔄 Retake Assessment Quiz",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
                         onClick = onDismiss,
@@ -1105,84 +1410,237 @@ fun StageQuizDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = HeadingPurple)
                     ) {
                         Text(
-                            text = if (passed) "Continue Roadmap" else "Close & Review",
+                            text = if (passed) "Continue Roadmap" else "Close & Practice Drills",
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                } else {
-                    // Questions List
-                    stage.assessmentQuestions.forEachIndexed { qIdx, question ->
-                        Column(modifier = Modifier.padding(bottom = 14.dp)) {
-                            Text(
-                                text = "Q${qIdx + 1}. ${question.question}",
-                                color = TextPrimary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
 
-                            question.options.forEachIndexed { optIdx, optText ->
-                                val isSelected = selectedAnswers[qIdx] == optIdx
-                                Row(
+                // =================================================================
+                // 3. ACTIVE QUIZ: Single Question at a time with Navigation & Dots
+                // =================================================================
+                } else {
+                    val questions = stage.assessmentQuestions
+                    val totalQuestions = questions.size
+
+                    if (questions.isEmpty()) {
+                        Text("No assessment questions available for this stage.", color = TextSecondary, fontSize = 13.sp)
+                    } else {
+                        val safeIndex = currentQuestionIndex.coerceIn(0, maxOf(0, totalQuestions - 1))
+                        val currentQuestion = questions[safeIndex]
+
+                        // Progress Pill & Linear Progress
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFEDE5FA))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Question ${safeIndex + 1} of $totalQuestions",
+                                    color = HeadingPurple,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Text(
+                                text = "${selectedAnswers.size}/$totalQuestions answered",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Progress Indicator Bar
+                        LinearProgressIndicator(
+                            progress = ((safeIndex + 1).toFloat() / totalQuestions).coerceIn(0f, 1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = HeadingPurple,
+                            trackColor = Color(0xFFEDE5FA)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Question Dot Navigator (Allows jumping directly between questions)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            for (i in 0 until totalQuestions) {
+                                val isAnswered = selectedAnswers.containsKey(i)
+                                val isCurrent = i == safeIndex
+
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 3.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isSelected) TaglineBackground else Color(0xFFF9F7FD))
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) HeadingPurple else CardBorder,
-                                            RoundedCornerShape(10.dp)
+                                        .padding(horizontal = 4.dp)
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when {
+                                                isCurrent -> HeadingPurple
+                                                isAnswered -> Color(0xFFD6C7F7)
+                                                else -> Color(0xFFF0EDF6)
+                                            }
                                         )
-                                        .clickable { onSelectOption(qIdx, optIdx) }
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .border(
+                                            width = if (isCurrent) 2.dp else 1.dp,
+                                            color = if (isCurrent) HeadingPurple else CardBorder,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { onJumpToQuestion(i) },
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { onSelectOption(qIdx, optIdx) },
-                                        colors = RadioButtonDefaults.colors(selectedColor = HeadingPurple)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = optText,
-                                        color = if (isSelected) HeadingPurple else TextPrimary,
-                                        fontSize = 12.sp,
-                                        lineHeight = 16.sp
+                                        text = "${i + 1}",
+                                        color = if (isCurrent) Color.White else if (isAnswered) HeadingPurple else TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
                         }
-                    }
 
-                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Question Text Card
                         Text(
-                            text = errorMessage,
-                            color = Color.Red,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            text = currentQuestion.question,
+                            color = HeadingPurple,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 20.sp
                         )
-                    }
 
-                    Button(
-                        onClick = onSubmit,
-                        enabled = !isSubmitting,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = HeadingPurple)
-                    ) {
-                        if (isSubmitting) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                        } else {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 4 Simple Options
+                        currentQuestion.options.forEachIndexed { optIdx, optText ->
+                            val isSelected = selectedAnswers[safeIndex] == optIdx
+                            val optionLetter = ('A'.code + optIdx).toChar()
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isSelected) Color(0xFFF3EDFD) else Color(0xFFF9F7FD))
+                                    .border(
+                                        width = if (isSelected) 1.5.dp else 1.dp,
+                                        color = if (isSelected) HeadingPurple else CardBorder,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { onSelectOption(safeIndex, optIdx) }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) HeadingPurple else Color(0xFFEDE5FA)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = optionLetter.toString(),
+                                        color = if (isSelected) Color.White else HeadingPurple,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Text(
+                                    text = optText,
+                                    color = if (isSelected) HeadingPurple else TextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    lineHeight = 16.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { onSelectOption(safeIndex, optIdx) },
+                                    colors = RadioButtonDefaults.colors(selectedColor = HeadingPurple)
+                                )
+                            }
+                        }
+
+                        if (errorMessage != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Submit Assessment",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
+                                text = errorMessage,
+                                color = Color.Red,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
                             )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Question Navigation Buttons (Previous, Next, Submit)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Previous Question Button
+                            OutlinedButton(
+                                onClick = onPreviousQuestion,
+                                enabled = safeIndex > 0,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (safeIndex > 0) HeadingPurple else CardBorder),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (safeIndex > 0) HeadingPurple else TextSecondary
+                                )
+                            ) {
+                                Text(text = "← Prev", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            // Next Question or Submit Button
+                            if (safeIndex < totalQuestions - 1) {
+                                Button(
+                                    onClick = onNextQuestion,
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .height(46.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = HeadingPurple)
+                                ) {
+                                    Text(text = "Next →", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                Button(
+                                    onClick = onSubmit,
+                                    enabled = !isSubmitting,
+                                    modifier = Modifier
+                                        .weight(1.2f)
+                                        .height(46.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = HeadingPurple)
+                                ) {
+                                    if (isSubmitting) {
+                                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                    } else {
+                                        Text(text = "Submit Quiz", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

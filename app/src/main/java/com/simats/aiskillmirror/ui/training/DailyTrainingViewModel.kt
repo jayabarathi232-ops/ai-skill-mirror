@@ -1061,11 +1061,364 @@ class DailyTrainingViewModel : ViewModel() {
         loadTraining()
     }
 
+    // ==========================================
+    // 1. Photography Practice Methods
+    // ==========================================
+    fun onPhotoCaptured(path: String) {
+        _uiState.value = _uiState.value.copy(
+            capturedPhotoPath = path,
+            selectedImagePath = path,
+            evaluationError = null
+        )
+    }
+
+    fun retakePhoto() {
+        _uiState.value = _uiState.value.copy(
+            capturedPhotoPath = null,
+            selectedImagePath = null,
+            evaluationError = null
+        )
+    }
+
+    fun submitCapturedPhoto() {
+        val path = _uiState.value.capturedPhotoPath ?: _uiState.value.selectedImagePath
+        if (path.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(
+                evaluationError = "Please capture or select a photo first."
+            )
+            return
+        }
+        submitImagePractice(isDrawing = false)
+    }
+
+    // ==========================================
+    // 2. Drawing Practice Methods
+    // ==========================================
+    fun startDrawingStroke(x: Float, y: Float) {
+        val point = DrawingStrokePoint(
+            x = x,
+            y = y,
+            isEndOfStroke = false,
+            color = if (_uiState.value.selectedDrawingTool == "ERASER") 0xFFFFFFFFL else _uiState.value.selectedDrawingColor,
+            strokeWidth = if (_uiState.value.selectedDrawingTool == "BRUSH") _uiState.value.drawingStrokeWidth * 2f else _uiState.value.drawingStrokeWidth
+        )
+        _uiState.value = _uiState.value.copy(
+            drawingStrokes = _uiState.value.drawingStrokes + point
+        )
+    }
+
+    fun addDrawingStrokePoint(x: Float, y: Float) {
+        val point = DrawingStrokePoint(
+            x = x,
+            y = y,
+            isEndOfStroke = false,
+            color = if (_uiState.value.selectedDrawingTool == "ERASER") 0xFFFFFFFFL else _uiState.value.selectedDrawingColor,
+            strokeWidth = if (_uiState.value.selectedDrawingTool == "BRUSH") _uiState.value.drawingStrokeWidth * 2f else _uiState.value.drawingStrokeWidth
+        )
+        _uiState.value = _uiState.value.copy(
+            drawingStrokes = _uiState.value.drawingStrokes + point
+        )
+    }
+
+    fun endDrawingStroke() {
+        val lastPoint = _uiState.value.drawingStrokes.lastOrNull() ?: return
+        val endPoint = lastPoint.copy(isEndOfStroke = true)
+        _uiState.value = _uiState.value.copy(
+            drawingStrokes = _uiState.value.drawingStrokes.dropLast(1) + endPoint
+        )
+    }
+
+    fun clearDrawing() {
+        _uiState.value = _uiState.value.copy(
+            drawingStrokes = emptyList(),
+            savedDrawingPath = null,
+            selectedImagePath = null,
+            evaluationError = null
+        )
+    }
+
+    fun undoDrawing() {
+        val strokes = _uiState.value.drawingStrokes
+        if (strokes.isEmpty()) return
+        val lastEndIdx = strokes.indexOfLast { it.isEndOfStroke }
+        if (lastEndIdx <= 0) {
+            _uiState.value = _uiState.value.copy(drawingStrokes = emptyList())
+        } else {
+            val secondLastEndIdx = strokes.subList(0, lastEndIdx).indexOfLast { it.isEndOfStroke }
+            val newStrokes = if (secondLastEndIdx >= 0) strokes.subList(0, secondLastEndIdx + 1) else emptyList()
+            _uiState.value = _uiState.value.copy(drawingStrokes = newStrokes)
+        }
+    }
+
+    fun selectDrawingTool(tool: String) {
+        _uiState.value = _uiState.value.copy(selectedDrawingTool = tool)
+    }
+
+    fun selectDrawingColor(color: Long) {
+        _uiState.value = _uiState.value.copy(selectedDrawingColor = color)
+    }
+
+    fun setDrawingStrokeWidth(width: Float) {
+        _uiState.value = _uiState.value.copy(drawingStrokeWidth = width)
+    }
+
+    fun submitDrawingArt(context: Context, imageBytes: ByteArray? = null, filePath: String? = null) {
+        val pathToUse = when {
+            !filePath.isNullOrBlank() -> filePath
+            imageBytes != null -> {
+                val f = File(context.cacheDir, "drawing_${System.currentTimeMillis()}.jpg")
+                f.writeBytes(imageBytes)
+                f.absolutePath
+            }
+            else -> _uiState.value.selectedImagePath
+        }
+
+        if (pathToUse.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(
+                evaluationError = "Canvas is empty. Draw on screen or upload a sketch photo first."
+            )
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(
+            savedDrawingPath = pathToUse,
+            selectedImagePath = pathToUse
+        )
+        submitImagePractice(isDrawing = true)
+    }
+
+    // ==========================================
+    // 3. Coding Practice Methods
+    // ==========================================
+    fun onLanguageSelected(lang: String) {
+        val starter = getStarterCodeForLanguage(lang, _uiState.value.activeSubcategoryName)
+        _uiState.value = _uiState.value.copy(
+            selectedLanguage = lang,
+            codeEditorText = starter,
+            codeSnippetInput = starter,
+            codingOutput = "",
+            codingError = "",
+            codeTestCases = emptyList(),
+            codeExplanation = ""
+        )
+    }
+
+    fun onCodeTextChanged(newCode: String) {
+        _uiState.value = _uiState.value.copy(
+            codeEditorText = newCode,
+            codeSnippetInput = newCode,
+            evaluationError = null
+        )
+    }
+
+    fun runCode(userId: Int) {
+        val code = _uiState.value.codeEditorText
+        val lang = _uiState.value.selectedLanguage
+        val task = _uiState.value.upNextTitle
+
+        if (code.isBlank()) {
+            _uiState.value = _uiState.value.copy(codingError = "Code cannot be empty.")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isCodeRunning = true, codingError = "", codingOutput = "")
+            val result = ApiClient.executeCode(userId, lang, code, task)
+            _uiState.value = _uiState.value.copy(isCodeRunning = false)
+            if (result.isSuccess && result.data != null) {
+                val d = result.data
+                _uiState.value = _uiState.value.copy(
+                    codingOutput = d.output,
+                    codingError = d.error,
+                    codeTestCases = d.testCases,
+                    codeExplanation = d.explanation
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    codingError = result.message ?: "Failed to execute code"
+                )
+            }
+        }
+    }
+
+    // ==========================================
+    // 4. Public Speaking Practice Methods
+    // ==========================================
+    fun startSpeechRecording(context: Context) {
+        try {
+            stopVoicePlayback()
+            val file = File(context.cacheDir, "speech_practice_${System.currentTimeMillis()}.m4a")
+            audioRecordingFile = file
+
+            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+            recorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(128000)
+                setAudioSamplingRate(44100)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            mediaRecorder = recorder
+            _uiState.value = _uiState.value.copy(
+                isRecordingSpeech = true,
+                speechRecordSeconds = 0,
+                recordedSpeechAudioPath = null,
+                recordedAudioPath = null,
+                evaluationError = null
+            )
+
+            voiceTimerJob?.cancel()
+            voiceTimerJob = viewModelScope.launch {
+                while (_uiState.value.isRecordingSpeech) {
+                    delay(1000L)
+                    _uiState.value = _uiState.value.copy(
+                        speechRecordSeconds = _uiState.value.speechRecordSeconds + 1
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isRecordingSpeech = false,
+                evaluationError = "Microphone error: ${e.message}"
+            )
+        }
+    }
+
+    fun stopSpeechRecording() {
+        try {
+            voiceTimerJob?.cancel()
+            mediaRecorder?.apply {
+                try { stop() } catch (_: Exception) {}
+                release()
+            }
+            mediaRecorder = null
+            val file = audioRecordingFile
+            if (file != null && file.exists() && file.length() >= 400) {
+                _uiState.value = _uiState.value.copy(
+                    isRecordingSpeech = false,
+                    recordedSpeechAudioPath = file.absolutePath,
+                    recordedAudioPath = file.absolutePath,
+                    evaluationError = null
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isRecordingSpeech = false,
+                    recordedSpeechAudioPath = null,
+                    evaluationError = "Recording was too short. Speak audibly into microphone."
+                )
+            }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isRecordingSpeech = false,
+                evaluationError = "Failed to stop recording: ${e.message}"
+            )
+        }
+    }
+
+    fun retakeSpeechRecording(context: Context) {
+        stopVoicePlayback()
+        audioRecordingFile?.delete()
+        audioRecordingFile = null
+        _uiState.value = _uiState.value.copy(
+            isRecordingSpeech = false,
+            speechRecordSeconds = 0,
+            recordedSpeechAudioPath = null,
+            recordedAudioPath = null,
+            evaluationError = null
+        )
+        startSpeechRecording(context)
+    }
+
+    // ==========================================
+    // 5. Music Instrument Metronome Methods
+    // ==========================================
+    private var metronomeJob: Job? = null
+
+    fun toggleMetronome() {
+        val current = _uiState.value
+        if (current.isMetronomeActive) {
+            metronomeJob?.cancel()
+            metronomeJob = null
+            _uiState.value = current.copy(isMetronomeActive = false, currentBeat = 1)
+        } else {
+            _uiState.value = current.copy(isMetronomeActive = true, currentBeat = 1)
+            metronomeJob = viewModelScope.launch {
+                while (_uiState.value.isMetronomeActive) {
+                    val bpm = _uiState.value.metronomeBpm.coerceIn(40, 240)
+                    val intervalMs = (60_000L / bpm)
+                    delay(intervalMs)
+                    val nextBeat = (_uiState.value.currentBeat % 4) + 1
+                    _uiState.value = _uiState.value.copy(currentBeat = nextBeat)
+                }
+            }
+        }
+    }
+
+    fun setMetronomeBpm(bpm: Int) {
+        _uiState.value = _uiState.value.copy(metronomeBpm = bpm.coerceIn(40, 240))
+    }
+
     override fun onCleared() {
         super.onCleared()
         sessionTimerJob?.cancel()
         voiceTimerJob?.cancel()
+        metronomeJob?.cancel()
         stopVoicePlayback()
         mediaRecorder?.release()
+    }
+}
+
+fun getStarterCodeForLanguage(lang: String, subcat: String): String {
+    return when (lang.lowercase()) {
+        "python" -> """# Python Practice Solution
+def solution():
+    # Write your solution here
+    print("Code running successfully!")
+    return True
+
+solution()
+"""
+        "java" -> """// Java Practice Solution
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Code running successfully!");
+    }
+}
+"""
+        "javascript" -> """// JavaScript Practice Solution
+function solution() {
+    console.log("Code running successfully!");
+    return true;
+}
+
+solution();
+"""
+        "c" -> """// C Practice Solution
+#include <stdio.h>
+
+int main() {
+    printf("Code running successfully!\n");
+    return 0;
+}
+"""
+        "cpp" -> """// C++ Practice Solution
+#include <iostream>
+
+int main() {
+    std::cout << "Code running successfully!" << std::endl;
+    return 0;
+}
+"""
+        else -> """# Practice Solution
+print("Code running successfully!")
+"""
     }
 }

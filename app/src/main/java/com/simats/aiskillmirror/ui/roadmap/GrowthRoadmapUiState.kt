@@ -39,6 +39,8 @@ data class GrowthRoadmapUiState(
     // Stage Assessment Quiz Modal State
     val isQuizDialogOpen: Boolean = false,
     val quizStage: RoadmapStageData? = null,
+    val currentQuestionIndex: Int = 0,
+    val isReviewMode: Boolean = false,
     val quizAnswers: Map<Int, Int> = emptyMap(),
     val quizResult: CompleteTopicResultData? = null,
     val isSubmittingQuiz: Boolean = false,

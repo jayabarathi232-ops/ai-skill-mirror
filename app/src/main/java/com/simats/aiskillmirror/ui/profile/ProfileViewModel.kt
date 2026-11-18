@@ -58,6 +58,14 @@ class ProfileViewModel(
                     careerGoal = if (p.careerGoal.isNotBlank()) p.careerGoal else _uiState.value.careerGoal,
                     profilePictureUrl = resolvedUrl,
                     initials = initials,
+                    skillScore = p.skillScore,
+                    totalSessions = p.totalSessions,
+                    dayStreak = p.dayStreak,
+                    totalXp = p.totalXp,
+                    memberSinceText = if (p.memberSinceText.isNotBlank()) p.memberSinceText else _uiState.value.memberSinceText,
+                    weeklyProgress = p.weeklyProgress,
+                    achievedBadges = p.achievedBadges,
+                    lockedBadges = p.lockedBadges,
                     errorMessage = null
                 )
             } else if (context != null) {

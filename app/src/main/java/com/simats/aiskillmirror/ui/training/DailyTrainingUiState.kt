@@ -1,11 +1,29 @@
 package com.simats.aiskillmirror.ui.training
 
+import com.simats.aiskillmirror.data.network.CodeTestCaseResult
+
+enum class SkillType {
+    MUSIC,
+    PHOTOGRAPHY,
+    DRAWING,
+    CODING,
+    PUBLIC_SPEAKING
+}
+
 enum class VocalAnalysisState {
     IDLE,
     ANALYSIS_PENDING,
     ANALYSIS_SUCCESS,
     ANALYSIS_FAILED
 }
+
+data class DrawingStrokePoint(
+    val x: Float,
+    val y: Float,
+    val isEndOfStroke: Boolean = false,
+    val color: Long = 0xFF7545C8,
+    val strokeWidth: Float = 6f
+)
 
 data class PracticeItem(
     val id: String,
@@ -86,7 +104,7 @@ data class DailyTrainingUiState(
     val weeklyLearningPlan: List<WeeklyPlanItem> = emptyList(),
     val aiTip: String = "Focus on slow, perfect repetitions. Speed and fluency are natural side-effects of precision.",
     
-    // Active Live Practice Session Timer
+    // Active Live Practice Session Timer (Used for Music & Public Speaking)
     val isSessionActive: Boolean = false,
     val isSessionPaused: Boolean = false,
     val elapsedSeconds: Int = 0,
@@ -105,7 +123,7 @@ data class DailyTrainingUiState(
     val selectedItemForDetail: PracticeItem? = null,
     val showItemDetailDialog: Boolean = false,
 
-    // Voice & Singing Microphone Recording State (Music Vocal Practice)
+    // 1. Music Vocal Practice
     val isRecordingVoice: Boolean = false,
     val isRecordingPaused: Boolean = false,
     val recordedAudioPath: String? = null,
@@ -117,8 +135,70 @@ data class DailyTrainingUiState(
     val isAnalysisComplete: Boolean = false,
     val showVocalReviewDialog: Boolean = false,
     val vocalAnalysisState: VocalAnalysisState = VocalAnalysisState.IDLE,
-    val liveAmplitudeWaveforms: List<Float> = listOf(0.2f, 0.5f, 0.8f, 0.4f, 0.9f, 0.6f, 0.3f, 0.7f)
+    val liveAmplitudeWaveforms: List<Float> = listOf(0.2f, 0.5f, 0.8f, 0.4f, 0.9f, 0.6f, 0.3f, 0.7f),
+
+    // 1b. Music Instrument Practice (Metronome & Recording)
+    val metronomeBpm: Int = 80,
+    val isMetronomeActive: Boolean = false,
+    val currentBeat: Int = 1,
+    val isRecordingInstrument: Boolean = false,
+
+    // 2. Photography Practice
+    val capturedPhotoPath: String? = null,
+    val isCameraActive: Boolean = false,
+
+    // 3. Drawing Practice
+    val drawingStrokes: List<DrawingStrokePoint> = emptyList(),
+    val selectedDrawingTool: String = "PENCIL", // "PENCIL", "BRUSH", "ERASER"
+    val selectedDrawingColor: Long = 0xFF25213AL, // Charcoal Black
+    val drawingStrokeWidth: Float = 6f,
+    val savedDrawingPath: String? = null,
+
+    // 4. Coding Practice
+    val selectedLanguage: String = "python", // "python", "java", "javascript", "cpp", "c"
+    val codeEditorText: String = "def solution():\n    # Write your code here\n    print(\"Hello World\")\n    return True\n\nsolution()\n",
+    val codingOutput: String = "",
+    val codingError: String = "",
+    val isCodeRunning: Boolean = false,
+    val codeTestCases: List<CodeTestCaseResult> = emptyList(),
+    val codeExplanation: String = "",
+
+    // 5. Public Speaking Practice
+    val isRecordingSpeech: Boolean = false,
+    val speechRecordSeconds: Int = 0,
+    val recordedSpeechAudioPath: String? = null,
+    val speechPromptText: String = "Deliver a 60-second elevator pitch introducing your core passion, an achieved project milestone, and your future ambition."
 ) {
+    val isSubmittingEvaluation: Boolean
+        get() = isEvaluatingArtifact
+
+    val detectedSkillType: SkillType
+        get() {
+            val skill = activeMainSkill.lowercase().trim()
+            val sub = activeSubcategoryName.lowercase().trim()
+            val cat = upNextCategory.lowercase().trim()
+            val title = upNextTitle.lowercase().trim()
+
+            return when {
+                skill.contains("photo") || sub.contains("photo") || cat.contains("photo") || title.contains("photo") ||
+                sub.contains("camera") || sub.contains("portrait_photo") || sub.contains("landscape_photo") -> SkillType.PHOTOGRAPHY
+
+                skill.contains("draw") || sub.contains("draw") || cat.contains("draw") || title.contains("draw") ||
+                skill.contains("art") || sub.contains("art") || sub.contains("sketch") || sub.contains("paint") ||
+                sub.contains("shading") -> SkillType.DRAWING
+
+                skill.contains("cod") || sub.contains("cod") || cat.contains("cod") || title.contains("cod") ||
+                skill.contains("program") || sub.contains("program") || sub.contains("python") || sub.contains("java") ||
+                sub.contains("script") || sub.contains("c++") || sub.contains("c_prog") || sub.contains("algo") -> SkillType.CODING
+
+                skill.contains("speak") || sub.contains("speak") || cat.contains("speak") || title.contains("speak") ||
+                skill.contains("speech") || sub.contains("speech") || (sub.contains("voice") && !sub.contains("sing")) ||
+                sub.contains("debate") || sub.contains("presentation") || sub.contains("self_intro") || sub.contains("pronunciation") -> SkillType.PUBLIC_SPEAKING
+
+                else -> SkillType.MUSIC
+            }
+        }
+
     val isVocalSkill: Boolean
         get() {
             val skill = activeMainSkill.lowercase().trim()
@@ -126,16 +206,23 @@ data class DailyTrainingUiState(
             val title = upNextTitle.lowercase().trim()
             val cat = upNextCategory.lowercase().trim()
             val isMusic = skill.contains("music") || cat.contains("music")
-            val hasVocal = sub.contains("sing") || sub.contains("vocal") || sub.contains("voice") ||
-                    title.contains("sing") || title.contains("vocal") || title.contains("voice") ||
+            val hasVocal = sub.contains("sing") || sub.contains("vocal") || (sub.contains("voice") && isMusic) ||
+                    title.contains("sing") || title.contains("vocal") ||
                     cat.contains("sing") || cat.contains("vocal")
-            return isMusic && hasVocal
+            return (isMusic && hasVocal) || sub == "singing"
         }
 
     val formattedVoiceRecordDuration: String
         get() {
             val m = voiceRecordSeconds / 60
             val s = voiceRecordSeconds % 60
+            return String.format("%02d:%02d", m, s)
+        }
+
+    val formattedSpeechRecordDuration: String
+        get() {
+            val m = speechRecordSeconds / 60
+            val s = speechRecordSeconds % 60
             return String.format("%02d:%02d", m, s)
         }
 }

@@ -48,9 +48,10 @@ class ProgressRepository {
     suspend fun completeRoadmapTopic(
         userId: Int = UserSession.userId,
         stageId: Int,
-        score: Int
+        score: Int,
+        answers: Map<Int, Int>? = null
     ): NetworkResult<com.simats.aiskillmirror.data.network.CompleteTopicResultData> {
-        return ApiClient.completeRoadmapTopic(userId, stageId, score)
+        return ApiClient.completeRoadmapTopic(userId, stageId, score, answers)
     }
 
     suspend fun toggleRoadmapTask(

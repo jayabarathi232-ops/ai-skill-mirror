@@ -47,10 +47,24 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.simats.aiskillmirror.data.network.UserSession
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import com.simats.aiskillmirror.ui.assess.SparkleMiniIcon
@@ -398,296 +412,16 @@ fun DailyTrainingScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Live Active Practice Session Timer Card (when timer is active)
-                AnimatedVisibility(
-                    visible = uiState.isSessionActive,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFFF6F0FF))
-                            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
-                            .padding(18.dp)
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(if (uiState.isSessionPaused) Color(0xFFF59E0B) else Color(0xFFEF4444))
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (uiState.isSessionPaused) "PRACTICE PAUSED" else "LIVE PRACTICE SESSION ACTIVE",
-                                    color = AccentPurple,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.8.sp
-                                )
-                            }
+                // ==============================================================
+                // AUTOMATIC SKILL-SPECIFIC PRACTICE TOOL INTERFACE
+                // ==============================================================
+                SkillSpecificPracticeSection(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    micPermissionLauncher = micPermissionLauncher
+                )
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text(
-                                text = uiState.formattedElapsed,
-                                color = HeadingPurple,
-                                fontSize = 42.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Text(
-                                text = "Elapsed active time counts toward your daily practice goal",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        if (uiState.isSessionPaused) viewModel.resumePracticeSession()
-                                        else viewModel.pausePracticeSession()
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(44.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE9DDFF)),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = if (uiState.isSessionPaused) "▶ Resume" else "⏸ Pause",
-                                        color = AccentPurple,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                Button(
-                                    onClick = { viewModel.cancelPracticeSession() },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(44.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = "✕ Cancel",
-                                        color = Color(0xFFDC2626),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            // Voice Recording Section for Vocal/Singing Practice (Requirements 1, 2, 3)
-                            if (uiState.isVocalSkill) {
-                                Spacer(modifier = Modifier.height(14.dp))
-
-                                if (uiState.isRecordingVoice) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(Color(0xFFFFEBEE))
-                                            .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
-                                            .padding(12.dp)
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(9.dp)
-                                                        .clip(CircleShape)
-                                                        .background(if (uiState.isRecordingPaused) Color(0xFFF59E0B) else Color(0xFFD32F2F))
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = if (uiState.isRecordingPaused) "MIC RECORDING PAUSED" else "🎙️ RECORDING SINGING VOICE...",
-                                                    color = if (uiState.isRecordingPaused) Color(0xFFD97706) else Color(0xFFC62828),
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-
-                                            Text(
-                                                text = "${uiState.formattedVoiceRecordDuration} recorded",
-                                                color = Color(0xFFB71C1C),
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-
-                                            Spacer(modifier = Modifier.height(6.dp))
-
-                                            // Animated dynamic waveform bars
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.height(24.dp)
-                                            ) {
-                                                uiState.liveAmplitudeWaveforms.forEach { amp ->
-                                                    val barH = (amp * 22).dp.coerceAtLeast(4.dp)
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .width(5.dp)
-                                                            .height(barH)
-                                                            .clip(RoundedCornerShape(2.dp))
-                                                            .background(if (uiState.isRecordingPaused) Color(0xFFF59E0B) else AccentPurple)
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                Button(
-                                                    onClick = {
-                                                        if (uiState.isRecordingPaused) viewModel.resumeVoiceRecording()
-                                                        else viewModel.pauseVoiceRecording()
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCDD2)),
-                                                    shape = RoundedCornerShape(10.dp),
-                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = if (uiState.isRecordingPaused) "▶ Resume Mic" else "⏸ Pause Mic",
-                                                        color = Color(0xFFB71C1C),
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-
-                                                Button(
-                                                    onClick = { viewModel.stopVoiceRecording() },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                                                    shape = RoundedCornerShape(10.dp),
-                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text("⏹ Stop Mic", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else if (!uiState.recordedAudioPath.isNullOrBlank()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(Color(0xFFE8F5E9))
-                                            .border(1.dp, Color(0xFFA5D6A7), RoundedCornerShape(14.dp))
-                                            .padding(12.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    text = "✓ Singing Recorded (${uiState.formattedVoiceRecordDuration})",
-                                                    color = Color(0xFF2E7D32),
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    text = "Ready for AI vocal evaluation on Finish",
-                                                    color = TextSecondary,
-                                                    fontSize = 11.sp
-                                                )
-                                            }
-
-                                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                Button(
-                                                    onClick = { viewModel.toggleVoicePlayback(context) },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = GreenNode),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = if (uiState.isPlayingVoice) "⏸" else "▶ Listen",
-                                                        color = Color.White,
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-
-                                                Button(
-                                                    onClick = { viewModel.clearVoiceRecording() },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text("🔄 Retake", color = TextSecondary, fontSize = 11.sp)
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(Color(0xFFEDE5FA))
-                                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                                            .padding(10.dp)
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "🎙️ Record your voice during this session to receive a real AI Performance Score.",
-                                                color = TextPrimary,
-                                                fontSize = 11.sp,
-                                                textAlign = TextAlign.Center
-                                            )
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Button(
-                                                onClick = {
-                                                    val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                                                    if (hasPerm) {
-                                                        viewModel.startVoiceRecording(context)
-                                                    } else {
-                                                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-                                                shape = RoundedCornerShape(10.dp),
-                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                                            ) {
-                                                Text(
-                                                    text = "🎙️ Start Voice Recording",
-                                                    color = Color.White,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (permissionDeniedMessage != null) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = permissionDeniedMessage!!,
-                                        color = Color(0xFFC2185B),
-                                        fontSize = 11.sp,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Featured Today's Practice Task Card
                 Box(
@@ -997,95 +731,276 @@ fun DailyTrainingScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Primary Action Button (Start Practice or Finish Practice)
-                if (!uiState.isSessionActive) {
-                    Button(
-                        onClick = {
-                            if (uiState.isVocalSkill) {
-                                val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                                if (hasPerm) {
-                                    viewModel.startPracticeSession(context = context, autoRecordVoice = true)
+                // Primary Action Button (Skill-Tailored)
+                when (uiState.detectedSkillType) {
+                    SkillType.PHOTOGRAPHY -> {
+                        Button(
+                            onClick = {
+                                if (uiState.capturedPhotoPath != null || uiState.selectedImagePath != null) {
+                                    viewModel.submitCapturedPhoto()
                                 } else {
-                                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    viewModel.openEvaluationModal()
                                 }
-                            } else {
-                                viewModel.startPracticeSession()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Box(
+                            },
+                            enabled = !uiState.isSubmittingEvaluation,
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                PlayIcon(size = 16.dp, color = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (uiState.isVocalSkill) "Start Vocal Practice (Timer & Mic)" else "Start Practice Session (Live Timer)",
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            viewModel.onFinishSessionClick(context)
-                        },
-                        enabled = !uiState.isCompleting,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (uiState.isCompleting) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
+                                if (uiState.isSubmittingEvaluation) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
                                     Text(
-                                        text = if (uiState.isVocalSkill) "✓ Finish & Review Vocal Performance (+35 XP)" else "✓ Finish & Record Practice (+35 XP)",
+                                        text = if (uiState.capturedPhotoPath != null || uiState.selectedImagePath != null)
+                                            "📊 Submit Photo for AI Composition Analysis (+35 XP)"
+                                        else
+                                            "📸 Open Camera / Practice Photo Above",
                                         color = Color.White,
-                                        fontSize = 16.sp,
+                                        fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
                         }
                     }
+                    SkillType.DRAWING -> {
+                        Button(
+                            onClick = {
+                                if (uiState.drawingStrokes.isNotEmpty() || !uiState.selectedImagePath.isNullOrBlank()) {
+                                    val bytes = exportStrokesToBitmap(uiState.drawingStrokes)
+                                    viewModel.submitDrawingArt(context, imageBytes = bytes)
+                                } else {
+                                    viewModel.openEvaluationModal()
+                                }
+                            },
+                            enabled = !uiState.isSubmittingEvaluation,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (uiState.isSubmittingEvaluation) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text(
+                                        text = if (uiState.drawingStrokes.isNotEmpty() || !uiState.selectedImagePath.isNullOrBlank())
+                                            "🎨 Submit Drawing for AI Artwork Analysis (+35 XP)"
+                                        else
+                                            "✍️ Draw on Canvas Above",
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    SkillType.CODING -> {
+                        Button(
+                            onClick = {
+                                viewModel.submitCodingPractice()
+                            },
+                            enabled = !uiState.isSubmittingEvaluation,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (uiState.isSubmittingEvaluation) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text(
+                                        text = "✓ Submit Code for AI Assessment (+35 XP)",
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    SkillType.PUBLIC_SPEAKING -> {
+                        Button(
+                            onClick = {
+                                if (!uiState.recordedSpeechAudioPath.isNullOrBlank() || !uiState.recordedAudioPath.isNullOrBlank()) {
+                                    viewModel.submitSpeechPractice()
+                                } else if (uiState.isRecordingSpeech) {
+                                    viewModel.stopSpeechRecording()
+                                } else {
+                                    val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                                    if (hasPerm) {
+                                        viewModel.startSpeechRecording(context)
+                                    } else {
+                                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    }
+                                }
+                            },
+                            enabled = !uiState.isSubmittingEvaluation,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (uiState.isSubmittingEvaluation) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text(
+                                        text = when {
+                                            !uiState.recordedSpeechAudioPath.isNullOrBlank() || !uiState.recordedAudioPath.isNullOrBlank() ->
+                                                "📊 Submit Speech for AI Evaluation (+35 XP)"
+                                            uiState.isRecordingSpeech ->
+                                                "⏹ Stop Speech Recording"
+                                            else ->
+                                                "🎙️ Start Speech Recording"
+                                        },
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    SkillType.MUSIC -> {
+                        if (!uiState.isSessionActive) {
+                            Button(
+                                onClick = {
+                                    if (uiState.isVocalSkill) {
+                                        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                                        if (hasPerm) {
+                                            viewModel.startPracticeSession(context = context, autoRecordVoice = true)
+                                        } else {
+                                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    } else {
+                                        viewModel.startPracticeSession()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        PlayIcon(size = 16.dp, color = Color.White)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (uiState.isVocalSkill) "Start Vocal Practice (Timer & Mic)" else "Start Instrument Practice",
+                                            color = Color.White,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    viewModel.onFinishSessionClick(context)
+                                },
+                                enabled = !uiState.isCompleting,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (uiState.isCompleting) {
+                                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                    } else {
+                                        Text(
+                                            text = if (uiState.isVocalSkill) "✓ Finish & Review Vocal Performance (+35 XP)" else "✓ Finish & Record Practice (+35 XP)",
+                                            color = Color.White,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1108,7 +1023,6 @@ fun DailyTrainingScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                }
 
                 Spacer(modifier = Modifier.height(18.dp))
             }
@@ -3694,6 +3608,1517 @@ fun VocalReviewDialog(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// SKILL-SPECIFIC PRACTICE TOOLS & EXPORTERS
+// ============================================================================
+
+fun exportStrokesToBitmap(
+    strokes: List<DrawingStrokePoint>,
+    width: Int = 800,
+    height: Int = 800
+): ByteArray {
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    canvas.drawColor(android.graphics.Color.WHITE)
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        style = android.graphics.Paint.Style.STROKE
+        strokeCap = android.graphics.Paint.Cap.ROUND
+        strokeJoin = android.graphics.Paint.Join.ROUND
+    }
+    for (i in 0 until strokes.size - 1) {
+        val p1 = strokes[i]
+        val p2 = strokes[i + 1]
+        if (!p1.isEndOfStroke) {
+            paint.color = p1.color.toInt()
+            paint.strokeWidth = (p1.strokeWidth * 2f).coerceAtLeast(3f)
+            canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint)
+        }
+    }
+    val stream = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream)
+    return stream.toByteArray()
+}
+
+@Composable
+fun SkillSpecificPracticeSection(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel,
+    micPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+) {
+    when (uiState.detectedSkillType) {
+        SkillType.PHOTOGRAPHY -> {
+            PhotographyPracticeTool(uiState = uiState, viewModel = viewModel)
+        }
+        SkillType.DRAWING -> {
+            DrawingPracticeTool(uiState = uiState, viewModel = viewModel)
+        }
+        SkillType.CODING -> {
+            CodingPracticeTool(uiState = uiState, viewModel = viewModel)
+        }
+        SkillType.PUBLIC_SPEAKING -> {
+            PublicSpeakingPracticeTool(uiState = uiState, viewModel = viewModel, micPermissionLauncher = micPermissionLauncher)
+        }
+        SkillType.MUSIC -> {
+            if (uiState.isVocalSkill) {
+                MusicVocalPracticeTool(uiState = uiState, viewModel = viewModel, micPermissionLauncher = micPermissionLauncher)
+            } else {
+                MusicInstrumentPracticeTool(uiState = uiState, viewModel = viewModel, micPermissionLauncher = micPermissionLauncher)
+            }
+        }
+    }
+}
+
+@Composable
+fun PhotographyPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel
+) {
+    val context = LocalContext.current
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            try {
+                val file = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+                viewModel.onPhotoCaptured(file.absolutePath)
+            } catch (_: Exception) {}
+        }
+    }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val file = File(context.cacheDir, "photo_upload_${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(file).use { output -> input.copyTo(output) }
+                }
+                viewModel.onPhotoCaptured(file.absolutePath)
+            } catch (_: Exception) {}
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "📸", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "PHOTOGRAPHY STUDIO PRACTICE",
+                            color = HeadingPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        Text(
+                            text = "Camera viewfinder • Rule of thirds • Lighting",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TaglineBackground)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("NO TIMER NEEDED", color = AccentPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            val photoPath = uiState.capturedPhotoPath ?: uiState.selectedImagePath
+            val bitmap = remember(photoPath) {
+                photoPath?.let { path ->
+                    try { BitmapFactory.decodeFile(path) } catch (_: Exception) { null }
+                }
+            }
+
+            if (bitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(230.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.Black)
+                ) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Captured Photography",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val w = size.width
+                        val h = size.height
+                        val gridColor = Color.White.copy(alpha = 0.5f)
+                        drawLine(gridColor, Offset(w / 3f, 0f), Offset(w / 3f, h), strokeWidth = 1.5f)
+                        drawLine(gridColor, Offset(2f * w / 3f, 0f), Offset(2f * w / 3f, h), strokeWidth = 1.5f)
+                        drawLine(gridColor, Offset(0f, h / 3f), Offset(w, h / 3f), strokeWidth = 1.5f)
+                        drawLine(gridColor, Offset(0f, 2f * h / 3f), Offset(w, 2f * h / 3f), strokeWidth = 1.5f)
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "📐 Rule-of-Thirds Grid Active",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { cameraLauncher.launch(null) },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("🔄 Retake", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { photoPickerLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("📁 Change Photo", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF3E8FF))
+                        .border(1.5.dp, Color(0xFFD6C8F2), RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "📸", fontSize = 36.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Ready to Capture Practice Photo",
+                            color = HeadingPurple,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "Open camera or upload a photo to analyze composition & lighting",
+                            color = TextSecondary,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { cameraLauncher.launch(null) },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("📷 Open Camera", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { photoPickerLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEDE5FA)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("📁 Upload Photo", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TaglineBackground)
+                    .padding(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(text = "💡", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Composition Tip: Place focal points on the grid lines or intersections. Ensure steady focus and balanced natural lighting.",
+                        color = TextPrimary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+            }
+
+            if (bitmap != null) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = { viewModel.submitCapturedPhoto() },
+                    enabled = !uiState.isSubmittingEvaluation,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isSubmittingEvaluation) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Analyzing Composition & Lighting...", color = Color.White, fontSize = 12.sp)
+                    } else {
+                        Text("📊 Submit Photo for AI Composition Analysis", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DrawingPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel
+) {
+    val context = LocalContext.current
+
+    val paperSketchLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val file = File(context.cacheDir, "drawing_sketch_${System.currentTimeMillis()}.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(file).use { output -> input.copyTo(output) }
+                }
+                viewModel.submitDrawingArt(context, filePath = file.absolutePath)
+            } catch (_: Exception) {}
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🎨", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "INTERACTIVE DRAWING CANVAS",
+                            color = HeadingPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        Text(
+                            text = "Draw on screen or capture paper sketch",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TaglineBackground)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("NO TIMER NEEDED", color = AccentPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Drawing Toolbar: Tools & Palette
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Tool Selectors (Pencil, Brush, Eraser)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val tools = listOf("Pencil" to "✏️", "Brush" to "🖌️", "Eraser" to "🧽")
+                    tools.forEach { (toolName, icon) ->
+                        val isSelected = uiState.selectedDrawingTool.equals(toolName, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) AccentPurple else TaglineBackground)
+                                .clickable { viewModel.selectDrawingTool(toolName) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "$icon $toolName",
+                                color = if (isSelected) Color.White else TextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                // Undo / Clear
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFEDE5FA))
+                            .clickable { viewModel.undoDrawing() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("↩ Undo", color = AccentPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFFEE2E2))
+                            .clickable { viewModel.clearDrawing() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("🗑️ Clear", color = Color(0xFFDC2626), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Color Palette Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val colors = listOf(
+                        0xFF1E293BL to "Black",
+                        0xFF7545C8L to "Purple",
+                        0xFF2563EBL to "Blue",
+                        0xFF16A34AL to "Green",
+                        0xFFDC2626L to "Red",
+                        0xFFD97706L to "Gold"
+                    )
+                    colors.forEach { (cLong, _) ->
+                        val isSelected = uiState.selectedDrawingColor == cLong && !uiState.selectedDrawingTool.equals("Eraser", ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(Color(cLong))
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) AccentPurple else Color.LightGray,
+                                    shape = CircleShape
+                                )
+                                .clickable { viewModel.selectDrawingColor(cLong) }
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF3E8FF))
+                        .clickable { paperSketchLauncher.launch("image/*") }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text("📸 Paper Sketch", color = AccentPurple, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Touch Drawing Canvas
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White)
+                    .border(1.5.dp, AccentPurple.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                    .clipToBounds()
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                viewModel.startDrawingStroke(offset.x, offset.y)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                viewModel.addDrawingStrokePoint(change.position.x, change.position.y)
+                            },
+                            onDragEnd = {
+                                viewModel.endDrawingStroke()
+                            }
+                        )
+                    }
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    for (i in 0 until uiState.drawingStrokes.size - 1) {
+                        val p1 = uiState.drawingStrokes[i]
+                        val p2 = uiState.drawingStrokes[i + 1]
+                        if (!p1.isEndOfStroke) {
+                            drawLine(
+                                color = Color(p1.color),
+                                start = Offset(p1.x, p1.y),
+                                end = Offset(p2.x, p2.y),
+                                strokeWidth = p1.strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                }
+
+                if (uiState.drawingStrokes.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✍️ Touch and draw your sketch here\n(or attach a paper sketch above)",
+                            color = Color(0xFFA098B5),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    val bytes = exportStrokesToBitmap(uiState.drawingStrokes)
+                    viewModel.submitDrawingArt(context, imageBytes = bytes)
+                },
+                enabled = !uiState.isSubmittingEvaluation && (uiState.drawingStrokes.isNotEmpty() || !uiState.selectedImagePath.isNullOrBlank()),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (uiState.isSubmittingEvaluation) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Analyzing Shapes, Shading & Proportions...", color = Color.White, fontSize = 12.sp)
+                } else {
+                    Text("📊 Submit Drawing for AI Artwork Analysis", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CodingPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "💻", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "PROGRAMMING PRACTICE & RUNNER",
+                            color = HeadingPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        Text(
+                            text = "In-app code editor • Test assertions",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TaglineBackground)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("NO RECORDING TIMER", color = AccentPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Language Selector Pills
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val languages = listOf("Python", "Java", "JavaScript", "C", "C++")
+                languages.forEach { lang ->
+                    val isSelected = uiState.selectedLanguage.equals(lang, ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) AccentPurple else TaglineBackground)
+                            .clickable { viewModel.onLanguageSelected(lang) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = lang,
+                            color = if (isSelected) Color.White else TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Task Problem Statement Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TaglineBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "TASK: ${uiState.upNextTitle}",
+                        color = HeadingPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "Write your code in ${uiState.selectedLanguage} below. Click 'Run Code' to execute and test against assertions.",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Monospace Code Editor
+            OutlinedTextField(
+                value = uiState.codeEditorText,
+                onValueChange = { viewModel.onCodeTextChanged(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 180.dp, max = 280.dp),
+                textStyle = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 13.sp,
+                    color = Color(0xFF1E293B)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AccentPurple,
+                    unfocusedBorderColor = CardBorder,
+                    focusedContainerColor = Color(0xFFFAF7FF),
+                    unfocusedContainerColor = Color(0xFFFAF7FF)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Action Buttons: Run Code & Submit
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = { viewModel.runCode(UserSession.userId) },
+                    enabled = !uiState.isCodeRunning,
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEDE5FA)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isCodeRunning) {
+                        CircularProgressIndicator(color = AccentPurple, modifier = Modifier.size(18.dp))
+                    } else {
+                        Text("▶ Run Code", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Button(
+                    onClick = { viewModel.submitCodingPractice() },
+                    enabled = !uiState.isSubmittingEvaluation,
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isSubmittingEvaluation) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                    } else {
+                        Text("✓ Submit Code", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Terminal Console / Output
+            if (uiState.codingOutput.isNotBlank() || uiState.codingError.isNotBlank() || uiState.codeTestCases.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0F172A))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "TERMINAL / TEST RESULTS",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+
+                        if (uiState.codingOutput.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = uiState.codingOutput,
+                                color = Color(0xFF4ADE80),
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        if (uiState.codingError.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = uiState.codingError,
+                                color = Color(0xFFF87171),
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        // Test Cases List
+                        if (uiState.codeTestCases.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            uiState.codeTestCases.forEach { tc ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (tc.passed) "✓ PASS" else "✕ FAIL",
+                                        color = if (tc.passed) Color(0xFF4ADE80) else Color(0xFFF87171),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "${tc.name}: expected ${tc.expected}, got ${tc.actual}",
+                                        color = Color(0xFFCBD5E1),
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
+                        }
+
+                        if (uiState.codeExplanation.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "AI Note: ${uiState.codeExplanation}",
+                                color = Color(0xFFE2E8F0),
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PublicSpeakingPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel,
+    micPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🗣️", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "SPEECH PRACTICE & TELEPROMPTER",
+                            color = HeadingPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        Text(
+                            text = "Vocal clarity • Speaking pace (130-150 WPM)",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TaglineBackground)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("SPEECH MODE", color = AccentPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Speech Prompt Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TaglineBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "TOPIC TO SPEAK ABOUT:",
+                        color = HeadingPurple,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.6.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = uiState.speechPromptText.ifBlank { "Introduce yourself, describe your learning passion, and explain why daily practice is essential for mastery." },
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "🎯 Target Pace: 130–150 WPM",
+                            color = AccentPurple,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Avoid filler words (um, ah)",
+                            color = TextSecondary,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Recording Controls
+            if (uiState.isRecordingSpeech) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFFEBEE))
+                        .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
+                        .padding(14.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFD32F2F))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "🎙️ RECORDING SPEECH...",
+                                color = Color(0xFFC62828),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        val formattedSpeech = String.format("%02d:%02d", uiState.speechRecordSeconds / 60, uiState.speechRecordSeconds % 60)
+                        Text(
+                            text = formattedSpeech,
+                            color = Color(0xFFB71C1C),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = { viewModel.stopSpeechRecording() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().height(42.dp)
+                        ) {
+                            Text("⏹ Stop Speech Recording", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else if (!uiState.recordedSpeechAudioPath.isNullOrBlank() || !uiState.recordedAudioPath.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE8F5E9))
+                        .border(1.dp, Color(0xFFA5D6A7), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "✓ Speech Audio Recorded",
+                                    color = Color(0xFF2E7D32),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Ready for AI speech clarity & cadence analysis",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = { viewModel.toggleVoicePlayback(context) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = GreenNode),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Text(if (uiState.isPlayingVoice) "⏸" else "▶ Listen", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Button(
+                                    onClick = { viewModel.retakeSpeechRecording(context) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text("🔄 Retake", color = TextSecondary, fontSize = 11.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = { viewModel.submitSpeechPractice() },
+                            enabled = !uiState.isSubmittingEvaluation,
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            if (uiState.isSubmittingEvaluation) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                            } else {
+                                Text("📊 Submit Speech for AI Performance Analysis", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Button(
+                    onClick = {
+                        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        if (hasPerm) {
+                            viewModel.startSpeechRecording(context)
+                        } else {
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("🎙️ Start Speech Recording", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MusicVocalPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel,
+    micPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFFF6F0FF))
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(if (uiState.isSessionPaused) Color(0xFFF59E0B) else Color(0xFFEF4444))
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (uiState.isSessionPaused) "VOCAL PRACTICE PAUSED" else "LIVE VOCAL PRACTICE SESSION",
+                    color = AccentPurple,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = uiState.formattedElapsed,
+                color = HeadingPurple,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Elapsed active singing time counts toward your daily goal",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = {
+                        if (uiState.isSessionPaused) viewModel.resumePracticeSession()
+                        else viewModel.pausePracticeSession()
+                    },
+                    modifier = Modifier.weight(1f).height(42.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE9DDFF)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (uiState.isSessionPaused) "▶ Resume" else "⏸ Pause",
+                        color = AccentPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Button(
+                    onClick = { viewModel.cancelPracticeSession() },
+                    modifier = Modifier.weight(1f).height(42.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("✕ Cancel", color = Color(0xFFDC2626), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Microphone Recording section
+            if (uiState.isRecordingVoice) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFFEBEE))
+                        .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(9.dp)
+                                    .clip(CircleShape)
+                                    .background(if (uiState.isRecordingPaused) Color(0xFFF59E0B) else Color(0xFFD32F2F))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (uiState.isRecordingPaused) "MIC RECORDING PAUSED" else "🎙️ RECORDING SINGING VOICE...",
+                                color = if (uiState.isRecordingPaused) Color(0xFFD97706) else Color(0xFFC62828),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "${uiState.formattedVoiceRecordDuration} recorded",
+                            color = Color(0xFFB71C1C),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Waveform bars
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.height(24.dp)
+                        ) {
+                            uiState.liveAmplitudeWaveforms.forEach { amp ->
+                                val barH = (amp * 22).dp.coerceAtLeast(4.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .width(5.dp)
+                                        .height(barH)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(if (uiState.isRecordingPaused) Color(0xFFF59E0B) else AccentPurple)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    if (uiState.isRecordingPaused) viewModel.resumeVoiceRecording()
+                                    else viewModel.pauseVoiceRecording()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCDD2)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = if (uiState.isRecordingPaused) "▶ Resume Mic" else "⏸ Pause Mic",
+                                    color = Color(0xFFB71C1C),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Button(
+                                onClick = { viewModel.stopVoiceRecording() },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text("⏹ Stop Mic", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            } else if (!uiState.recordedAudioPath.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE8F5E9))
+                        .border(1.dp, Color(0xFFA5D6A7), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "✓ Singing Recorded (${uiState.formattedVoiceRecordDuration})",
+                                color = Color(0xFF2E7D32),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Ready for AI acoustic evaluation on Finish",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Button(
+                                onClick = { viewModel.toggleVoicePlayback(context) },
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenNode),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(if (uiState.isPlayingVoice) "⏸" else "▶ Listen", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = { viewModel.clearVoiceRecording() },
+                                colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("🔄 Retake", color = TextSecondary, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Button(
+                    onClick = {
+                        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        if (hasPerm) {
+                            viewModel.startVoiceRecording(context)
+                        } else {
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("🎙️ Start Voice Recording", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MusicInstrumentPracticeTool(
+    uiState: DailyTrainingUiState,
+    viewModel: DailyTrainingViewModel,
+    micPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF7545C8))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.5.dp, AccentPurple, RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🎵", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "INSTRUMENT PRACTICE & METRONOME",
+                            color = HeadingPurple,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                        Text(
+                            text = "${uiState.activeSubcategoryName} tempo trainer & rhythm drill",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TaglineBackground)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("INSTRUMENT MODE", color = AccentPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Metronome Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9F5FF))
+                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                    .padding(14.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "METRONOME TEMPO",
+                        color = HeadingPurple,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "${uiState.metronomeBpm} BPM",
+                        color = AccentPurple,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 4-Beat Visual LED Flasher
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        for (beat in 1..4) {
+                            val isActive = uiState.isMetronomeActive && uiState.currentBeat == beat
+                            val isAccented = beat == 1
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isActive) 18.dp else 14.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        when {
+                                            isActive && isAccented -> AccentPurple
+                                            isActive -> Color(0xFF9E77ED)
+                                            else -> Color(0xFFDDD3F0)
+                                        }
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isActive) AccentPurple else Color.Transparent,
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // BPM Slider
+                    Slider(
+                        value = uiState.metronomeBpm.toFloat(),
+                        onValueChange = { viewModel.setMetronomeBpm(it.toInt()) },
+                        valueRange = 40f..240f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = AccentPurple,
+                            activeTrackColor = AccentPurple,
+                            inactiveTrackColor = Color(0xFFDDD3F0)
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Button(
+                        onClick = { viewModel.toggleMetronome() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (uiState.isMetronomeActive) Color(0xFFFEE2E2) else Color(0xFFEDE5FA)
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                    ) {
+                        Text(
+                            text = if (uiState.isMetronomeActive) "⏹ Stop Metronome" else "▶ Start Metronome (${uiState.metronomeBpm} BPM)",
+                            color = if (uiState.isMetronomeActive) Color(0xFFDC2626) else AccentPurple,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Instrument Audio Recording Section
+            if (uiState.isRecordingVoice) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFFEBEE))
+                        .border(1.dp, Color(0xFFEF9A9A), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "🎙️ RECORDING INSTRUMENT PERFORMANCE...",
+                            color = Color(0xFFC62828),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${uiState.formattedVoiceRecordDuration} recorded",
+                            color = Color(0xFFB71C1C),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { viewModel.stopVoiceRecording() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("⏹ Stop Mic", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else if (!uiState.recordedAudioPath.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE8F5E9))
+                        .border(1.dp, Color(0xFFA5D6A7), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("✓ Instrument Audio Recorded", color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Ready for AI rhythm & tempo analysis", color = TextSecondary, fontSize = 11.sp)
+                        }
+                        Button(
+                            onClick = { viewModel.clearVoiceRecording() },
+                            colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("🔄 Retake", color = TextSecondary, fontSize = 11.sp)
+                        }
+                    }
+                }
+            } else {
+                Button(
+                    onClick = {
+                        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        if (hasPerm) {
+                            viewModel.startVoiceRecording(context)
+                        } else {
+                            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("🎙️ Record Instrument Audio (Tempo / Rhythm Drill)", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

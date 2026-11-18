@@ -25,6 +25,33 @@ data class UserData(
     val profilePicture: String = ""
 )
 
+data class DailyProgressItem(
+    val day: String = "Mon",
+    val date: String = "",
+    val minutes: Int = 0,
+    val tasks: Int = 0,
+    val xp: Int = 0,
+    val isToday: Boolean = false
+)
+
+data class ProfileWeeklyProgressData(
+    val days: List<DailyProgressItem> = emptyList(),
+    val totalWeeklyMinutes: Int = 0,
+    val weeklyCompletedTasks: Int = 0,
+    val weeklyXpEarned: Int = 0,
+    val weeklyGoalMinutes: Int = 60,
+    val weeklyGoalPercentage: Int = 0
+)
+
+data class ProfileBadgeItem(
+    val id: String = "",
+    val name: String = "",
+    val description: String = "",
+    val iconType: String = "TROPHY",
+    val isUnlocked: Boolean = false,
+    val earnedDate: String? = null
+)
+
 data class ProfileData(
     val userId: Int,
     val name: String,
@@ -34,7 +61,34 @@ data class ProfileData(
     val skills: String,
     val careerGoal: String,
     val bio: String,
-    val profilePicture: String = ""
+    val profilePicture: String = "",
+    val skillScore: Int = 0,
+    val totalSessions: Int = 0,
+    val dayStreak: Int = 0,
+    val totalXp: Int = 0,
+    val memberSinceText: String = "Growing with AI Skills Mirror",
+    val weeklyProgress: ProfileWeeklyProgressData = ProfileWeeklyProgressData(),
+    val achievedBadges: List<ProfileBadgeItem> = emptyList(),
+    val lockedBadges: List<ProfileBadgeItem> = emptyList()
+)
+
+data class CodeTestCaseResult(
+    val name: String,
+    val passed: Boolean,
+    val input: String,
+    val expected: String,
+    val actual: String
+)
+
+data class CodeExecutionResult(
+    val language: String,
+    val output: String,
+    val error: String,
+    val hasError: Boolean,
+    val testCases: List<CodeTestCaseResult>,
+    val allTestsPassed: Boolean,
+    val executionTimeMs: Int,
+    val explanation: String
 )
 
 data class DashboardData(
@@ -157,11 +211,25 @@ data class RoadmapAiFeedbackData(
     val nextGoal: String = ""
 )
 
+data class QuizReviewItem(
+    val id: Int = 0,
+    val question: String = "",
+    val options: List<String> = emptyList(),
+    val userChoice: Int = -1,
+    val correctChoice: Int = 0,
+    val explanation: String = "",
+    val isCorrect: Boolean = false
+)
+
 data class CompleteTopicResultData(
     val passed: Boolean,
     val score: Int,
     val xpAwarded: Int,
     val message: String,
+    val totalQuestions: Int = 5,
+    val correctAnswers: Int = 0,
+    val incorrectAnswers: Int = 0,
+    val reviewQuestions: List<QuizReviewItem> = emptyList(),
     val nextTopicUnlocked: String? = null,
     val remedialAdvice: String? = null,
     val remedialFeedback: String? = remedialAdvice,
@@ -672,6 +740,81 @@ object ApiClient {
                     val rawPic = p.optString("profile_picture_url").takeIf { it.isNotBlank() }
                         ?: p.optString("profile_picture", "")
                     val resolvedPic = resolveImageUrl(rawPic)
+
+                    // Parse weekly progress
+                    val wpJson = p.optJSONObject("weekly_progress") ?: json.optJSONObject("weekly_progress")
+                    val weeklyProgress = if (wpJson != null) {
+                        val daysArray = wpJson.optJSONArray("days")
+                        val daysList = mutableListOf<DailyProgressItem>()
+                        if (daysArray != null) {
+                            for (i in 0 until daysArray.length()) {
+                                val d = daysArray.optJSONObject(i)
+                                if (d != null) {
+                                    daysList.add(
+                                        DailyProgressItem(
+                                            day = d.optString("day", ""),
+                                            date = d.optString("date", ""),
+                                            minutes = d.optInt("minutes", 0),
+                                            tasks = d.optInt("tasks", 0),
+                                            xp = d.optInt("xp", 0),
+                                            isToday = d.optBoolean("is_today", false)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        ProfileWeeklyProgressData(
+                            days = daysList,
+                            totalWeeklyMinutes = wpJson.optInt("total_weekly_minutes", 0),
+                            weeklyCompletedTasks = wpJson.optInt("weekly_completed_tasks", 0),
+                            weeklyXpEarned = wpJson.optInt("weekly_xp_earned", 0),
+                            weeklyGoalMinutes = wpJson.optInt("weekly_goal_minutes", 60),
+                            weeklyGoalPercentage = wpJson.optInt("weekly_goal_percentage", 0)
+                        )
+                    } else ProfileWeeklyProgressData()
+
+                    // Parse achieved badges
+                    val achArray = p.optJSONArray("achieved_badges") ?: json.optJSONArray("achieved_badges")
+                    val achievedBadges = mutableListOf<ProfileBadgeItem>()
+                    if (achArray != null) {
+                        for (i in 0 until achArray.length()) {
+                            val b = achArray.optJSONObject(i)
+                            if (b != null) {
+                                achievedBadges.add(
+                                    ProfileBadgeItem(
+                                        id = b.optString("id", ""),
+                                        name = b.optString("name", ""),
+                                        description = b.optString("description", ""),
+                                        iconType = b.optString("icon_type", "TROPHY"),
+                                        isUnlocked = b.optBoolean("is_unlocked", true),
+                                        earnedDate = b.optString("earned_date").takeIf { it.isNotBlank() && it != "null" }
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // Parse locked badges
+                    val lockedArray = p.optJSONArray("locked_badges") ?: json.optJSONArray("locked_badges")
+                    val lockedBadges = mutableListOf<ProfileBadgeItem>()
+                    if (lockedArray != null) {
+                        for (i in 0 until lockedArray.length()) {
+                            val b = lockedArray.optJSONObject(i)
+                            if (b != null) {
+                                lockedBadges.add(
+                                    ProfileBadgeItem(
+                                        id = b.optString("id", ""),
+                                        name = b.optString("name", ""),
+                                        description = b.optString("description", ""),
+                                        iconType = b.optString("icon_type", "TROPHY"),
+                                        isUnlocked = b.optBoolean("is_unlocked", false),
+                                        earnedDate = null
+                                    )
+                                )
+                            }
+                        }
+                    }
+
                     val profile = ProfileData(
                         userId = p.optInt("user_id", userId),
                         name = p.optString("name", ""),
@@ -681,7 +824,15 @@ object ApiClient {
                         skills = p.optString("skills", ""),
                         careerGoal = p.optString("career_goal", ""),
                         bio = p.optString("bio", ""),
-                        profilePicture = resolvedPic
+                        profilePicture = resolvedPic,
+                        skillScore = p.optInt("skill_score", 0),
+                        totalSessions = p.optInt("total_sessions", 0),
+                        dayStreak = p.optInt("day_streak", 0),
+                        totalXp = p.optInt("total_xp", 0),
+                        memberSinceText = p.optString("member_since_text", "Growing with AI Skills Mirror"),
+                        weeklyProgress = weeklyProgress,
+                        achievedBadges = achievedBadges,
+                        lockedBadges = lockedBadges
                     )
                     NetworkResult(true, message, profile)
                 } else {
@@ -1177,23 +1328,58 @@ object ApiClient {
     suspend fun completeRoadmapTopic(
         userId: Int,
         stageId: Int,
-        score: Int
+        score: Int,
+        answers: Map<Int, Int>? = null
     ): NetworkResult<CompleteTopicResultData> = withContext(Dispatchers.IO) {
         try {
             val payload = JSONObject().apply {
                 put("user_id", userId)
                 put("stage_id", stageId)
                 put("score", score)
+                if (answers != null && answers.isNotEmpty()) {
+                    val ansObj = JSONObject()
+                    for ((k, v) in answers) {
+                        ansObj.put(k.toString(), v)
+                    }
+                    put("answers", ansObj)
+                }
             }
             val (code, text) = postJson("roadmap/roadmap_topic_complete.php", payload)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val d = json.getJSONObject("data")
+
+                val revList = mutableListOf<QuizReviewItem>()
+                d.optJSONArray("reviewQuestions")?.let { rqa ->
+                    for (i in 0 until rqa.length()) {
+                        val ro = rqa.getJSONObject(i)
+                        val optList = mutableListOf<String>()
+                        ro.optJSONArray("options")?.let { opa ->
+                            for (j in 0 until opa.length()) optList.add(opa.getString(j))
+                        }
+                        revList.add(
+                            QuizReviewItem(
+                                id = ro.optInt("id", i + 1),
+                                question = ro.optString("question", ""),
+                                options = optList,
+                                userChoice = ro.optInt("userChoice", -1),
+                                correctChoice = ro.optInt("correctChoice", 0),
+                                explanation = ro.optString("explanation", ""),
+                                isCorrect = ro.optBoolean("isCorrect", false)
+                            )
+                        )
+                    }
+                }
+
                 val res = CompleteTopicResultData(
                     passed = d.optBoolean("passed", true),
                     score = d.optInt("score", score),
                     xpAwarded = d.optInt("xpAwarded", 0),
                     message = json.optString("message", "Topic completed"),
+                    totalQuestions = d.optInt("totalQuestions", 5),
+                    correctAnswers = d.optInt("correctAnswers", 0),
+                    incorrectAnswers = d.optInt("incorrectAnswers", 0),
+                    reviewQuestions = revList,
                     nextTopicUnlocked = if (d.isNull("nextTopicUnlocked")) null else d.optString("nextTopicUnlocked"),
                     remedialAdvice = if (d.isNull("remedialAdvice")) null else d.optString("remedialAdvice"),
                     remedialFeedback = if (d.isNull("remedialFeedback")) (if (d.isNull("remedialAdvice")) null else d.optString("remedialAdvice")) else d.optString("remedialFeedback"),
@@ -1462,6 +1648,60 @@ object ApiClient {
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun executeCode(
+        userId: Int,
+        language: String,
+        code: String,
+        taskTitle: String
+    ): NetworkResult<CodeExecutionResult> = withContext(Dispatchers.IO) {
+        try {
+            val payload = JSONObject().apply {
+                put("user_id", userId)
+                put("language", language)
+                put("code", code)
+                put("task_title", taskTitle)
+            }
+            val (statusCode, text) = postJson("training/code_execute.php", payload, connectTimeoutMs = 15000, readTimeoutMs = 20000)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            val status = json.optString("status")
+            if (statusCode == 200 && status == "success") {
+                val tcArr = json.optJSONArray("test_cases")
+                val tcList = mutableListOf<CodeTestCaseResult>()
+                if (tcArr != null) {
+                    for (i in 0 until tcArr.length()) {
+                        val tc = tcArr.optJSONObject(i)
+                        if (tc != null) {
+                            tcList.add(
+                                CodeTestCaseResult(
+                                    name = tc.optString("name", "Test"),
+                                    passed = tc.optBoolean("passed", false),
+                                    input = tc.optString("input", ""),
+                                    expected = tc.optString("expected", ""),
+                                    actual = tc.optString("actual", "")
+                                )
+                            )
+                        }
+                    }
+                }
+                val res = CodeExecutionResult(
+                    language = json.optString("language", language),
+                    output = json.optString("output", ""),
+                    error = json.optString("error", ""),
+                    hasError = json.optBoolean("has_error", false),
+                    testCases = tcList,
+                    allTestsPassed = json.optBoolean("all_tests_passed", false),
+                    executionTimeMs = json.optInt("execution_time_ms", 0),
+                    explanation = json.optString("explanation", "")
+                )
+                NetworkResult(true, "Code executed", res)
+            } else {
+                NetworkResult(false, json.optString("message", "Execution failed"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Code execution error: ${e.localizedMessage}")
         }
     }
 

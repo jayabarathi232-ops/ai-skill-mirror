@@ -97,6 +97,8 @@ class GrowthRoadmapViewModel(
         _uiState.value = _uiState.value.copy(
             isQuizDialogOpen = true,
             quizStage = stage,
+            currentQuestionIndex = 0,
+            isReviewMode = false,
             quizAnswers = emptyMap(),
             quizResult = null,
             quizError = null,
@@ -113,6 +115,70 @@ class GrowthRoadmapViewModel(
         )
     }
 
+    fun nextQuestion() {
+        val stage = _uiState.value.quizStage ?: return
+        val total = stage.assessmentQuestions.size
+        val cur = _uiState.value.currentQuestionIndex
+        if (cur < total - 1) {
+            _uiState.value = _uiState.value.copy(
+                currentQuestionIndex = cur + 1,
+                quizError = null
+            )
+        }
+    }
+
+    fun previousQuestion() {
+        val cur = _uiState.value.currentQuestionIndex
+        if (cur > 0) {
+            _uiState.value = _uiState.value.copy(
+                currentQuestionIndex = cur - 1,
+                quizError = null
+            )
+        }
+    }
+
+    fun jumpToQuestion(index: Int) {
+        val stage = _uiState.value.quizStage ?: return
+        if (index in stage.assessmentQuestions.indices) {
+            _uiState.value = _uiState.value.copy(
+                currentQuestionIndex = index,
+                quizError = null
+            )
+        }
+    }
+
+    fun openReviewMode() {
+        _uiState.value = _uiState.value.copy(isReviewMode = true)
+    }
+
+    fun closeReviewMode() {
+        _uiState.value = _uiState.value.copy(isReviewMode = false)
+    }
+
+    fun retakeQuiz() {
+        _uiState.value = _uiState.value.copy(
+            currentQuestionIndex = 0,
+            isReviewMode = false,
+            quizAnswers = emptyMap(),
+            quizResult = null,
+            quizError = null,
+            isSubmittingQuiz = false
+        )
+    }
+
+    fun closeQuizDialog() {
+        _uiState.value = _uiState.value.copy(
+            isQuizDialogOpen = false,
+            quizStage = null,
+            currentQuestionIndex = 0,
+            isReviewMode = false,
+            quizAnswers = emptyMap(),
+            quizResult = null,
+            quizError = null,
+            isSubmittingQuiz = false
+        )
+    }
+
     fun submitStageQuiz() {
         val stage = _uiState.value.quizStage ?: return
         val questions = stage.assessmentQuestions
@@ -123,7 +189,11 @@ class GrowthRoadmapViewModel(
         }
 
         if (_uiState.value.quizAnswers.size < questions.size) {
-            _uiState.value = _uiState.value.copy(quizError = "Please answer all questions before submitting.")
+            val unansweredIndex = (0 until questions.size).firstOrNull { !_uiState.value.quizAnswers.containsKey(it) } ?: 0
+            _uiState.value = _uiState.value.copy(
+                currentQuestionIndex = unansweredIndex,
+                quizError = "Please answer Question ${unansweredIndex + 1} before submitting."
+            )
             return
         }
 
@@ -143,7 +213,8 @@ class GrowthRoadmapViewModel(
             val result = progressRepository.completeRoadmapTopic(
                 userId = UserSession.userId,
                 stageId = stage.id,
-                score = calculatedScore
+                score = calculatedScore,
+                answers = _uiState.value.quizAnswers
             )
 
             _uiState.value = _uiState.value.copy(isSubmittingQuiz = false)
@@ -185,15 +256,7 @@ class GrowthRoadmapViewModel(
         }
     }
 
-    fun closeQuizDialog() {
-        _uiState.value = _uiState.value.copy(
-            isQuizDialogOpen = false,
-            quizStage = null,
-            quizAnswers = emptyMap(),
-            quizResult = null,
-            quizError = null
-        )
-    }
+
 
     fun startStagePractice(stage: RoadmapStageData) {
         viewModelScope.launch {
