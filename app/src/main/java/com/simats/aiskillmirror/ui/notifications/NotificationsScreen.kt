@@ -874,7 +874,7 @@ private fun SmartAlertsQuickBar(
                 )
                 SmartAlertPill(
                     icon = "📊",
-                    label = "Weekly Progress",
+                    label = "Weekly Comparison",
                     onClick = { viewModel.triggerSmartNotification(context, "WEEKLY_PROGRESS") }
                 )
                 SmartAlertPill(
@@ -1336,7 +1336,7 @@ private fun NotificationSettingsDialog(
         "Daily Practice Reminders" to "Exact time nudge for Public Speaking",
         "Missed Practice Alerts" to "Notify if not completed by evening",
         "Practice Completion" to "Celebrate daily finished drills & XP",
-        "Weekly Updates" to "Weekly progress recap every Monday",
+        "Weekly Updates" to "Weekly comparison recap every Monday",
         "AI Coach Recommendations" to "AI-driven personalized speech drills"
     )
 

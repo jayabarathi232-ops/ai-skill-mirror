@@ -99,6 +99,73 @@ data class ProfileWeeklyProgressData(
     val weeklyGoalPercentage: Int = 0
 )
 
+data class WeekMetricsData(
+    val totalPracticeMinutes: Int = 0,
+    val completedTasks: Int = 0,
+    val musicScore: Int? = null,
+    val photographyScore: Int? = null,
+    val codingScore: Int? = null
+)
+
+data class TimeComparisonData(
+    val previousMinutes: Int = 0,
+    val currentMinutes: Int = 0,
+    val diffMinutes: Int = 0,
+    val diffPercentage: Double? = null,
+    val status: String = "no_change",
+    val formattedDiff: String = "0m"
+)
+
+data class TasksComparisonData(
+    val previousTasks: Int = 0,
+    val currentTasks: Int = 0,
+    val diffTasks: Int = 0,
+    val status: String = "no_change",
+    val formattedDiff: String = "0"
+)
+
+data class SkillComparisonData(
+    val skillKey: String = "",
+    val skillName: String = "",
+    val previousScore: Int? = null,
+    val currentScore: Int? = null,
+    val scoreDiff: Int? = null,
+    val improvementPercentage: Double? = null,
+    val status: String = "not_enough_data",
+    val statusText: String = "Not Enough Data"
+)
+
+data class AiWeeklySummaryData(
+    val status: String = "ai_unavailable",
+    val improvedMost: String = "Not Enough Data",
+    val needsPractice: String = "Coding",
+    val overallTrend: String = "steady",
+    val consistency: String = "",
+    val summaryText: String = "",
+    val recommendations: List<String> = emptyList(),
+    val canRetry: Boolean = false,
+    val aiModel: String = "none",
+    val message: String? = null
+)
+
+data class WeeklyComparisonData(
+    val userId: Int = 1,
+    val weekOffset: Int = 0,
+    val isCurrentWeek: Boolean = true,
+    val currentWeekLabel: String = "Week in Progress",
+    val currentWeekRange: String = "",
+    val previousWeekLabel: String = "Previous Week",
+    val previousWeekRange: String = "",
+    val elapsedDaysCount: Int = 4,
+    val fairComparisonNote: String = "",
+    val previousWeek: WeekMetricsData = WeekMetricsData(),
+    val currentWeek: WeekMetricsData = WeekMetricsData(),
+    val practiceTimeComparison: TimeComparisonData = TimeComparisonData(),
+    val tasksComparison: TasksComparisonData = TasksComparisonData(),
+    val skillsComparison: List<SkillComparisonData> = emptyList(),
+    val aiSummary: AiWeeklySummaryData = AiWeeklySummaryData()
+)
+
 data class ProfileBadgeItem(
     val id: String = "",
     val name: String = "",
@@ -124,6 +191,7 @@ data class ProfileData(
     val totalXp: Int = 0,
     val memberSinceText: String = "Growing with AI Skills Mirror",
     val weeklyProgress: ProfileWeeklyProgressData = ProfileWeeklyProgressData(),
+    val weeklyComparison: WeeklyComparisonData = WeeklyComparisonData(),
     val achievedBadges: List<ProfileBadgeItem> = emptyList(),
     val lockedBadges: List<ProfileBadgeItem> = emptyList()
 )
@@ -2252,7 +2320,7 @@ object ApiClient {
                 put("message", message)
                 put("language", language)
             }
-            val (code, text) = postJson("coach/coach_send_message.php", body)
+            val (code, text) = postJson("coach/coach_send_message.php", body, connectTimeoutMs = 15000, readTimeoutMs = 65000)
             val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
             if (code == 200 && json.optString("status") == "success") {
                 val d = json.getJSONObject("data")
@@ -2434,6 +2502,123 @@ object ApiClient {
                 }
             } else {
                 NetworkResult(false, json.optString("message", "Failed to fetch weekly progress"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchWeeklyComparison(
+        userId: Int,
+        weekOffset: Int = 0,
+        includeAi: Boolean = true
+    ): NetworkResult<WeeklyComparisonData> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("progress/weekly_comparison_fetch.php?user_id=$userId&week_offset=$weekOffset&include_ai=$includeAi")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val prevObj = json.optJSONObject("previous_week") ?: JSONObject()
+                val prevMetrics = WeekMetricsData(
+                    totalPracticeMinutes = prevObj.optInt("total_practice_minutes", 0),
+                    completedTasks = prevObj.optInt("completed_tasks", 0),
+                    musicScore = if (prevObj.has("music_score") && !prevObj.isNull("music_score")) prevObj.optInt("music_score") else null,
+                    photographyScore = if (prevObj.has("photography_score") && !prevObj.isNull("photography_score")) prevObj.optInt("photography_score") else null,
+                    codingScore = if (prevObj.has("coding_score") && !prevObj.isNull("coding_score")) prevObj.optInt("coding_score") else null
+                )
+
+                val curObj = json.optJSONObject("current_week") ?: JSONObject()
+                val curMetrics = WeekMetricsData(
+                    totalPracticeMinutes = curObj.optInt("total_practice_minutes", 0),
+                    completedTasks = curObj.optInt("completed_tasks", 0),
+                    musicScore = if (curObj.has("music_score") && !curObj.isNull("music_score")) curObj.optInt("music_score") else null,
+                    photographyScore = if (curObj.has("photography_score") && !curObj.isNull("photography_score")) curObj.optInt("photography_score") else null,
+                    codingScore = if (curObj.has("coding_score") && !curObj.isNull("coding_score")) curObj.optInt("coding_score") else null
+                )
+
+                val ptObj = json.optJSONObject("practice_time_comparison") ?: JSONObject()
+                val timeComp = TimeComparisonData(
+                    previousMinutes = ptObj.optInt("previous_minutes", 0),
+                    currentMinutes = ptObj.optInt("current_minutes", 0),
+                    diffMinutes = ptObj.optInt("diff_minutes", 0),
+                    diffPercentage = if (ptObj.has("diff_percentage") && !ptObj.isNull("diff_percentage")) ptObj.optDouble("diff_percentage") else null,
+                    status = ptObj.optString("status", "no_change"),
+                    formattedDiff = ptObj.optString("formatted_diff", "0m")
+                )
+
+                val tkObj = json.optJSONObject("tasks_comparison") ?: JSONObject()
+                val tasksComp = TasksComparisonData(
+                    previousTasks = tkObj.optInt("previous_tasks", 0),
+                    currentTasks = tkObj.optInt("current_tasks", 0),
+                    diffTasks = tkObj.optInt("diff_tasks", 0),
+                    status = tkObj.optString("status", "no_change"),
+                    formattedDiff = tkObj.optString("formatted_diff", "0")
+                )
+
+                val skillsArr = json.optJSONArray("skills_comparison")
+                val skillsList = mutableListOf<SkillComparisonData>()
+                if (skillsArr != null) {
+                    for (i in 0 until skillsArr.length()) {
+                        val s = skillsArr.optJSONObject(i) ?: continue
+                        skillsList.add(
+                            SkillComparisonData(
+                                skillKey = s.optString("skill_key", ""),
+                                skillName = s.optString("skill_name", ""),
+                                previousScore = if (s.has("previous_score") && !s.isNull("previous_score")) s.optInt("previous_score") else null,
+                                currentScore = if (s.has("current_score") && !s.isNull("current_score")) s.optInt("current_score") else null,
+                                scoreDiff = if (s.has("score_diff") && !s.isNull("score_diff")) s.optInt("score_diff") else null,
+                                improvementPercentage = if (s.has("improvement_percentage") && !s.isNull("improvement_percentage")) s.optDouble("improvement_percentage") else null,
+                                status = s.optString("status", "not_enough_data"),
+                                statusText = s.optString("status_text", "Not Enough Data")
+                            )
+                        )
+                    }
+                }
+
+                val aiObj = json.optJSONObject("ai_summary")
+                val recsList = mutableListOf<String>()
+                if (aiObj != null) {
+                    val rArr = aiObj.optJSONArray("recommendations")
+                    if (rArr != null) {
+                        for (rIdx in 0 until rArr.length()) {
+                            recsList.add(rArr.optString(rIdx))
+                        }
+                    }
+                }
+                val aiSummary = if (aiObj != null) {
+                    AiWeeklySummaryData(
+                        status = aiObj.optString("status", "ai_unavailable"),
+                        improvedMost = aiObj.optString("improved_most", "Not Enough Data"),
+                        needsPractice = aiObj.optString("needs_practice", "Coding"),
+                        overallTrend = aiObj.optString("overall_trend", "steady"),
+                        consistency = aiObj.optString("consistency", ""),
+                        summaryText = aiObj.optString("summary_text", ""),
+                        recommendations = recsList,
+                        canRetry = aiObj.optBoolean("can_retry", false),
+                        aiModel = aiObj.optString("ai_model", "none"),
+                        message = if (aiObj.has("message") && !aiObj.isNull("message")) aiObj.optString("message") else null
+                    )
+                } else AiWeeklySummaryData()
+
+                val data = WeeklyComparisonData(
+                    userId = json.optInt("user_id", userId),
+                    weekOffset = json.optInt("week_offset", weekOffset),
+                    isCurrentWeek = json.optBoolean("is_current_week", weekOffset == 0),
+                    currentWeekLabel = json.optString("current_week_label", "Week in Progress"),
+                    currentWeekRange = json.optString("current_week_range", ""),
+                    previousWeekLabel = json.optString("previous_week_label", "Previous Week"),
+                    previousWeekRange = json.optString("previous_week_range", ""),
+                    elapsedDaysCount = json.optInt("elapsed_days_count", 4),
+                    fairComparisonNote = json.optString("fair_comparison_note", ""),
+                    previousWeek = prevMetrics,
+                    currentWeek = curMetrics,
+                    practiceTimeComparison = timeComp,
+                    tasksComparison = tasksComp,
+                    skillsComparison = skillsList,
+                    aiSummary = aiSummary
+                )
+                NetworkResult(true, "Weekly comparison fetched", data)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch weekly comparison"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")

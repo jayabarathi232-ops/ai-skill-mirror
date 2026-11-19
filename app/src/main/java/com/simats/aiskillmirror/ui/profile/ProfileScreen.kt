@@ -54,7 +54,8 @@ fun ProfileScreen(
     onTabSelected: (DashboardTab) -> Unit = {},
     onEditPersonalInfoClick: () -> Unit = {},
     onNextMilestoneClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onWeeklyComparisonClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -247,16 +248,10 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 2. DEDICATED WEEKLY PROGRESS SECTION
-                WeeklyProgressCard(
-                    weeklyProgress = uiState.weeklyProgress,
-                    selectedDayIndex = uiState.selectedDayIndex,
-                    selectedDay = uiState.selectedDay,
-                    currentWeekOffset = uiState.currentWeekOffset,
-                    isLoading = uiState.isLoadingWeeklyProgress,
-                    onDayClick = { idx -> viewModel.selectDay(idx) },
-                    onPrevWeekClick = { viewModel.changeWeekOffset(-1) },
-                    onNextWeekClick = { viewModel.changeWeekOffset(1) }
+                // 2. DEDICATED WEEKLY COMPARISON SECTION (Replaced old Weekly Progress)
+                ProfileWeeklyComparisonCard(
+                    compData = uiState.weeklyComparison,
+                    onViewFullComparisonClick = onWeeklyComparisonClick
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -434,8 +429,138 @@ fun ProfileScreen(
 }
 
 // ==========================================
-// WEEKLY PROGRESS COMPOSABLES
+// WEEKLY COMPARISON & PROGRESS COMPOSABLES
 // ==========================================
+
+@Composable
+fun ProfileWeeklyComparisonCard(
+    compData: com.simats.aiskillmirror.data.network.WeeklyComparisonData,
+    onViewFullComparisonClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+            .clip(RoundedCornerShape(20.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .clickable { onViewFullComparisonClick() }
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TaglineBackground),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CalendarClockIcon(size = 20.dp, color = TaglineText)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("weekly_comparison"),
+                            color = HeadingPurple,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (compData.isCurrentWeek) "Week in Progress vs Previous Week" else compData.currentWeekRange,
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                val pt = compData.practiceTimeComparison
+                val (bg, fg) = when (pt.status.lowercase()) {
+                    "increased" -> Pair(Color(0xFFDCFCE7), GreenNode)
+                    "decreased" -> Pair(Color(0xFFFEE2E2), Color(0xFFDC2626))
+                    else -> Pair(Color(0xFFF1F5F9), Color(0xFF64748B))
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(bg)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = pt.formattedDiff,
+                        color = fg,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Quick Comparison Stats
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TaglineBackground.copy(alpha = 0.5f))
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(text = "Previous Week", color = TextSecondary, fontSize = 10.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${compData.previousWeek.totalPracticeMinutes}m · ${compData.previousWeek.completedTasks} tasks",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Text(text = "vs", color = TextSecondary, fontSize = 12.sp)
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(text = "Current Week", color = PrimaryGradientStart, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${compData.currentWeek.totalPracticeMinutes}m · ${compData.currentWeek.completedTasks} tasks",
+                        color = PrimaryGradientStart,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Music: ${compData.currentWeek.musicScore?.let { "$it/100" } ?: "--"} · Photo: ${compData.currentWeek.photographyScore?.let { "$it/100" } ?: "--"} · Code: ${compData.currentWeek.codingScore?.let { "$it/100" } ?: "--"}",
+                    color = TextSecondary,
+                    fontSize = 10.sp
+                )
+
+                Text(
+                    text = "View Comparison →",
+                    color = PrimaryGradientStart,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun WeeklyProgressCard(

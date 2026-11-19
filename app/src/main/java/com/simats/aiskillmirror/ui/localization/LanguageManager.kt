@@ -62,7 +62,7 @@ object LanguageManager {
         "nav_home" to mapOf(AppLanguage.ENGLISH to "Home", AppLanguage.TAMIL to "முகப்பு"),
         "nav_skills" to mapOf(AppLanguage.ENGLISH to "Skills", AppLanguage.TAMIL to "திறன்கள்"),
         "nav_coach" to mapOf(AppLanguage.ENGLISH to "AI Coach", AppLanguage.TAMIL to "AI பயிற்சியாளர்"),
-        "nav_progress" to mapOf(AppLanguage.ENGLISH to "Progress", AppLanguage.TAMIL to "முன்னேற்றம்"),
+        "nav_progress" to mapOf(AppLanguage.ENGLISH to "Comparison", AppLanguage.TAMIL to "ஒப்பீடு"),
         "nav_profile" to mapOf(AppLanguage.ENGLISH to "Profile", AppLanguage.TAMIL to "சுயவிவரம்"),
 
         // Make It Yours Screen
@@ -91,8 +91,23 @@ object LanguageManager {
         "logout" to mapOf(AppLanguage.ENGLISH to "Log out →", AppLanguage.TAMIL to "வெளியேறு →"),
         "app_version" to mapOf(AppLanguage.ENGLISH to "AI Skills Mirror · Version 1.0.0", AppLanguage.TAMIL to "AI ஸ்கில்ஸ் மிரர் · பதிப்பு 1.0.0"),
 
-        // Weekly Progress
+        // Weekly Progress & Weekly Comparison
         "weekly_progress" to mapOf(AppLanguage.ENGLISH to "Weekly Progress", AppLanguage.TAMIL to "வாராந்திர முன்னேற்றம்"),
+        "weekly_comparison" to mapOf(AppLanguage.ENGLISH to "Weekly Comparison", AppLanguage.TAMIL to "வாராந்திர ஒப்பீடு"),
+        "nav_comparison" to mapOf(AppLanguage.ENGLISH to "Comparison", AppLanguage.TAMIL to "ஒப்பீடு"),
+        "curr_week" to mapOf(AppLanguage.ENGLISH to "Current Week", AppLanguage.TAMIL to "தற்போதைய வாரம்"),
+        "week_in_progress" to mapOf(AppLanguage.ENGLISH to "Week in Progress", AppLanguage.TAMIL to "நடைபெறும் வாரம்"),
+        "practice_time_comp" to mapOf(AppLanguage.ENGLISH to "Practice Time Comparison", AppLanguage.TAMIL to "பயிற்சி நேர ஒப்பீடு"),
+        "skill_performance_comp" to mapOf(AppLanguage.ENGLISH to "Skill-wise Performance Comparison", AppLanguage.TAMIL to "திறன் வாரியான செயல்திறன் ஒப்பீடு"),
+        "completed_tasks_comp" to mapOf(AppLanguage.ENGLISH to "Completed Tasks Comparison", AppLanguage.TAMIL to "முடித்த பணிகள் ஒப்பீடு"),
+        "ai_weekly_summary" to mapOf(AppLanguage.ENGLISH to "AI Weekly Improvement Summary", AppLanguage.TAMIL to "AI வாராந்திர முன்னேற்றச் சுருக்கம்"),
+        "retry_ai_summary" to mapOf(AppLanguage.ENGLISH to "Retry AI Summary", AppLanguage.TAMIL to "AI சுருக்கத்தை மீண்டும் முயற்சிக்கவும்"),
+        "not_enough_data" to mapOf(AppLanguage.ENGLISH to "Not Enough Data", AppLanguage.TAMIL to "போதுமான தரவு இல்லை"),
+        "increased" to mapOf(AppLanguage.ENGLISH to "Increased", AppLanguage.TAMIL to "அதிகரித்துள்ளது"),
+        "decreased" to mapOf(AppLanguage.ENGLISH to "Decreased", AppLanguage.TAMIL to "குறைந்துள்ளது"),
+        "no_change" to mapOf(AppLanguage.ENGLISH to "No Change", AppLanguage.TAMIL to "மாற்றமில்லை"),
+        "diff" to mapOf(AppLanguage.ENGLISH to "Difference", AppLanguage.TAMIL to "வேறுபாடு"),
+        "fair_comparison" to mapOf(AppLanguage.ENGLISH to "Fair Elapsed Comparison", AppLanguage.TAMIL to "நியாயமான கால ஒப்பீடு"),
         "mon_to_sun_activity" to mapOf(AppLanguage.ENGLISH to "Monday to Sunday activity", AppLanguage.TAMIL to "திங்கள் முதல் ஞாயிறு வரையிலான செயல்பாடு"),
         "practice" to mapOf(AppLanguage.ENGLISH to "Practice", AppLanguage.TAMIL to "பயிற்சி"),
         "tasks_done" to mapOf(AppLanguage.ENGLISH to "Tasks Done", AppLanguage.TAMIL to "முடித்த பணிகள்"),

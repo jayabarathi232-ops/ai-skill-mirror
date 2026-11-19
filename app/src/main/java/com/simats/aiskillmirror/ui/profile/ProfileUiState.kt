@@ -23,6 +23,7 @@ data class ProfileUiState(
     val nextMilestoneSubtitle: String = "Reach a skill score of 85",
     val memberSinceText: String = "Growing with AI Skills Mirror",
     val weeklyProgress: ProfileWeeklyProgressData = ProfileWeeklyProgressData(),
+    val weeklyComparison: com.simats.aiskillmirror.data.network.WeeklyComparisonData = com.simats.aiskillmirror.data.network.WeeklyComparisonData(),
     val selectedDayIndex: Int = -1,
     val selectedDay: DailyProgressItem? = null,
     val currentWeekOffset: Int = 0,

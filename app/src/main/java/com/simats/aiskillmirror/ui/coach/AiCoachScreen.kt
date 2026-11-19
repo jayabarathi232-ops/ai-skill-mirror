@@ -397,7 +397,7 @@ fun AiCoachScreen(
                             Column {
                                 Box(
                                     modifier = Modifier
-                                        .widthIn(max = 290.dp)
+                                        .widthIn(max = 330.dp)
                                         .shadow(2.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
                                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
                                         .background(CardBackground)

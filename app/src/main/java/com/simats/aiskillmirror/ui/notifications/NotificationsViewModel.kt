@@ -592,8 +592,8 @@ class NotificationsViewModel : ViewModel() {
                 true
             )
             "WEEKLY_PROGRESS" -> Tuple6(
-                "Weekly Progress Update",
-                "Weekly summary: You've completed 5 sessions with 88% average clarity.",
+                "Weekly Comparison Update",
+                "Weekly summary: You've completed practice sessions with verified score improvements.",
                 "WEEKLY",
                 NotificationIconType.BOOK,
                 "MILESTONES",

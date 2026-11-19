@@ -43,6 +43,8 @@ import com.simats.aiskillmirror.ui.profile.ProfileScreen
 import com.simats.aiskillmirror.ui.profile.ProfileViewModel
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsScreen
 import com.simats.aiskillmirror.ui.progress.ProgressAnalyticsViewModel
+import com.simats.aiskillmirror.ui.progress.WeeklyComparisonScreen
+import com.simats.aiskillmirror.ui.progress.WeeklyComparisonViewModel
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryScreen
 import com.simats.aiskillmirror.ui.recovery.AccountRecoveryViewModel
 import com.simats.aiskillmirror.ui.register.RegisterScreen
@@ -89,6 +91,7 @@ enum class AppScreen {
     SPEECH_STUDIO,
     SPEECH_ANALYSIS,
     PROGRESS_ANALYTICS,
+    WEEKLY_COMPARISON,
     GROWTH_REPORT,
     MILESTONES,
     NOTIFICATIONS,
@@ -115,6 +118,7 @@ class MainActivity : ComponentActivity() {
     private val speechStudioViewModel: SpeechStudioViewModel by viewModels()
     private val speechAnalysisViewModel: SpeechAnalysisViewModel by viewModels()
     private val progressAnalyticsViewModel: ProgressAnalyticsViewModel by viewModels()
+    private val weeklyComparisonViewModel: WeeklyComparisonViewModel by viewModels()
     private val growthReportViewModel: GrowthReportViewModel by viewModels()
     private val milestonesViewModel: MilestonesViewModel by viewModels()
     private val notificationsViewModel: NotificationsViewModel by viewModels()
@@ -210,7 +214,7 @@ class MainActivity : ComponentActivity() {
                             DashboardTab.PROFILE -> selectMainTab(AppScreen.PROFILE)
                             DashboardTab.ASSESS -> selectMainTab(AppScreen.SKILL_SELECTION)
                             DashboardTab.LEARN -> selectMainTab(AppScreen.ROADMAP)
-                            DashboardTab.PROGRESS -> selectMainTab(AppScreen.PROGRESS_ANALYTICS)
+                            DashboardTab.PROGRESS -> selectMainTab(AppScreen.WEEKLY_COMPARISON)
                         }
                     }
 
@@ -361,6 +365,9 @@ class MainActivity : ComponentActivity() {
                                     onOpenSkillCategory = { catId ->
                                         skillSelectionViewModel.selectCategory(catId)
                                         navigateTo(AppScreen.SKILL_SELECTION)
+                                    },
+                                    onWeeklyComparisonClick = {
+                                        navigateTo(AppScreen.WEEKLY_COMPARISON)
                                     }
                                 )
                             }
@@ -393,6 +400,9 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onSettingsClick = {
                                         navigateTo(AppScreen.SETTINGS)
+                                    },
+                                    onWeeklyComparisonClick = {
+                                        navigateTo(AppScreen.WEEKLY_COMPARISON)
                                     }
                                 )
                             }
@@ -537,20 +547,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            AppScreen.PROGRESS_ANALYTICS -> {
-                                ProgressAnalyticsScreen(
-                                    viewModel = progressAnalyticsViewModel,
+                            AppScreen.PROGRESS_ANALYTICS,
+                            AppScreen.WEEKLY_COMPARISON -> {
+                                WeeklyComparisonScreen(
+                                    viewModel = weeklyComparisonViewModel,
                                     onTabSelected = ::handleTabSelected,
-                                    onViewReportClick = {
-                                        navigateTo(AppScreen.GROWTH_REPORT)
-                                    },
-                                    onOpenSkillGapDetectorClick = {
-                                        skillGapViewModel.loadGapData()
-                                        navigateTo(AppScreen.SKILL_GAP_DETECTOR)
-                                    },
-                                    onCalendarClick = {
-                                        Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
-                                    },
                                     onBackClick = {
                                         if (backStack.size > 1) {
                                             navigateBack()
@@ -684,7 +685,7 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.ROADMAP)
                                     },
                                     onViewProgressClick = {
-                                        navigateTo(AppScreen.PROGRESS_ANALYTICS)
+                                        navigateTo(AppScreen.WEEKLY_COMPARISON)
                                     },
                                     onSwitchSkillClick = {
                                         navigateTo(AppScreen.SKILL_SELECTION)

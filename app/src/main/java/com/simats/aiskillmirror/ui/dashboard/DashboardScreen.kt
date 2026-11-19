@@ -67,7 +67,8 @@ fun DashboardScreen(
     onOpenSkillGapDetectorClick: () -> Unit = {},
     onUploadPerformanceClick: (String) -> Unit = {},
     onOpenPublicSpeakingClick: () -> Unit = {},
-    onOpenSkillCategory: (String) -> Unit = {}
+    onOpenSkillCategory: (String) -> Unit = {},
+    onWeeklyComparisonClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -739,7 +740,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ==========================================
-                // 7. WEEKLY PROGRESS CHART (WHITE CARD)
+                // 7. WEEKLY COMPARISON (PREVIOUS VS CURRENT)
                 // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -748,28 +749,29 @@ fun DashboardScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Weekly Progress",
+                            text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("weekly_comparison"),
                             color = AccentPurple,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Practice intensity & hours spent across skills",
+                            text = "Previous Week vs Current Week progress",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
                     }
                     Text(
-                        text = uiState.totalWeeklyHoursText,
-                        color = TaglineText,
+                        text = "Compare →",
+                        color = PrimaryGradientStart,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onWeeklyComparisonClick() }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Weekly Chart Card
+                // Weekly Comparison Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -777,6 +779,7 @@ fun DashboardScreen(
                         .clip(RoundedCornerShape(20.dp))
                         .background(CardBackground)
                         .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                        .clickable { onWeeklyComparisonClick() }
                         .padding(16.dp)
                 ) {
                     Column {
@@ -794,15 +797,15 @@ fun DashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Daily Practice Hours",
+                                    text = "Practice Hours & Tasks Comparison",
                                     color = TextSecondary,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
                             Text(
-                                text = "▲ +18% vs last week",
-                                color = GreenNode,
+                                text = "View Details",
+                                color = PrimaryGradientStart,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )

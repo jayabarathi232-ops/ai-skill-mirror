@@ -78,6 +78,14 @@ class ProfileViewModel(
                     lockedBadges = p.lockedBadges,
                     errorMessage = null
                 )
+
+                // Fetch real weekly comparison
+                try {
+                    val compRes = ApiClient.fetchWeeklyComparison(UserSession.userId, 0, includeAi = false)
+                    if (compRes.isSuccess && compRes.data != null) {
+                        _uiState.value = _uiState.value.copy(weeklyComparison = compRes.data)
+                    }
+                } catch (ignored: Exception) {}
             } else if (context != null) {
                 // Restore locally persisted profile picture if offline
                 val localPic = UserSession.getPersistedProfilePicture(context, UserSession.userId)
