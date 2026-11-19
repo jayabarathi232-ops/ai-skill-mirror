@@ -4,7 +4,9 @@ import com.simats.aiskillmirror.data.network.ApiClient
 import com.simats.aiskillmirror.data.network.DashboardData
 import com.simats.aiskillmirror.data.network.NetworkResult
 import com.simats.aiskillmirror.data.network.UserSession
+import com.simats.aiskillmirror.network.PerformanceUploadItemDto
 import com.simats.aiskillmirror.network.RetrofitClient
+import java.io.File
 
 class DashboardRepository {
     suspend fun getDashboard(userId: Int = UserSession.userId): NetworkResult<DashboardData> {
@@ -43,5 +45,35 @@ class DashboardRepository {
         } catch (e: Exception) {
             ApiClient.fetchDashboard(userId)
         }
+    }
+
+    private val performanceUploadRepository = PerformanceUploadRepository()
+
+    suspend fun uploadMedia(
+        userId: Int = UserSession.userId,
+        type: String,
+        filename: String
+    ): NetworkResult<PerformanceUploadItemDto> {
+        val cat = when (type.lowercase()) {
+            "video" -> "speaking"
+            "photo", "image" -> "photography"
+            "audio" -> "music"
+            else -> "general"
+        }
+        val title = "${type.replaceFirstChar { it.uppercase() }} Practice Session"
+        val mime = when (type.lowercase()) {
+            "video" -> "video/mp4"
+            "photo", "image" -> "image/jpeg"
+            else -> "audio/wav"
+        }
+        val dummyFile = File(filename.ifBlank { "practice_file" })
+        return performanceUploadRepository.uploadPerformance(
+            userId = userId,
+            mediaType = if (type == "image") "photo" else type,
+            skillCategory = cat,
+            title = title,
+            file = dummyFile,
+            mimeType = mime
+        )
     }
 }

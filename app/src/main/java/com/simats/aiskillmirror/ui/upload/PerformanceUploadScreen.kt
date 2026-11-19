@@ -279,11 +279,9 @@ fun PerformanceUploadScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val categories = listOf(
-                        "speaking" to "🎙️ Public Speaking",
+                        "music" to "🎵 Music",
                         "photography" to "📷 Photography",
-                        "drawing" to "🎨 Drawing & Art",
-                        "coding" to "💻 Coding",
-                        "music" to "🎵 Music"
+                        "coding" to "💻 Coding"
                     )
                     categories.forEach { (catKey, label) ->
                         val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)
@@ -313,9 +311,7 @@ fun PerformanceUploadScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 val skillHint = when (uiState.skillCategory.lowercase()) {
-                    "speaking", "public_speaking" -> "🎙️ Analyses speech clarity, pace (words/min), pauses & posture alignment"
                     "photography" -> "📷 Analyses rule-of-thirds composition, framing, lighting exposure & contrast"
-                    "drawing", "art" -> "🎨 Analyses line stroke confidence, proportions, perspective & tonal shading"
                     "coding" -> "💻 Analyses logic hierarchy, algorithmic complexity & syntax cleanliness"
                     "music" -> "🎵 Analyses pitch accuracy, dynamic expression & vocal timbre warmth"
                     else -> "⚡ Multi-modal computer vision and acoustic skill decomposition"

@@ -76,6 +76,40 @@ object UserSession {
         return prefs.getString("$KEY_PROFILE_PIC_PREFIX$uid", "") ?: ""
     }
 
+    private const val KEY_SOUND_EFFECTS = "pref_sound_effects"
+    private const val KEY_AUDIO_GUIDANCE = "pref_audio_guidance"
+    private const val KEY_REMINDER_TIME = "pref_reminder_time"
+
+    fun getSoundEffectsEnabled(context: Context? = null): Boolean {
+        val ctx = context ?: appContext ?: return true
+        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_SOUND_EFFECTS, true)
+    }
+
+    fun setSoundEffectsEnabled(context: Context? = null, enabled: Boolean) {
+        val ctx = context ?: appContext ?: return
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_SOUND_EFFECTS, enabled).apply()
+    }
+
+    fun getAudioGuidanceEnabled(context: Context? = null): Boolean {
+        val ctx = context ?: appContext ?: return true
+        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_AUDIO_GUIDANCE, true)
+    }
+
+    fun setAudioGuidanceEnabled(context: Context? = null, enabled: Boolean) {
+        val ctx = context ?: appContext ?: return
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_AUDIO_GUIDANCE, enabled).apply()
+    }
+
+    fun getReminderTime(context: Context? = null): String {
+        val ctx = context ?: appContext ?: return "07:00 PM"
+        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_REMINDER_TIME, "07:00 PM") ?: "07:00 PM"
+    }
+
+    fun setReminderTime(context: Context? = null, time: String) {
+        val ctx = context ?: appContext ?: return
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_REMINDER_TIME, time).apply()
+    }
+
     fun clear(context: Context? = null) {
         userId = 1
         userName = "Test Student"

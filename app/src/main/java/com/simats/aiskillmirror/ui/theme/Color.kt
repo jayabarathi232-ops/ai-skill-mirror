@@ -3,43 +3,67 @@ package com.simats.aiskillmirror.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * AI Skills Mirror — Brand New Theme Palette
- * 
- * Main Background: Soft lavender (#F5F0FF)
- * Cards: Pure white (#FFFFFF)
- * Primary Color: Deep purple (#7545C8)
- * Secondary Color: Light purple (#E9DDFF)
- * Text: Dark charcoal (#25213A)
- * Text Secondary: Dark grey (#6B6684)
- * Buttons: Purple gradient (#7545C8 -> #9353E2)
- * Icons: Purple & violet (#7545C8, #9353E2)
+ * AI Skills Mirror — Dynamic Brand Palette
+ * Automatically reactive to Dark Mode and selected Theme Palette!
  */
 
 // Background & Surfaces
-val DarkBackground = Color(0xFFF5F0FF)   // Soft lavender (#F5F0FF)
-val SurfaceDark = Color(0xFFFFFFFF)      // Pure white (#FFFFFF)
-val CardBackground = Color(0xFFFFFFFF)   // Pure white (#FFFFFF)
-val CardBorder = Color(0xFFE9DDFF)       // Light purple border (#E9DDFF)
+val DarkBackground: Color
+    get() = ThemeManager.getColors().background
 
-val OrbitRing = Color(0xFFD8C7F8)
-val TaglineBackground = Color(0xFFE9DDFF)// Light purple (#E9DDFF)
-val TaglineText = Color(0xFF7545C8)      // Deep purple (#7545C8)
+val SurfaceDark: Color
+    get() = ThemeManager.getColors().surface
+
+val CardBackground: Color
+    get() = ThemeManager.getColors().cardBackground
+
+val CardBorder: Color
+    get() = ThemeManager.getColors().cardBorder
+
+val OrbitRing: Color
+    get() = if (ThemeManager.isDarkMode) Color(0xFF3E3656) else Color(0xFFD8C7F8)
+
+val TaglineBackground: Color
+    get() = ThemeManager.getColors().taglineBackground
+
+val TaglineText: Color
+    get() = ThemeManager.getColors().taglineText
 
 // Primary Gradient
-val PrimaryGradientStart = Color(0xFF7545C8) // Deep purple (#7545C8)
-val PrimaryGradientEnd = Color(0xFF9353E2)   // Vibrant violet purple
-val CenterCardGradientStart = Color(0xFF7545C8)
-val CenterCardGradientEnd = Color(0xFF9353E2)
+val PrimaryGradientStart: Color
+    get() = ThemeManager.getColors().primaryStart
+
+val PrimaryGradientEnd: Color
+    get() = ThemeManager.getColors().primaryEnd
+
+val CenterCardGradientStart: Color
+    get() = ThemeManager.getColors().primaryStart
+
+val CenterCardGradientEnd: Color
+    get() = ThemeManager.getColors().primaryEnd
 
 // Accent Colors & Indicators
-val GreenNode = Color(0xFF16A34A)       // Crisp readable green
-val CyanNode = Color(0xFF0284C7)        // Deeper cyan for light background
-val BadgeBackground = Color(0xFFE9DDFF)
-val BadgeBorder = Color(0xFFD8C7F8)
+val GreenNode: Color = Color(0xFF16A34A)
+val CyanNode: Color = Color(0xFF0284C7)
+
+val BadgeBackground: Color
+    get() = ThemeManager.getColors().badgeBackground
+
+val BadgeBorder: Color
+    get() = ThemeManager.getColors().badgeBorder
 
 // Typography
-val HeadingPurple = Color(0xFF3B1869)   // Dark purple headings (#3B1869)
-val TextPrimary = Color(0xFF25213A)     // Dark charcoal (#25213A)
-val TextSecondary = Color(0xFF6B6684)   // Dark grey (#6B6684)
-val AccentPurple = Color(0xFF7545C8)    // Deep purple (#7545C8)
-val LightPurple = Color(0xFFE9DDFF)     // Light purple (#E9DDFF)
+val HeadingPurple: Color
+    get() = ThemeManager.getColors().heading
+
+val TextPrimary: Color
+    get() = ThemeManager.getColors().textPrimary
+
+val TextSecondary: Color
+    get() = ThemeManager.getColors().textSecondary
+
+val AccentPurple: Color
+    get() = ThemeManager.getColors().accent
+
+val LightPurple: Color
+    get() = ThemeManager.getColors().badgeBackground

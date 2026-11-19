@@ -6,7 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
 
     private const val BASE_URL =
-        "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend/"
+        "http://172.23.52.187/skillmirrorbackend/"
 
     val retrofit: Retrofit by lazy {
         Retrofit.Builder()

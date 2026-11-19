@@ -64,20 +64,18 @@ data class DashboardUiState(
     val mySkills: List<SkillItem> = listOf(
         SkillItem("music", "Music", "Instruments & Vocals", 88, "Pro", "🎵", 0xFFA855F7, 0.88f),
         SkillItem("photo", "Photography", "Composition & Light", 75, "Intermediate", "📷", 0xFF06B6D4, 0.75f),
-        SkillItem("drawing", "Drawing", "Sketching & Art", 82, "Advanced", "🎨", 0xFFEC4899, 0.82f),
-        SkillItem("coding", "Coding", "Algorithms & Logic", 92, "Master", "💻", 0xFF6366F1, 0.92f),
-        SkillItem("speaking", "Public Speaking", "Speech & Articulation", 86, "Advanced", "🎙️", 0xFF8B5CF6, 0.86f)
+        SkillItem("coding", "Coding", "Algorithms & Logic", 92, "Master", "💻", 0xFF6366F1, 0.92f)
     ),
 
     // Recent Performance History
     val recentHistory: List<PerformanceHistoryItem> = listOf(
-        PerformanceHistoryItem("1", "Public Speaking", "Impromptu Speech Clarity Drill", 86, "Today, 11:15 AM", "🎙️", "WPM: 142 · Clarity: 88% · Minimal fillers"),
-        PerformanceHistoryItem("2", "Coding", "Tree Traversal Algorithm Test", 92, "Yesterday", "💻", "Optimal complexity achieved"),
-        PerformanceHistoryItem("3", "Music", "Vocal Pitch & Harmonic Scale", 88, "Nov 2", "🎵", "98% note accuracy achieved"),
-        PerformanceHistoryItem("4", "Photography", "Rule of Thirds & Lighting Study", 75, "Nov 1", "📷", "Golden hour framing accuracy 94%")
+        PerformanceHistoryItem("1", "Coding", "Tree Traversal Algorithm Test", 92, "Today", "💻", "Optimal complexity achieved"),
+        PerformanceHistoryItem("2", "Music", "Vocal Pitch & Harmonic Scale", 88, "Nov 18", "🎵", "98% note accuracy achieved"),
+        PerformanceHistoryItem("3", "Photography", "Rule of Thirds & Lighting Study", 75, "Nov 17", "📷", "Golden hour framing accuracy 94%")
     ),
 
     // Weekly Progress Chart Data
+    val totalWeeklyHoursText: String = "0.9 hrs total",
     val weeklyProgress: List<WeeklyDayProgress> = listOf(
         WeeklyDayProgress("M", 1.8f),
         WeeklyDayProgress("T", 2.4f),
@@ -90,15 +88,17 @@ data class DashboardUiState(
 
     // Today's Recommended Practice
     val recommendedPractice: List<RecommendedPracticeItem> = listOf(
-        RecommendedPracticeItem("1", "60s Elevator Pitch Practice", "Public Speaking", "6 min", "Medium", "🎙️"),
-        RecommendedPracticeItem("2", "Dynamic Programming Sprint", "Coding", "15 min", "Hard", "💻"),
-        RecommendedPracticeItem("3", "Interval Ear Training & Scales", "Music", "8 min", "Easy", "🎵")
+        RecommendedPracticeItem("1", "Dynamic Programming Sprint", "Coding", "15 min", "Hard", "💻"),
+        RecommendedPracticeItem("2", "Interval Ear Training & Scales", "Music", "8 min", "Easy", "🎵"),
+        RecommendedPracticeItem("3", "Rule of Thirds Framing Drill", "Photography", "10 min", "Medium", "📷")
     ),
 
     // Multi-modal Upload & Analysis
     val uploadedMediaName: String? = null,
     val uploadedMediaType: String? = null,
     val isAnalyzing: Boolean = false,
+    val isUploading: Boolean = false,
+    val uploadProgress: Float = 0f,
     val uploadFeedbackMessage: String? = null,
 
     // Notifications

@@ -248,7 +248,16 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // 2. DEDICATED WEEKLY PROGRESS SECTION
-                WeeklyProgressCard(weeklyProgress = uiState.weeklyProgress)
+                WeeklyProgressCard(
+                    weeklyProgress = uiState.weeklyProgress,
+                    selectedDayIndex = uiState.selectedDayIndex,
+                    selectedDay = uiState.selectedDay,
+                    currentWeekOffset = uiState.currentWeekOffset,
+                    isLoading = uiState.isLoadingWeeklyProgress,
+                    onDayClick = { idx -> viewModel.selectDay(idx) },
+                    onPrevWeekClick = { viewModel.changeWeekOffset(-1) },
+                    onNextWeekClick = { viewModel.changeWeekOffset(1) }
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -431,6 +440,13 @@ fun ProfileScreen(
 @Composable
 fun WeeklyProgressCard(
     weeklyProgress: ProfileWeeklyProgressData,
+    selectedDayIndex: Int = -1,
+    selectedDay: DailyProgressItem? = null,
+    currentWeekOffset: Int = 0,
+    isLoading: Boolean = false,
+    onDayClick: (Int) -> Unit = {},
+    onPrevWeekClick: () -> Unit = {},
+    onNextWeekClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -443,13 +459,13 @@ fun WeeklyProgressCard(
             .padding(18.dp)
     ) {
         Column {
-            // Header
+            // Header with Week Range and Navigation
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -462,13 +478,15 @@ fun WeeklyProgressCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Weekly Progress",
+                            text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("weekly_progress"),
                             color = HeadingPurple,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Monday to Sunday activity",
+                            text = weeklyProgress.weekLabel.ifBlank {
+                                com.simats.aiskillmirror.ui.localization.LanguageManager.t("mon_to_sun_activity")
+                            },
                             color = TextSecondary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Normal
@@ -491,7 +509,57 @@ fun WeeklyProgressCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Week Switcher Controls (Prev / Next week to preserve and view previous weekly records)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TaglineBackground.copy(alpha = 0.5f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("prev_week"),
+                    color = AccentPurple,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onPrevWeekClick() }
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+
+                Text(
+                    text = if (currentWeekOffset == 0) {
+                        com.simats.aiskillmirror.ui.localization.LanguageManager.t("this_week")
+                    } else if (currentWeekOffset == -1) {
+                        "1 Week Ago"
+                    } else {
+                        "${-currentWeekOffset} Weeks Ago"
+                    },
+                    color = HeadingPurple,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("next_week"),
+                    color = if (currentWeekOffset < 0) AccentPurple else TextSecondary.copy(alpha = 0.5f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .then(
+                            if (currentWeekOffset < 0) Modifier.clickable { onNextWeekClick() } else Modifier
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // 3 Mini summary pills: Practice, Tasks Done, XP
             Row(
@@ -500,22 +568,22 @@ fun WeeklyProgressCard(
             ) {
                 WeeklyMiniStatPill(
                     modifier = Modifier.weight(1f),
-                    label = "Practice",
+                    label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("practice"),
                     value = "${weeklyProgress.totalWeeklyMinutes}m"
                 )
                 WeeklyMiniStatPill(
                     modifier = Modifier.weight(1f),
-                    label = "Tasks Done",
+                    label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("tasks_done"),
                     value = "${weeklyProgress.weeklyCompletedTasks}"
                 )
                 WeeklyMiniStatPill(
                     modifier = Modifier.weight(1f),
-                    label = "XP Earned",
+                    label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("xp_earned"),
                     value = "+${weeklyProgress.weeklyXpEarned}"
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Weekly Goal Progress Bar
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -525,7 +593,7 @@ fun WeeklyProgressCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Weekly Goal (${weeklyProgress.totalWeeklyMinutes}/${weeklyProgress.weeklyGoalMinutes} min)",
+                        text = "${com.simats.aiskillmirror.ui.localization.LanguageManager.t("weekly_goal")} (${weeklyProgress.totalWeeklyMinutes}/${weeklyProgress.weeklyGoalMinutes} min)",
                         color = TextPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -540,13 +608,12 @@ fun WeeklyProgressCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Custom rounded progress bar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFFEDE5FA))
+                        .background(if (AppTheme.isDark) Color(0xFF2E2744) else Color(0xFFEDE5FA))
                 ) {
                     val progressFraction = (weeklyProgress.weeklyGoalPercentage / 100f).coerceIn(0f, 1f)
                     if (progressFraction > 0f) {
@@ -565,19 +632,51 @@ fun WeeklyProgressCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Daily practice time headline
-            Text(
-                text = "Daily Practice Chart",
-                color = TextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
+            // Daily practice chart headline with tap hint
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("daily_practice_chart"),
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Tap a day to view details",
+                    color = TextSecondary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 7-day Interactive Bar Chart for Monday to Sunday
+            WeeklyBarChart(
+                days = weeklyProgress.days,
+                selectedIndex = selectedDayIndex,
+                onDayClick = onDayClick
             )
 
-            // 7-day Bar Chart for Monday to Sunday
-            WeeklyBarChart(days = weeklyProgress.days)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Selected Day's Actual Practice Details Section
+            val effectiveSelectedDay = if (selectedDayIndex in weeklyProgress.days.indices) {
+                weeklyProgress.days[selectedDayIndex]
+            } else {
+                selectedDay ?: weeklyProgress.days.firstOrNull { d -> d.isToday } ?: weeklyProgress.days.firstOrNull()
+            }
+
+            if (effectiveSelectedDay != null) {
+                SelectedDayDetailsCard(
+                    day = effectiveSelectedDay
+                )
+            }
         }
     }
 }
@@ -591,8 +690,8 @@ fun WeeklyMiniStatPill(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF9F6FE))
-            .border(1.dp, Color(0xFFEDE5FA), RoundedCornerShape(12.dp))
+            .background(TaglineBackground.copy(alpha = 0.4f))
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
             .padding(vertical = 8.dp, horizontal = 6.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -615,10 +714,15 @@ fun WeeklyMiniStatPill(
 }
 
 @Composable
-fun WeeklyBarChart(days: List<DailyProgressItem>) {
+fun WeeklyBarChart(
+    days: List<DailyProgressItem>,
+    selectedIndex: Int = -1,
+    onDayClick: (Int) -> Unit = {}
+) {
     val safeDays = if (days.size == 7) days else {
         val names = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-        names.map { DailyProgressItem(day = it, minutes = 0) }
+        val fullNames = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        names.mapIndexed { idx, it -> DailyProgressItem(day = it, dayFull = fullNames[idx], minutes = 0) }
     }
 
     val maxDayMin = safeDays.maxOfOrNull { it.minutes } ?: 0
@@ -631,10 +735,13 @@ fun WeeklyBarChart(days: List<DailyProgressItem>) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
-        safeDays.forEach { item ->
+        safeDays.forEachIndexed { index, item ->
+            val isSelected = (index == selectedIndex)
             DayBarColumn(
                 item = item,
                 scaleMax = scaleMax,
+                isSelected = isSelected,
+                onClick = { onDayClick(index) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -645,6 +752,8 @@ fun WeeklyBarChart(days: List<DailyProgressItem>) {
 fun DayBarColumn(
     item: DailyProgressItem,
     scaleMax: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val chartHeight = 84.dp
@@ -660,15 +769,18 @@ fun DayBarColumn(
     }
 
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Daily minute label above bar
         Text(
             text = if (item.minutes > 0) "${item.minutes}m" else "0m",
-            color = if (item.isToday) TaglineText else TextSecondary,
+            color = if (isSelected) AccentPurple else if (item.isToday) TaglineText else TextSecondary,
             fontSize = 10.sp,
-            fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (isSelected || item.isToday) FontWeight.Bold else FontWeight.Normal
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -677,7 +789,7 @@ fun DayBarColumn(
         Box(
             modifier = Modifier
                 .height(chartHeight)
-                .width(18.dp),
+                .width(20.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             // Track slot outline
@@ -686,7 +798,12 @@ fun DayBarColumn(
                     .fillMaxHeight()
                     .width(16.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF4EFFC))
+                    .background(if (AppTheme.isDark) Color(0xFF2E2744) else Color(0xFFF4EFFC))
+                    .border(
+                        width = if (isSelected) 1.5.dp else 0.dp,
+                        color = if (isSelected) AccentPurple else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    )
             )
 
             // Actual practice fill
@@ -702,7 +819,10 @@ fun DayBarColumn(
                             )
                         } else {
                             Brush.verticalGradient(
-                                listOf(Color(0xFFE2D6F5), Color(0xFFE2D6F5))
+                                listOf(
+                                    if (AppTheme.isDark) Color(0xFF383150) else Color(0xFFE2D6F5),
+                                    if (AppTheme.isDark) Color(0xFF383150) else Color(0xFFE2D6F5)
+                                )
                             )
                         }
                     )
@@ -712,21 +832,246 @@ fun DayBarColumn(
         Spacer(modifier = Modifier.height(6.dp))
 
         // Day name below bar
+        val translatedDay = com.simats.aiskillmirror.ui.localization.LanguageManager.translateDay(item.day)
         Box(
-            modifier = if (item.isToday) {
+            modifier = if (isSelected) {
+                Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(PrimaryGradientStart)
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
+            } else if (item.isToday) {
                 Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(TaglineBackground)
                     .padding(horizontal = 4.dp, vertical = 2.dp)
-            } else Modifier,
+            } else Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = item.day,
-                color = if (item.isToday) HeadingPurple else TextPrimary,
+                text = translatedDay,
+                color = if (isSelected) Color.White else if (item.isToday) HeadingPurple else TextPrimary,
                 fontSize = 11.sp,
-                fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Medium
+                fontWeight = if (isSelected || item.isToday) FontWeight.Bold else FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+fun SelectedDayDetailsCard(
+    day: DailyProgressItem
+) {
+    val translatedDayFull = com.simats.aiskillmirror.ui.localization.LanguageManager.translateFullDay(day.dayFull)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(TaglineBackground.copy(alpha = 0.5f))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .padding(14.dp)
+    ) {
+        Column {
+            // Day Header with Today Tag
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "$translatedDayFull${if (day.formattedDate.isNotBlank()) ", ${day.formattedDate}" else ""}",
+                        color = HeadingPurple,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (day.isToday) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(PrimaryGradientStart)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("today_tag"),
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("practice_details"),
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            if (day.hasActivity) {
+                // 3 Quick Stat Badges: Practice Time, Completed Tasks, XP
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DayStatChip(
+                        modifier = Modifier.weight(1f),
+                        icon = "⏱️",
+                        title = "Practice",
+                        value = "${day.minutes} min"
+                    )
+                    DayStatChip(
+                        modifier = Modifier.weight(1f),
+                        icon = "✅",
+                        title = "Tasks",
+                        value = "${day.tasks} done"
+                    )
+                    DayStatChip(
+                        modifier = Modifier.weight(1f),
+                        icon = "⭐",
+                        title = "Earned",
+                        value = "+${day.xp} XP"
+                    )
+                }
+
+                // Skills Practiced Section
+                if (day.skillsPracticed.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("skills_practiced"),
+                        color = TextPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        day.skillsPracticed.forEach { skill ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(CardBackground)
+                                    .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = skill,
+                                    color = HeadingPurple,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Detailed Task List
+                if (day.tasksDetail.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        day.tasksDetail.take(5).forEach { task ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(CardBackground)
+                                    .border(1.dp, CardBorder.copy(alpha = 0.7f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = task.title,
+                                        color = TextPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "${task.skill} · ${task.durationMinutes}m${if (task.score != null) " · Score: ${task.score}/100" else ""}",
+                                        color = TextSecondary,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(TaglineBackground)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "+${task.xpAwarded} XP",
+                                        color = TaglineText,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Empty State when this day has no recorded practice activity
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "🎯", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("no_activity_today"),
+                        color = HeadingPurple,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("no_activity_desc"),
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DayStatChip(
+    modifier: Modifier = Modifier,
+    icon: String,
+    title: String,
+    value: String
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = icon, fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = title, color = TextSecondary, fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Text(text = value, color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

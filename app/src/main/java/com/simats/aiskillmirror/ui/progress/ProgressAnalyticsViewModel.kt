@@ -26,6 +26,8 @@ class ProgressAnalyticsViewModel : ViewModel() {
     fun loadAnalytics() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
+
+            // 1. Fetch general progress analytics
             val result = ApiClient.fetchAnalytics(UserSession.userId)
             if (result.isSuccess && result.data != null) {
                 val d = result.data
@@ -70,6 +72,59 @@ class ProgressAnalyticsViewModel : ViewModel() {
                 )
             } else {
                 _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+
+            // 2. Fetch real weekly progress for interactive day selection
+            try {
+                val wpRes = ApiClient.fetchWeeklyProgress(UserSession.userId, _uiState.value.currentWeekOffset)
+                if (wpRes.isSuccess && wpRes.data != null) {
+                    val wp = wpRes.data
+                    val todayIdx = if (wp.days.isNotEmpty()) {
+                        val found = wp.days.indexOfFirst { it.isToday }
+                        if (found >= 0) found else 0
+                    } else -1
+                    val selDay = if (todayIdx in wp.days.indices) wp.days[todayIdx] else null
+                    _uiState.value = _uiState.value.copy(
+                        weeklyProgress = wp,
+                        selectedDayIndex = todayIdx,
+                        selectedDay = selDay
+                    )
+                }
+            } catch (ignored: Exception) {}
+        }
+    }
+
+    fun selectDay(index: Int) {
+        val days = _uiState.value.weeklyProgress.days
+        if (index in days.indices) {
+            _uiState.value = _uiState.value.copy(
+                selectedDayIndex = index,
+                selectedDay = days[index]
+            )
+        }
+    }
+
+    fun changeWeekOffset(delta: Int) {
+        val newOffset = _uiState.value.currentWeekOffset + delta
+        _uiState.value = _uiState.value.copy(
+            currentWeekOffset = newOffset,
+            isLoadingWeeklyProgress = true
+        )
+        viewModelScope.launch {
+            val res = ApiClient.fetchWeeklyProgress(UserSession.userId, newOffset)
+            _uiState.value = _uiState.value.copy(isLoadingWeeklyProgress = false)
+            if (res.isSuccess && res.data != null) {
+                val wp = res.data
+                val todayIdx = if (wp.days.isNotEmpty()) {
+                    val found = wp.days.indexOfFirst { it.isToday }
+                    if (found >= 0) found else 0
+                } else -1
+                val selDay = if (todayIdx in wp.days.indices) wp.days[todayIdx] else null
+                _uiState.value = _uiState.value.copy(
+                    weeklyProgress = wp,
+                    selectedDayIndex = todayIdx,
+                    selectedDay = selDay
+                )
             }
         }
     }

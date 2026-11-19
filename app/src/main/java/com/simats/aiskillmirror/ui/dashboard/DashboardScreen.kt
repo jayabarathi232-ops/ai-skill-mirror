@@ -760,7 +760,7 @@ fun DashboardScreen(
                         )
                     }
                     Text(
-                        text = "14.5 hrs total",
+                        text = uiState.totalWeeklyHoursText,
                         color = TaglineText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -775,7 +775,7 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .shadow(4.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White)
+                        .background(CardBackground)
                         .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
                         .padding(16.dp)
                 ) {
@@ -1332,38 +1332,38 @@ fun BottomNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
-            .background(Color.White)
+            .background(CardBackground)
             .border(1.dp, CardBorder, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .padding(vertical = 10.dp, horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomNavItem(
-            label = "Home",
+            label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("nav_home"),
             isSelected = selectedTab == DashboardTab.HOME,
             icon = { color -> HomeNavIcon(size = 20.dp, color = color) },
             onClick = { onTabSelected(DashboardTab.HOME) }
         )
         BottomNavItem(
-            label = "Assess",
+            label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("nav_skills"),
             isSelected = selectedTab == DashboardTab.ASSESS,
             icon = { color -> TargetScanIcon(size = 20.dp, color = color) },
             onClick = { onTabSelected(DashboardTab.ASSESS) }
         )
         BottomNavItem(
-            label = "Learn",
+            label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("nav_coach"),
             isSelected = selectedTab == DashboardTab.LEARN,
             icon = { color -> BookNavIcon(size = 20.dp, color = color) },
             onClick = { onTabSelected(DashboardTab.LEARN) }
         )
         BottomNavItem(
-            label = "Progress",
+            label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("nav_progress"),
             isSelected = selectedTab == DashboardTab.PROGRESS,
             icon = { color -> ChartIcon(size = 20.dp, color = color) },
             onClick = { onTabSelected(DashboardTab.PROGRESS) }
         )
         BottomNavItem(
-            label = "Profile",
+            label = com.simats.aiskillmirror.ui.localization.LanguageManager.t("nav_profile"),
             isSelected = selectedTab == DashboardTab.PROFILE,
             icon = { color -> ProfileNavIcon(size = 20.dp, color = color) },
             onClick = { onTabSelected(DashboardTab.PROFILE) }
@@ -1382,7 +1382,7 @@ fun BottomNavItem(
     val backgroundModifier = if (isSelected) {
         Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFE9DDFF))
+            .background(TaglineBackground)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     } else {
         Modifier.padding(horizontal = 8.dp, vertical = 6.dp)

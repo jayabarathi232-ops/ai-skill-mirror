@@ -30,7 +30,7 @@ data class AiCoachUiState(
     val voiceLanguage: VoiceLanguage = VoiceLanguage.ENGLISH,
     val userSpokenText: String = "",
     val isEditingSpokenText: Boolean = false,
-    val latestAiVoiceResponse: String = "Hi, I'm Mira! Ask me anything about your coding, photography, drawing, music, or public speaking progress.",
+    val latestAiVoiceResponse: String = "Hi, I'm Mira! Ask me anything about your music, photography, or coding practice.",
     val audioRmsLevel: Float = 0f,
     val isContinuousMode: Boolean = true,
     val isAudioMuted: Boolean = false,

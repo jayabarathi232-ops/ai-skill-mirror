@@ -5,9 +5,7 @@ import com.simats.aiskillmirror.data.network.CodeTestCaseResult
 enum class SkillType {
     MUSIC,
     PHOTOGRAPHY,
-    DRAWING,
-    CODING,
-    PUBLIC_SPEAKING
+    CODING
 }
 
 enum class VocalAnalysisState {
@@ -183,17 +181,9 @@ data class DailyTrainingUiState(
                 skill.contains("photo") || sub.contains("photo") || cat.contains("photo") || title.contains("photo") ||
                 sub.contains("camera") || sub.contains("portrait_photo") || sub.contains("landscape_photo") -> SkillType.PHOTOGRAPHY
 
-                skill.contains("draw") || sub.contains("draw") || cat.contains("draw") || title.contains("draw") ||
-                skill.contains("art") || sub.contains("art") || sub.contains("sketch") || sub.contains("paint") ||
-                sub.contains("shading") -> SkillType.DRAWING
-
                 skill.contains("cod") || sub.contains("cod") || cat.contains("cod") || title.contains("cod") ||
                 skill.contains("program") || sub.contains("program") || sub.contains("python") || sub.contains("java") ||
                 sub.contains("script") || sub.contains("c++") || sub.contains("c_prog") || sub.contains("algo") -> SkillType.CODING
-
-                skill.contains("speak") || sub.contains("speak") || cat.contains("speak") || title.contains("speak") ||
-                skill.contains("speech") || sub.contains("speech") || (sub.contains("voice") && !sub.contains("sing")) ||
-                sub.contains("debate") || sub.contains("presentation") || sub.contains("self_intro") || sub.contains("pronunciation") -> SkillType.PUBLIC_SPEAKING
 
                 else -> SkillType.MUSIC
             }

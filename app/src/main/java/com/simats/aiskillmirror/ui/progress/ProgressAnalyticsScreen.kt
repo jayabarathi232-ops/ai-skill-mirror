@@ -34,6 +34,7 @@ import com.simats.aiskillmirror.ui.results.SkillScoreBarItem
 import com.simats.aiskillmirror.ui.results.SkillScoreItem
 import com.simats.aiskillmirror.ui.theme.*
 import com.simats.aiskillmirror.ui.training.CalendarIcon
+import com.simats.aiskillmirror.ui.profile.WeeklyProgressCard
 
 @Composable
 fun ProgressAnalyticsScreen(
@@ -128,6 +129,20 @@ fun ProgressAnalyticsScreen(
                 TimeframeSegmentedTabs(
                     selectedTimeframe = uiState.selectedTimeframe,
                     onSelect = { viewModel.onSelectTimeframe(it) }
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Dedicated Weekly Progress Section with Interactive Manual Day Selection
+                WeeklyProgressCard(
+                    weeklyProgress = uiState.weeklyProgress,
+                    selectedDayIndex = uiState.selectedDayIndex,
+                    selectedDay = uiState.selectedDay,
+                    currentWeekOffset = uiState.currentWeekOffset,
+                    isLoading = uiState.isLoadingWeeklyProgress,
+                    onDayClick = { idx -> viewModel.selectDay(idx) },
+                    onPrevWeekClick = { viewModel.changeWeekOffset(-1) },
+                    onNextWeekClick = { viewModel.changeWeekOffset(1) }
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))

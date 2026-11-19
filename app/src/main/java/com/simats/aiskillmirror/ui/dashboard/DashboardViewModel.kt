@@ -2,6 +2,7 @@ package com.simats.aiskillmirror.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simats.aiskillmirror.data.network.ApiClient
 import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.data.repository.DashboardRepository
 import com.simats.aiskillmirror.data.repository.ProgressRepository
@@ -63,6 +64,27 @@ class DashboardViewModel(
                     profilePicture = UserSession.profilePictureUrl
                 )
             }
+
+            // Fetch real weekly progress for dashboard chart
+            try {
+                val wpRes = ApiClient.fetchWeeklyProgress(UserSession.userId, 0)
+                if (wpRes.isSuccess && wpRes.data != null) {
+                    val wp = wpRes.data
+                    val list = wp.days.map { day ->
+                        val hrs = Math.round((day.minutes / 60.0f) * 10f) / 10f
+                        WeeklyDayProgress(
+                            day = day.day.firstOrNull()?.toString() ?: "M",
+                            hours = if (hrs > 0f) hrs else 0f,
+                            isToday = day.isToday
+                        )
+                    }
+                    val totalHrs = Math.round((wp.totalWeeklyMinutes / 60.0f) * 10f) / 10f
+                    _uiState.value = _uiState.value.copy(
+                        weeklyProgress = list,
+                        totalWeeklyHoursText = "$totalHrs hrs total"
+                    )
+                }
+            } catch (ignored: Exception) {}
         }
     }
 
@@ -77,18 +99,46 @@ class DashboardViewModel(
                 "image" -> "posture_alignment.jpg"
                 else -> "speech_sample.wav"
             }
-            _uiState.value = _uiState.value.copy(
-                uploadedMediaType = type,
-                uploadedMediaName = name,
-                isAnalyzing = true,
-                uploadFeedbackMessage = "Analyzing $type using AI vision & acoustic models..."
-            )
-            delay(1500)
-            _uiState.value = _uiState.value.copy(
-                isAnalyzing = false,
-                uploadFeedbackMessage = "Analysis complete! Score updated to ${_uiState.value.skillScore}% (+2 pts)."
-            )
-            _eventChannel.send(DashboardUiEvent.ShowToast("Uploaded $type successfully! AI Analysis complete."))
+            _uiState.value = _uiState.value.copy(isUploading = true, uploadProgress = 0.05f)
+
+            for (i in 1..10) {
+                delay(120)
+                _uiState.value = _uiState.value.copy(uploadProgress = i * 0.1f)
+            }
+
+            val result = dashboardRepository.uploadMedia(UserSession.userId, type, name)
+            _uiState.value = _uiState.value.copy(isUploading = false, uploadProgress = 0f)
+
+            if (result.isSuccess && result.data != null) {
+                val item = PerformanceHistoryItem(
+                    id = result.data.id.toString(),
+                    skillName = when (result.data.skillCategory.lowercase()) {
+                        "photo", "photography" -> "Photography"
+                        "coding" -> "Coding"
+                        else -> "Music"
+                    },
+                    activity = result.data.title,
+                    score = result.data.score,
+                    dateText = "Just now",
+                    iconEmoji = when (type.lowercase()) {
+                        "video" -> "📹"
+                        "image", "photo" -> "📷"
+                        else -> "🎙️"
+                    },
+                    feedback = result.data.analysisSummary
+                )
+                val updated = listOf(item) + _uiState.value.recentHistory
+                _uiState.value = _uiState.value.copy(recentHistory = updated)
+                _eventChannel.send(DashboardUiEvent.ShowToast("Uploaded successfully! AI score: ${result.data.score}/100"))
+            } else {
+                _eventChannel.send(DashboardUiEvent.ShowToast(result.message ?: "Upload simulated: Saved locally"))
+            }
+        }
+    }
+
+    fun onNotificationsClick() {
+        viewModelScope.launch {
+            _eventChannel.send(DashboardUiEvent.OpenNotifications)
         }
     }
 
@@ -98,27 +148,13 @@ class DashboardViewModel(
         }
     }
 
-    fun onViewPlanClick() {
-        viewModelScope.launch {
-            _eventChannel.send(DashboardUiEvent.ViewPlan)
-        }
-    }
-
-    fun onContinueTrainingClick() {
-        viewModelScope.launch {
-            _eventChannel.send(DashboardUiEvent.ContinueTraining)
-        }
-    }
-
     fun onOpenAiCoachClick() {
         viewModelScope.launch {
             _eventChannel.send(DashboardUiEvent.OpenAiCoach)
         }
     }
 
-    fun onNotificationsClick() {
-        viewModelScope.launch {
-            _eventChannel.send(DashboardUiEvent.OpenNotifications)
-        }
+    fun onRefresh() {
+        loadDashboard()
     }
 }

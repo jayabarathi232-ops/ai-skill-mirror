@@ -1,5 +1,8 @@
 package com.simats.aiskillmirror.ui.progress
 
+import com.simats.aiskillmirror.data.network.DailyProgressItem
+import com.simats.aiskillmirror.data.network.ProfileWeeklyProgressData
+
 enum class TimeframeTab {
     WEEK,
     MONTH,
@@ -44,7 +47,13 @@ data class ProgressAnalyticsUiState(
     val skillItems: List<ProgressSkillItem> = emptyList(),
     val recentPracticeScores: List<RecentPracticeScoreItem> = emptyList(),
     val isLoading: Boolean = false,
-    val selectedScoreDetail: RecentPracticeScoreItem? = null
+    val selectedScoreDetail: RecentPracticeScoreItem? = null,
+    // Dedicated Weekly Progress Interactive State
+    val weeklyProgress: ProfileWeeklyProgressData = ProfileWeeklyProgressData(),
+    val selectedDayIndex: Int = -1,
+    val selectedDay: DailyProgressItem? = null,
+    val currentWeekOffset: Int = 0,
+    val isLoadingWeeklyProgress: Boolean = false
 )
 
 sealed interface ProgressAnalyticsUiEvent {

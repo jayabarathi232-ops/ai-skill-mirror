@@ -48,6 +48,13 @@ class ProfileViewModel(
                     UserSession.setProfilePicture(context, resolvedUrl)
                 }
 
+                val wp = p.weeklyProgress
+                val todayIdx = if (wp.days.isNotEmpty()) {
+                    val found = wp.days.indexOfFirst { it.isToday }
+                    if (found >= 0) found else 0
+                } else -1
+                val selDay = if (todayIdx in wp.days.indices) wp.days[todayIdx] else null
+
                 _uiState.value = _uiState.value.copy(
                     userName = if (p.name.isNotBlank()) p.name else _uiState.value.userName,
                     email = if (p.email.isNotBlank()) p.email else _uiState.value.email,
@@ -63,7 +70,10 @@ class ProfileViewModel(
                     dayStreak = p.dayStreak,
                     totalXp = p.totalXp,
                     memberSinceText = if (p.memberSinceText.isNotBlank()) p.memberSinceText else _uiState.value.memberSinceText,
-                    weeklyProgress = p.weeklyProgress,
+                    weeklyProgress = wp,
+                    selectedDayIndex = todayIdx,
+                    selectedDay = selDay,
+                    currentWeekOffset = wp.weekOffset,
                     achievedBadges = p.achievedBadges,
                     lockedBadges = p.lockedBadges,
                     errorMessage = null
@@ -177,6 +187,41 @@ class ProfileViewModel(
             } else {
                 _uiState.value = _uiState.value.copy(errorMessage = updateRes.message ?: "Failed to update profile")
                 _eventChannel.send(ProfileUiEvent.ShowToast(updateRes.message ?: "Update failed"))
+            }
+        }
+    }
+
+    fun selectDay(index: Int) {
+        val days = _uiState.value.weeklyProgress.days
+        if (index in days.indices) {
+            _uiState.value = _uiState.value.copy(
+                selectedDayIndex = index,
+                selectedDay = days[index]
+            )
+        }
+    }
+
+    fun changeWeekOffset(delta: Int) {
+        val newOffset = _uiState.value.currentWeekOffset + delta
+        _uiState.value = _uiState.value.copy(
+            currentWeekOffset = newOffset,
+            isLoadingWeeklyProgress = true
+        )
+        viewModelScope.launch {
+            val res = ApiClient.fetchWeeklyProgress(UserSession.userId, newOffset)
+            _uiState.value = _uiState.value.copy(isLoadingWeeklyProgress = false)
+            if (res.isSuccess && res.data != null) {
+                val wp = res.data
+                val todayIdx = if (wp.days.isNotEmpty()) {
+                    val found = wp.days.indexOfFirst { it.isToday }
+                    if (found >= 0) found else 0
+                } else -1
+                val selDay = if (todayIdx in wp.days.indices) wp.days[todayIdx] else null
+                _uiState.value = _uiState.value.copy(
+                    weeklyProgress = wp,
+                    selectedDayIndex = todayIdx,
+                    selectedDay = selDay
+                )
             }
         }
     }

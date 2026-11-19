@@ -47,9 +47,9 @@ class PerformanceUploadViewModel(
         clearSelectedMedia()
         val defaultCategory = when (tab) {
             MediaTypeTab.PHOTO -> "photography"
-            MediaTypeTab.VIDEO -> "speaking"
-            MediaTypeTab.AUDIO -> "speaking"
-            MediaTypeTab.LIVE_CAPTURE -> "speaking"
+            MediaTypeTab.VIDEO -> "music"
+            MediaTypeTab.AUDIO -> "music"
+            MediaTypeTab.LIVE_CAPTURE -> "photography"
         }
         val openCamera = (tab == MediaTypeTab.LIVE_CAPTURE)
         _uiState.value = _uiState.value.copy(
@@ -158,7 +158,7 @@ class PerformanceUploadViewModel(
             val size = cacheFile.length()
             val uri = Uri.fromFile(cacheFile)
 
-            val category = if (_uiState.value.skillCategory == "speaking") "photography" else _uiState.value.skillCategory
+            val category = if (_uiState.value.skillCategory == "music") "photography" else _uiState.value.skillCategory
 
             _uiState.value = _uiState.value.copy(
                 selectedTab = MediaTypeTab.PHOTO,
@@ -241,7 +241,7 @@ class PerformanceUploadViewModel(
             selectedFileSizeText = formatFileSize(file.length()),
             selectedDurationText = durationText,
             selectedDurationSeconds = durationSec,
-            skillCategory = if (_uiState.value.skillCategory == "photography") "speaking" else _uiState.value.skillCategory,
+            skillCategory = if (_uiState.value.skillCategory == "photography") "music" else _uiState.value.skillCategory,
             isLiveCameraOpen = false,
             isReviewingCapture = false,
             errorMessage = null

@@ -142,6 +142,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         UserSession.init(this)
+        com.simats.aiskillmirror.ui.theme.ThemeManager.init(this)
+        com.simats.aiskillmirror.ui.localization.LanguageManager.init(this)
         SmartNotificationManager.initNotificationChannel(this)
         SmartNotificationManager.rescheduleSavedReminders(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -158,7 +160,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navigateToExtra = intent?.getStringExtra("navigateTo")
                     val initialScreen = when (navigateToExtra) {
-                        "SPEECH_STUDIO" -> AppScreen.SPEECH_STUDIO
+                        "SPEECH_STUDIO" -> AppScreen.DAILY_TRAINING
                         "NOTIFICATIONS" -> AppScreen.NOTIFICATIONS
                         else -> AppScreen.SPLASH
                     }
@@ -174,7 +176,7 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.runtime.LaunchedEffect(pendingNavigation.value) {
                         pendingNavigation.value?.let { target ->
                             when (target) {
-                                "SPEECH_STUDIO" -> navigateTo(AppScreen.SPEECH_STUDIO)
+                                "SPEECH_STUDIO" -> navigateTo(AppScreen.DAILY_TRAINING)
                                 "NOTIFICATIONS" -> navigateTo(AppScreen.NOTIFICATIONS)
                                 "DAILY_TRAINING" -> navigateTo(AppScreen.DAILY_TRAINING)
                                 "SKILL_GAP_DETECTOR" -> navigateTo(AppScreen.SKILL_GAP_DETECTOR)
@@ -622,7 +624,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = aiCoachViewModel,
                                     onTabSelected = ::handleTabSelected,
                                     onStartPracticeFromCoachClick = {
-                                        navigateTo(AppScreen.SPEECH_STUDIO)
+                                        navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onBackClick = {
                                         if (backStack.size > 1) {

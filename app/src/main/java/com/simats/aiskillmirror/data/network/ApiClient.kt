@@ -25,16 +25,35 @@ data class UserData(
     val profilePicture: String = ""
 )
 
+data class PracticeTaskDetail(
+    val id: Int = 0,
+    val type: String = "PRACTICE",
+    val title: String = "",
+    val skill: String = "",
+    val durationMinutes: Int = 0,
+    val xpAwarded: Int = 0,
+    val score: Int? = null
+)
+
 data class DailyProgressItem(
     val day: String = "Mon",
+    val dayFull: String = "Monday",
     val date: String = "",
+    val formattedDate: String = "",
     val minutes: Int = 0,
     val tasks: Int = 0,
     val xp: Int = 0,
-    val isToday: Boolean = false
+    val isToday: Boolean = false,
+    val hasActivity: Boolean = false,
+    val skillsPracticed: List<String> = emptyList(),
+    val tasksDetail: List<PracticeTaskDetail> = emptyList()
 )
 
 data class ProfileWeeklyProgressData(
+    val weekOffset: Int = 0,
+    val weekLabel: String = "This Week",
+    val mondayDate: String = "",
+    val sundayDate: String = "",
     val days: List<DailyProgressItem> = emptyList(),
     val totalWeeklyMinutes: Int = 0,
     val weeklyCompletedTasks: Int = 0,
@@ -505,12 +524,16 @@ data class CoachChatData(
 )
 
 data class UserSettingsData(
-    val isLearningRemindersEnabled: Boolean,
-    val isPersonalizedAiEnabled: Boolean,
-    val isSaveVoiceRecordingsEnabled: Boolean,
-    val currentAppearanceText: String,
-    val currentLanguageText: String,
-    val appVersionText: String
+    val isLearningRemindersEnabled: Boolean = true,
+    val isPersonalizedAiEnabled: Boolean = true,
+    val isSaveVoiceRecordingsEnabled: Boolean = false,
+    val currentAppearanceText: String = "Light",
+    val reminderTimeText: String = "07:00 PM",
+    val themePaletteText: String = "Lavender",
+    val isSoundEffectsEnabled: Boolean = true,
+    val isAudioGuidanceEnabled: Boolean = true,
+    val currentLanguageText: String = "English",
+    val appVersionText: String = "AI Skills Mirror · Version 1.0.0"
 )
 
 data class SkillAreaItem(
@@ -598,9 +621,9 @@ data class SkillGapResponseData(
 
 object ApiClient {
     // 10.0.2.2 reaches localhost on Android Emulator.
-    // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.49.166/skillmirrorbackend"
-
-    var BASE_URL = "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend"
+    // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.52.187/skillmirrorbackend"
+    var BASE_URL = "http://172.23.52.187/skillmirrorbackend"
+    var FALLBACK_URL = "http://10.0.2.2/skillmirrorbackend"
 
     fun resolveImageUrl(pathOrUrl: String?): String {
         if (pathOrUrl.isNullOrBlank()) return ""
@@ -617,47 +640,75 @@ object ApiClient {
     private fun postJson(
         endpoint: String,
         bodyJson: JSONObject,
-        connectTimeoutMs: Int = 30000,
-        readTimeoutMs: Int = 60000
+        connectTimeoutMs: Int = 10000,
+        readTimeoutMs: Int = 30000
     ): Pair<Int, String> {
-        val url = URL("$BASE_URL/$endpoint")
-        val conn = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-            setRequestProperty("Accept", "application/json")
-            doOutput = true
-            doInput = true
-            connectTimeout = connectTimeoutMs
-            readTimeout = readTimeoutMs
+        val targets = listOf(BASE_URL, if (BASE_URL != FALLBACK_URL) FALLBACK_URL else null).filterNotNull()
+        var lastException: Exception? = null
+        for (targetBase in targets) {
+            try {
+                val cleanTarget = targetBase.trimEnd('/')
+                val cleanEndpoint = endpoint.trimStart('/')
+                val url = URL("$cleanTarget/$cleanEndpoint")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    setRequestProperty("Accept", "application/json")
+                    doOutput = true
+                    doInput = true
+                    connectTimeout = connectTimeoutMs
+                    readTimeout = readTimeoutMs
+                }
+                OutputStreamWriter(conn.outputStream).use { writer ->
+                    writer.write(bodyJson.toString())
+                    writer.flush()
+                }
+                val code = conn.responseCode
+                val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
+                conn.disconnect()
+                if (targetBase != BASE_URL) {
+                    BASE_URL = targetBase
+                }
+                return Pair(code, text)
+            } catch (e: Exception) {
+                lastException = e
+            }
         }
-        OutputStreamWriter(conn.outputStream).use { writer ->
-            writer.write(bodyJson.toString())
-            writer.flush()
-        }
-        val code = conn.responseCode
-        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-        val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
-        conn.disconnect()
-        return Pair(code, text)
+        throw lastException ?: java.io.IOException("Unable to connect to server")
     }
 
     private fun getJson(
         endpointWithQuery: String,
-        connectTimeoutMs: Int = 20000,
-        readTimeoutMs: Int = 30000
+        connectTimeoutMs: Int = 10000,
+        readTimeoutMs: Int = 20000
     ): Pair<Int, String> {
-        val url = URL("$BASE_URL/$endpointWithQuery")
-        val conn = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-            connectTimeout = connectTimeoutMs
-            readTimeout = readTimeoutMs
+        val targets = listOf(BASE_URL, if (BASE_URL != FALLBACK_URL) FALLBACK_URL else null).filterNotNull()
+        var lastException: Exception? = null
+        for (targetBase in targets) {
+            try {
+                val cleanTarget = targetBase.trimEnd('/')
+                val cleanEndpoint = endpointWithQuery.trimStart('/')
+                val url = URL("$cleanTarget/$cleanEndpoint")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    setRequestProperty("Accept", "application/json")
+                    connectTimeout = connectTimeoutMs
+                    readTimeout = readTimeoutMs
+                }
+                val code = conn.responseCode
+                val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
+                conn.disconnect()
+                if (targetBase != BASE_URL) {
+                    BASE_URL = targetBase
+                }
+                return Pair(code, text)
+            } catch (e: Exception) {
+                lastException = e
+            }
         }
-        val code = conn.responseCode
-        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-        val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
-        conn.disconnect()
-        return Pair(code, text)
+        throw lastException ?: java.io.IOException("Unable to connect to server")
     }
 
     suspend fun login(email: String, password: String): NetworkResult<UserData> = withContext(Dispatchers.IO) {
@@ -750,20 +801,56 @@ object ApiClient {
                             for (i in 0 until daysArray.length()) {
                                 val d = daysArray.optJSONObject(i)
                                 if (d != null) {
+                                    val skillsArr = d.optJSONArray("skills_practiced")
+                                    val skillsList = mutableListOf<String>()
+                                    if (skillsArr != null) {
+                                        for (sIdx in 0 until skillsArr.length()) {
+                                            skillsList.add(skillsArr.optString(sIdx))
+                                        }
+                                    }
+                                    val tasksArr = d.optJSONArray("tasks_detail")
+                                    val tasksList = mutableListOf<PracticeTaskDetail>()
+                                    if (tasksArr != null) {
+                                        for (tIdx in 0 until tasksArr.length()) {
+                                            val tObj = tasksArr.optJSONObject(tIdx)
+                                            if (tObj != null) {
+                                                tasksList.add(
+                                                    PracticeTaskDetail(
+                                                        id = tObj.optInt("id", 0),
+                                                        type = tObj.optString("type", "PRACTICE"),
+                                                        title = tObj.optString("title", ""),
+                                                        skill = tObj.optString("skill", ""),
+                                                        durationMinutes = tObj.optInt("duration_minutes", 0),
+                                                        xpAwarded = tObj.optInt("xp_awarded", 0),
+                                                        score = if (tObj.has("score") && !tObj.isNull("score")) tObj.optInt("score") else null
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
                                     daysList.add(
                                         DailyProgressItem(
                                             day = d.optString("day", ""),
+                                            dayFull = d.optString("day_full", d.optString("day", "")),
                                             date = d.optString("date", ""),
+                                            formattedDate = d.optString("formatted_date", ""),
                                             minutes = d.optInt("minutes", 0),
                                             tasks = d.optInt("tasks", 0),
                                             xp = d.optInt("xp", 0),
-                                            isToday = d.optBoolean("is_today", false)
+                                            isToday = d.optBoolean("is_today", false),
+                                            hasActivity = d.optBoolean("has_activity", d.optInt("tasks", 0) > 0 || d.optInt("minutes", 0) > 0),
+                                            skillsPracticed = skillsList,
+                                            tasksDetail = tasksList
                                         )
                                     )
                                 }
                             }
                         }
                         ProfileWeeklyProgressData(
+                            weekOffset = wpJson.optInt("week_offset", 0),
+                            weekLabel = wpJson.optString("week_label", "This Week"),
+                            mondayDate = wpJson.optString("monday_date", ""),
+                            sundayDate = wpJson.optString("sunday_date", ""),
                             days = daysList,
                             totalWeeklyMinutes = wpJson.optInt("total_weekly_minutes", 0),
                             weeklyCompletedTasks = wpJson.optInt("weekly_completed_tasks", 0),
@@ -2136,7 +2223,11 @@ object ApiClient {
                     isLearningRemindersEnabled = d.optBoolean("isLearningRemindersEnabled", true),
                     isPersonalizedAiEnabled = d.optBoolean("isPersonalizedAiEnabled", true),
                     isSaveVoiceRecordingsEnabled = d.optBoolean("isSaveVoiceRecordingsEnabled", false),
-                    currentAppearanceText = d.optString("currentAppearanceText", "Dark"),
+                    currentAppearanceText = d.optString("currentAppearanceText", "Light"),
+                    reminderTimeText = d.optString("reminderTimeText", "07:00 PM"),
+                    themePaletteText = d.optString("themePaletteText", "Lavender"),
+                    isSoundEffectsEnabled = d.optBoolean("isSoundEffectsEnabled", true),
+                    isAudioGuidanceEnabled = d.optBoolean("isAudioGuidanceEnabled", true),
                     currentLanguageText = d.optString("currentLanguageText", "English"),
                     appVersionText = d.optString("appVersionText", "AI Skills Mirror · Version 1.0.0")
                 )
@@ -2155,6 +2246,10 @@ object ApiClient {
         ai: Boolean? = null,
         voice: Boolean? = null,
         appearance: String? = null,
+        reminderTime: String? = null,
+        themePalette: String? = null,
+        sound: Boolean? = null,
+        audio: Boolean? = null,
         language: String? = null
     ): NetworkResult<Boolean> = withContext(Dispatchers.IO) {
         try {
@@ -2164,6 +2259,10 @@ object ApiClient {
                 ai?.let { put("isPersonalizedAiEnabled", it) }
                 voice?.let { put("isSaveVoiceRecordingsEnabled", it) }
                 appearance?.let { put("currentAppearanceText", it) }
+                reminderTime?.let { put("reminderTimeText", it) }
+                themePalette?.let { put("themePaletteText", it) }
+                sound?.let { put("isSoundEffectsEnabled", it) }
+                audio?.let { put("isAudioGuidanceEnabled", it) }
                 language?.let { put("currentLanguageText", it) }
             }
             val (code, text) = postJson("settings/settings_update.php", body)
@@ -2171,6 +2270,91 @@ object ApiClient {
             NetworkResult(code == 200 && json.optString("status") == "success", json.optString("message"), true)
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}", false)
+        }
+    }
+
+    suspend fun fetchWeeklyProgress(
+        userId: Int,
+        weekOffset: Int = 0
+    ): NetworkResult<ProfileWeeklyProgressData> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("progress/weekly_progress_fetch.php?user_id=$userId&week_offset=$weekOffset")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val wpJson = json.optJSONObject("data")
+                if (wpJson != null) {
+                    val daysArray = wpJson.optJSONArray("days")
+                    val daysList = mutableListOf<DailyProgressItem>()
+                    if (daysArray != null) {
+                        for (i in 0 until daysArray.length()) {
+                            val d = daysArray.optJSONObject(i)
+                            if (d != null) {
+                                val skillsArr = d.optJSONArray("skills_practiced")
+                                val skillsList = mutableListOf<String>()
+                                if (skillsArr != null) {
+                                    for (sIdx in 0 until skillsArr.length()) {
+                                        skillsList.add(skillsArr.optString(sIdx))
+                                    }
+                                }
+                                val tasksArr = d.optJSONArray("tasks_detail")
+                                val tasksList = mutableListOf<PracticeTaskDetail>()
+                                if (tasksArr != null) {
+                                    for (tIdx in 0 until tasksArr.length()) {
+                                        val tObj = tasksArr.optJSONObject(tIdx)
+                                        if (tObj != null) {
+                                            tasksList.add(
+                                                PracticeTaskDetail(
+                                                    id = tObj.optInt("id", 0),
+                                                    type = tObj.optString("type", "PRACTICE"),
+                                                    title = tObj.optString("title", ""),
+                                                    skill = tObj.optString("skill", ""),
+                                                    durationMinutes = tObj.optInt("duration_minutes", 0),
+                                                    xpAwarded = tObj.optInt("xp_awarded", 0),
+                                                    score = if (tObj.has("score") && !tObj.isNull("score")) tObj.optInt("score") else null
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                                daysList.add(
+                                    DailyProgressItem(
+                                        day = d.optString("day", ""),
+                                        dayFull = d.optString("day_full", d.optString("day", "")),
+                                        date = d.optString("date", ""),
+                                        formattedDate = d.optString("formatted_date", ""),
+                                        minutes = d.optInt("minutes", 0),
+                                        tasks = d.optInt("tasks", 0),
+                                        xp = d.optInt("xp", 0),
+                                        isToday = d.optBoolean("is_today", false),
+                                        hasActivity = d.optBoolean("has_activity", d.optInt("tasks", 0) > 0 || d.optInt("minutes", 0) > 0),
+                                        skillsPracticed = skillsList,
+                                        tasksDetail = tasksList
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    val data = ProfileWeeklyProgressData(
+                        weekOffset = wpJson.optInt("week_offset", weekOffset),
+                        weekLabel = wpJson.optString("week_label", "This Week"),
+                        mondayDate = wpJson.optString("monday_date", ""),
+                        sundayDate = wpJson.optString("sunday_date", ""),
+                        days = daysList,
+                        totalWeeklyMinutes = wpJson.optInt("total_weekly_minutes", 0),
+                        weeklyCompletedTasks = wpJson.optInt("weekly_completed_tasks", 0),
+                        weeklyXpEarned = wpJson.optInt("weekly_xp_earned", 0),
+                        weeklyGoalMinutes = wpJson.optInt("weekly_goal_minutes", 60),
+                        weeklyGoalPercentage = wpJson.optInt("weekly_goal_percentage", 0)
+                    )
+                    NetworkResult(true, "Weekly progress fetched", data)
+                } else {
+                    NetworkResult(false, "No weekly data returned")
+                }
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch weekly progress"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
         }
     }
 
