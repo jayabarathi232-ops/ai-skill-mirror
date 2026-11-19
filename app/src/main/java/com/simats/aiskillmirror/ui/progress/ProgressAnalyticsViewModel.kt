@@ -95,19 +95,38 @@ class ProgressAnalyticsViewModel : ViewModel() {
     }
 
     fun selectDay(index: Int) {
-        val days = _uiState.value.weeklyProgress.days
+        val days = if (_uiState.value.weeklyProgress.days.size == 7) {
+            _uiState.value.weeklyProgress.days
+        } else {
+            com.simats.aiskillmirror.data.network.createDefaultWeekDays(_uiState.value.currentWeekOffset)
+        }
         if (index in days.indices) {
+            val selected = days[index]
+            val updatedWp = if (_uiState.value.weeklyProgress.days.size != 7) {
+                _uiState.value.weeklyProgress.copy(days = days)
+            } else {
+                _uiState.value.weeklyProgress
+            }
             _uiState.value = _uiState.value.copy(
+                weeklyProgress = updatedWp,
                 selectedDayIndex = index,
-                selectedDay = days[index]
+                selectedDay = selected
             )
         }
     }
 
     fun changeWeekOffset(delta: Int) {
         val newOffset = _uiState.value.currentWeekOffset + delta
+        val initialDays = com.simats.aiskillmirror.data.network.createDefaultWeekDays(newOffset)
+        val todayIdx = initialDays.indexOfFirst { it.isToday }.let { if (it >= 0) it else 0 }
         _uiState.value = _uiState.value.copy(
             currentWeekOffset = newOffset,
+            weeklyProgress = _uiState.value.weeklyProgress.copy(
+                weekOffset = newOffset,
+                days = initialDays
+            ),
+            selectedDayIndex = todayIdx,
+            selectedDay = initialDays.getOrNull(todayIdx),
             isLoadingWeeklyProgress = true
         )
         viewModelScope.launch {
@@ -115,14 +134,14 @@ class ProgressAnalyticsViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoadingWeeklyProgress = false)
             if (res.isSuccess && res.data != null) {
                 val wp = res.data
-                val todayIdx = if (wp.days.isNotEmpty()) {
+                val resolvedIdx = if (wp.days.isNotEmpty()) {
                     val found = wp.days.indexOfFirst { it.isToday }
                     if (found >= 0) found else 0
-                } else -1
-                val selDay = if (todayIdx in wp.days.indices) wp.days[todayIdx] else null
+                } else 0
+                val selDay = wp.days.getOrNull(resolvedIdx) ?: initialDays.getOrNull(resolvedIdx)
                 _uiState.value = _uiState.value.copy(
                     weeklyProgress = wp,
-                    selectedDayIndex = todayIdx,
+                    selectedDayIndex = resolvedIdx,
                     selectedDay = selDay
                 )
             }

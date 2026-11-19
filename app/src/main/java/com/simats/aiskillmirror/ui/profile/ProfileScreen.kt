@@ -656,9 +656,13 @@ fun WeeklyProgressCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val safeDays = if (weeklyProgress.days.size == 7) weeklyProgress.days else {
+                com.simats.aiskillmirror.data.network.createDefaultWeekDays(currentWeekOffset)
+            }
+
             // 7-day Interactive Bar Chart for Monday to Sunday
             WeeklyBarChart(
-                days = weeklyProgress.days,
+                days = safeDays,
                 selectedIndex = selectedDayIndex,
                 onDayClick = onDayClick
             )
@@ -666,10 +670,10 @@ fun WeeklyProgressCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Selected Day's Actual Practice Details Section
-            val effectiveSelectedDay = if (selectedDayIndex in weeklyProgress.days.indices) {
-                weeklyProgress.days[selectedDayIndex]
+            val effectiveSelectedDay = if (selectedDayIndex in safeDays.indices) {
+                safeDays[selectedDayIndex]
             } else {
-                selectedDay ?: weeklyProgress.days.firstOrNull { d -> d.isToday } ?: weeklyProgress.days.firstOrNull()
+                selectedDay ?: safeDays.firstOrNull { d -> d.isToday } ?: safeDays.firstOrNull()
             }
 
             if (effectiveSelectedDay != null) {

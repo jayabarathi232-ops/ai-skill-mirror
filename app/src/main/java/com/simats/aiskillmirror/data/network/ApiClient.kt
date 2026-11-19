@@ -49,12 +49,49 @@ data class DailyProgressItem(
     val tasksDetail: List<PracticeTaskDetail> = emptyList()
 )
 
+fun createDefaultWeekDays(weekOffset: Int = 0): List<DailyProgressItem> {
+    val dayNamesShort = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val dayNamesFull = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+    val cal = java.util.Calendar.getInstance()
+    val todayCal = java.util.Calendar.getInstance()
+
+    val dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK)
+    val daysFromMonday = if (dayOfWeek == java.util.Calendar.SUNDAY) 6 else (dayOfWeek - java.util.Calendar.MONDAY)
+    cal.add(java.util.Calendar.DAY_OF_YEAR, -daysFromMonday + (weekOffset * 7))
+
+    val sdfDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+    val sdfFormat = java.text.SimpleDateFormat("MMM d", java.util.Locale.US)
+    val todayDateStr = sdfDate.format(todayCal.time)
+
+    return (0..6).map { i ->
+        val dateStr = sdfDate.format(cal.time)
+        val formattedDate = sdfFormat.format(cal.time)
+        val isToday = (dateStr == todayDateStr)
+        val item = DailyProgressItem(
+            day = dayNamesShort[i],
+            dayFull = dayNamesFull[i],
+            date = dateStr,
+            formattedDate = formattedDate,
+            minutes = 0,
+            tasks = 0,
+            xp = 0,
+            isToday = isToday,
+            hasActivity = false,
+            skillsPracticed = emptyList(),
+            tasksDetail = emptyList()
+        )
+        cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        item
+    }
+}
+
 data class ProfileWeeklyProgressData(
     val weekOffset: Int = 0,
     val weekLabel: String = "This Week",
     val mondayDate: String = "",
     val sundayDate: String = "",
-    val days: List<DailyProgressItem> = emptyList(),
+    val days: List<DailyProgressItem> = createDefaultWeekDays(0),
     val totalWeeklyMinutes: Int = 0,
     val weeklyCompletedTasks: Int = 0,
     val weeklyXpEarned: Int = 0,
@@ -620,10 +657,49 @@ data class SkillGapResponseData(
 )
 
 object ApiClient {
-    // 10.0.2.2 reaches localhost on Android Emulator.
-    // For a physical device on the same Wi-Fi, change to your PC's IP, e.g. "http://172.23.52.187/skillmirrorbackend"
-    var BASE_URL = "http://172.23.52.187/skillmirrorbackend"
-    var FALLBACK_URL = "http://10.0.2.2/skillmirrorbackend"
+    // 1. ngrok tunnel reaches backend from any network (mobile data / Wi-Fi)
+    // 2. 172.23.52.187 reaches backend over local Wi-Fi
+    // 3. 10.0.2.2 reaches localhost from Android Emulator
+    var BASE_URL = "https://throat-unused-repeated.ngrok-free.dev/skillmirrorbackend"
+    var FALLBACK_URL = "http://172.23.52.187/skillmirrorbackend"
+    var EMULATOR_URL = "http://10.0.2.2/skillmirrorbackend"
+
+    fun createDefaultWeekDays(weekOffset: Int = 0): List<DailyProgressItem> {
+        val dayNamesShort = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        val dayNamesFull = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+        val cal = java.util.Calendar.getInstance()
+        val todayCal = java.util.Calendar.getInstance()
+
+        val dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK)
+        val daysFromMonday = if (dayOfWeek == java.util.Calendar.SUNDAY) 6 else (dayOfWeek - java.util.Calendar.MONDAY)
+        cal.add(java.util.Calendar.DAY_OF_YEAR, -daysFromMonday + (weekOffset * 7))
+
+        val sdfDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val sdfFormat = java.text.SimpleDateFormat("MMM d", java.util.Locale.US)
+        val todayDateStr = sdfDate.format(todayCal.time)
+
+        return (0..6).map { i ->
+            val dateStr = sdfDate.format(cal.time)
+            val formattedDate = sdfFormat.format(cal.time)
+            val isToday = (dateStr == todayDateStr)
+            val item = DailyProgressItem(
+                day = dayNamesShort[i],
+                dayFull = dayNamesFull[i],
+                date = dateStr,
+                formattedDate = formattedDate,
+                minutes = 0,
+                tasks = 0,
+                xp = 0,
+                isToday = isToday,
+                hasActivity = false,
+                skillsPracticed = emptyList(),
+                tasksDetail = emptyList()
+            )
+            cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+            item
+        }
+    }
 
     fun resolveImageUrl(pathOrUrl: String?): String {
         if (pathOrUrl.isNullOrBlank()) return ""
@@ -643,7 +719,7 @@ object ApiClient {
         connectTimeoutMs: Int = 10000,
         readTimeoutMs: Int = 30000
     ): Pair<Int, String> {
-        val targets = listOf(BASE_URL, if (BASE_URL != FALLBACK_URL) FALLBACK_URL else null).filterNotNull()
+        val targets = listOf(BASE_URL, FALLBACK_URL, EMULATOR_URL).distinct()
         var lastException: Exception? = null
         for (targetBase in targets) {
             try {
@@ -654,6 +730,8 @@ object ApiClient {
                     requestMethod = "POST"
                     setRequestProperty("Content-Type", "application/json; charset=UTF-8")
                     setRequestProperty("Accept", "application/json")
+                    setRequestProperty("ngrok-skip-browser-warning", "true")
+                    setRequestProperty("User-Agent", "AISkillMirror/1.0")
                     doOutput = true
                     doInput = true
                     connectTimeout = connectTimeoutMs
@@ -667,7 +745,7 @@ object ApiClient {
                 val stream = if (code in 200..299) conn.inputStream else conn.errorStream
                 val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
                 conn.disconnect()
-                if (targetBase != BASE_URL) {
+                if (targetBase != BASE_URL && code in 200..299) {
                     BASE_URL = targetBase
                 }
                 return Pair(code, text)
@@ -683,7 +761,7 @@ object ApiClient {
         connectTimeoutMs: Int = 10000,
         readTimeoutMs: Int = 20000
     ): Pair<Int, String> {
-        val targets = listOf(BASE_URL, if (BASE_URL != FALLBACK_URL) FALLBACK_URL else null).filterNotNull()
+        val targets = listOf(BASE_URL, FALLBACK_URL, EMULATOR_URL).distinct()
         var lastException: Exception? = null
         for (targetBase in targets) {
             try {
@@ -693,6 +771,8 @@ object ApiClient {
                 val conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
                     setRequestProperty("Accept", "application/json")
+                    setRequestProperty("ngrok-skip-browser-warning", "true")
+                    setRequestProperty("User-Agent", "AISkillMirror/1.0")
                     connectTimeout = connectTimeoutMs
                     readTimeout = readTimeoutMs
                 }
@@ -700,7 +780,7 @@ object ApiClient {
                 val stream = if (code in 200..299) conn.inputStream else conn.errorStream
                 val text = stream?.bufferedReader()?.use(BufferedReader::readText) ?: ""
                 conn.disconnect()
-                if (targetBase != BASE_URL) {
+                if (targetBase != BASE_URL && code in 200..299) {
                     BASE_URL = targetBase
                 }
                 return Pair(code, text)
@@ -969,6 +1049,8 @@ object ApiClient {
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                setRequestProperty("ngrok-skip-browser-warning", "true")
+                setRequestProperty("User-Agent", "AISkillMirror/1.0")
                 doOutput = true
                 doInput = true
                 connectTimeout = 15000
