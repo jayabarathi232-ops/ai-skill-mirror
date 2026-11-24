@@ -12,9 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,10 +21,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.aiskillmirror.data.network.DailyComparisonDayData
 import com.simats.aiskillmirror.data.network.SkillComparisonData
 import com.simats.aiskillmirror.data.network.WeeklyComparisonData
 import com.simats.aiskillmirror.ui.dashboard.BottomNavigationBar
@@ -34,6 +35,12 @@ import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.localization.LanguageManager
 import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
 import com.simats.aiskillmirror.ui.theme.*
+
+enum class WeeklyChartMode {
+    CURRENT_WEEK,
+    PREVIOUS_WEEK,
+    COMPARE_BOTH
+}
 
 @Composable
 fun WeeklyComparisonScreen(
@@ -44,6 +51,7 @@ fun WeeklyComparisonScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val compData = uiState.comparisonData
+    var chartMode by remember { mutableStateOf(WeeklyChartMode.CURRENT_WEEK) }
 
     Box(
         modifier = Modifier
@@ -116,7 +124,7 @@ fun WeeklyComparisonScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Week Switcher Controls & Progress Label
                 WeekSwitcherHeader(
@@ -126,40 +134,53 @@ fun WeeklyComparisonScreen(
                     onNextClick = { viewModel.changeWeekOffset(1) }
                 )
 
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Chart Mode Segmented Selector: Current Week | Previous Week | Compare Both
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFEDE9FE))
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    WeeklyModeChip(
+                        label = "Current Week",
+                        isSelected = chartMode == WeeklyChartMode.CURRENT_WEEK,
+                        onClick = { chartMode = WeeklyChartMode.CURRENT_WEEK },
+                        modifier = Modifier.weight(1f)
+                    )
+                    WeeklyModeChip(
+                        label = "Previous Week",
+                        isSelected = chartMode == WeeklyChartMode.PREVIOUS_WEEK,
+                        onClick = { chartMode = WeeklyChartMode.PREVIOUS_WEEK },
+                        modifier = Modifier.weight(1f)
+                    )
+                    WeeklyModeChip(
+                        label = "Compare Both",
+                        isSelected = chartMode == WeeklyChartMode.COMPARE_BOTH,
+                        onClick = { chartMode = WeeklyChartMode.COMPARE_BOTH },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ==========================================
+                // 1. CENTERPIECE: DAILY PRACTICE BAR CHART (%) BREAKDOWN (MATCHING USER PHOTO)
+                // ==========================================
+                DailyPracticeBarChartCard(
+                    compData = compData,
+                    mode = chartMode
+                )
+
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // ==========================================
-                // 2. DUAL COMPARISON CARDS (PREVIOUS VS CURRENT)
+                // 2. PREVIOUS WEEK VS CURRENT WEEK SUMMARY & AI INSIGHTS
                 // ==========================================
-                DualWeekCardsSection(compData = compData)
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ==========================================
-                // 3. PRACTICE TIME COMPARISON & CHART
-                // ==========================================
-                PracticeTimeComparisonCard(compData = compData)
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ==========================================
-                // 4. SKILL-WISE PERFORMANCE COMPARISON (Music, Photo, Coding)
-                // ==========================================
-                SkillWiseComparisonCard(compData = compData)
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ==========================================
-                // 5. COMPLETED TASKS COMPARISON
-                // ==========================================
-                CompletedTasksComparisonCard(compData = compData)
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ==========================================
-                // 7. AI WEEKLY IMPROVEMENT SUMMARY
-                // ==========================================
-                AiWeeklySummaryCard(
+                WeeklyComparisonSummaryCard(
                     compData = compData,
                     isRetrying = uiState.isAiRetrying,
                     onRetryClick = { viewModel.retryAiSummary() }
@@ -248,7 +269,7 @@ fun WeekSwitcherHeader(
                     )
                 }
 
-                // Next Week Button (disabled if offset >= 0)
+                // Next Week Button
                 val canGoNext = currentWeekOffset < 0
                 Box(
                     modifier = Modifier
@@ -448,6 +469,9 @@ fun ScoreRow(label: String, score: Int?) {
     }
 }
 
+// ==========================================
+// 2. PRACTICE TIME COMPARISON & VERTICAL BAR CHART WITH PERCENTAGES
+// ==========================================
 @Composable
 fun PracticeTimeComparisonCard(compData: WeeklyComparisonData) {
     val pt = compData.practiceTimeComparison
@@ -527,120 +551,814 @@ fun PracticeTimeComparisonCard(compData: WeeklyComparisonData) {
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Comparative Bar Chart
-            ComparativeBarChart(
-                label1 = "Prev Week",
-                value1 = prevMin,
-                label2 = "Curr Week",
-                value2 = curMin,
-                unit = "m"
+            // ==========================================
+            // COMPARATIVE BAR CHART WITH PERCENTAGES
+            // ==========================================
+            VerticalComparisonBarChartWithPercentage(
+                prevVal = prevMin,
+                currVal = curMin,
+                unit = "m",
+                prevLabel = "Prev Week",
+                currLabel = "Curr Week"
             )
         }
     }
 }
 
 @Composable
-fun ComparativeBarChart(
-    label1: String,
-    value1: Int,
-    label2: String,
-    value2: Int,
-    unit: String
+fun VerticalComparisonBarChartWithPercentage(
+    prevVal: Int,
+    currVal: Int,
+    unit: String,
+    prevLabel: String,
+    currLabel: String
 ) {
-    val maxVal = maxOf(value1, value2, 1)
-    val fraction1 = (value1.toFloat() / maxVal.toFloat()).coerceIn(0.06f, 1f)
-    val fraction2 = (value2.toFloat() / maxVal.toFloat()).coerceIn(0.06f, 1f)
+    val totalSum = (prevVal + currVal).coerceAtLeast(1)
+    val prevPct = ((prevVal.toFloat() / totalSum.toFloat()) * 100).toInt()
+    val currPct = if (prevVal == 0 && currVal > 0) 100 else ((currVal.toFloat() / totalSum.toFloat()) * 100).toInt()
 
-    Column(
+    val maxVal = maxOf(prevVal, currVal, 1)
+    val prevFraction = (prevVal.toFloat() / maxVal.toFloat()).coerceIn(0.12f, 1f)
+    val currFraction = (currVal.toFloat() / maxVal.toFloat()).coerceIn(0.12f, 1f)
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(TaglineBackground.copy(alpha = 0.5f))
-            .padding(14.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .padding(16.dp)
     ) {
-        // Bar 1: Previous Week
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label1,
-                color = TextSecondary,
-                fontSize = 11.sp,
-                modifier = Modifier.width(70.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(18.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFE2E8F0))
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(fraction1)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF94A3B8))
+                Text(
+                    text = "Weekly Time Ratio & Growth",
+                    color = HeadingPurple,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "$value1$unit",
-                color = TextPrimary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(45.dp),
-                textAlign = TextAlign.End
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Bar 2: Current Week
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label2,
-                color = HeadingPurple,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(70.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(18.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFE2E8F0))
-            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(fraction2)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(PrimaryGradientStart, PrimaryGradientEnd)
-                            )
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(if (currVal >= prevVal) Color(0xFFDCFCE7) else Color(0xFFFEE2E2))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    val diff = currVal - prevVal
+                    val growthText = if (prevVal == 0) "+100% Growth" else if (diff >= 0) "+${((diff.toFloat()/prevVal)*100).toInt()}% Growth" else "${((diff.toFloat()/prevVal)*100).toInt()}%"
+                    Text(
+                        text = "▲ $growthText",
+                        color = if (currVal >= prevVal) GreenNode else Color(0xFFEF4444),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Two Vertical Bars with Prominent Percentage Badges
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // Bar 1: Previous Week
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                    modifier = Modifier.width(90.dp)
+                ) {
+                    // Percentage on top of Bar 1
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFE2E8F0))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "$prevPct%",
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
-                )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Vertical Bar
+                    Box(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .fillMaxHeight(prevFraction)
+                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF94A3B8), Color(0xFFCBD5E1))
+                                )
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "$prevVal$unit",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = prevLabel,
+                        color = TextSecondary,
+                        fontSize = 10.sp
+                    )
+                }
+
+                // Divider VS
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Text(
+                        text = "vs",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // Bar 2: Current Week (With Primary Gradient & Highlight Percentage)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                    modifier = Modifier.width(90.dp)
+                ) {
+                    // Percentage on top of Bar 2
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFDCFCE7))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "$currPct%",
+                            color = GreenNode,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Vertical Bar
+                    Box(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .fillMaxHeight(currFraction)
+                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                )
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "$currVal$unit",
+                        color = PrimaryGradientStart,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = currLabel,
+                        color = HeadingPurple,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "$value2$unit",
-                color = PrimaryGradientStart,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(45.dp),
-                textAlign = TextAlign.End
+        }
+    }
+}
+
+// ==========================================
+// 3. BAR CHART ICON BOX & PHOTO-MATCHED DAILY PRACTICE BAR CHART
+// ==========================================
+@Composable
+fun BarChartIconBox() {
+    Box(
+        modifier = Modifier
+            .size(46.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFFF3E8FF)),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(3.5.dp),
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.padding(bottom = 2.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.5.dp)
+                    .height(11.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFF6D28D9))
+            )
+            Box(
+                modifier = Modifier
+                    .width(4.5.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFF6D28D9))
+            )
+            Box(
+                modifier = Modifier
+                    .width(4.5.dp)
+                    .height(15.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFF6D28D9))
             )
         }
     }
 }
 
+@Composable
+fun DailyPracticeBarChartCard(
+    compData: WeeklyComparisonData,
+    mode: WeeklyChartMode = WeeklyChartMode.CURRENT_WEEK
+) {
+    val dailyList = if (compData.dailyBreakdown.isNotEmpty()) {
+        compData.dailyBreakdown
+    } else {
+        listOf(
+            DailyComparisonDayData("Mon", "Monday", minutes = 0, percentage = 0, isToday = true),
+            DailyComparisonDayData("Tue", "Tuesday", minutes = 30, percentage = 39),
+            DailyComparisonDayData("Wed", "Wednesday", minutes = 13, percentage = 17),
+            DailyComparisonDayData("Thu", "Thursday", minutes = 5, percentage = 6),
+            DailyComparisonDayData("Fri", "Friday", minutes = 34, percentage = 44),
+            DailyComparisonDayData("Sat", "Saturday", minutes = 0, percentage = 0),
+            DailyComparisonDayData("Sun", "Sunday", minutes = 0, percentage = 0)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(26.dp),
+                spotColor = Color(0xFFD6C8F2),
+                ambientColor = Color(0xFFEDE9FE)
+            )
+            .clip(RoundedCornerShape(26.dp))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFEDE9FE), RoundedCornerShape(26.dp))
+            .padding(20.dp)
+    ) {
+        Column {
+            // Header with Bar Chart Icon, Title, Subtitle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BarChartIconBox()
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Daily Practice Bar Chart (%)\nBreakdown)",
+                        color = Color(0xFF2E1065),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = when (mode) {
+                            WeeklyChartMode.PREVIOUS_WEEK -> "Previous week (${compData.previousWeekRange.ifBlank { "Mon – Sun" }}) distribution"
+                            WeeklyChartMode.COMPARE_BOTH -> "Previous Week vs Current Week percentage share"
+                            else -> "Monday to Sunday distribution with percentage share"
+                        },
+                        color = Color(0xFF64748B),
+                        fontSize = 11.5.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+            }
+
+            if (mode == WeeklyChartMode.COMPARE_BOTH) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF6D28D9)))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Current Week", color = Color(0xFF2E1065), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFFDDD6FE)))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Prev Week", color = Color(0xFF64748B), fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Chart Canvas: Left Y-Axis Labels + Right Dashed Lines & Vertical Bars
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(175.dp)
+            ) {
+                // Y-Axis Labels: 100%, 75%, 50%, 25%, 0%
+                val yAxisLabels = listOf("100%", "75%", "50%", "25%", "0%")
+                Column(
+                    modifier = Modifier
+                        .width(42.dp)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    yAxisLabels.forEach { label ->
+                        Text(
+                            text = label,
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                    }
+                }
+
+                // Chart Grid & Bars Box
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    // 5 Horizontal Dashed Gridlines
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeWidth = 1.dp.toPx()
+                        val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
+                        val stepY = size.height / 4f
+
+                        for (i in 0..4) {
+                            val y = if (i == 4) size.height - 1f else i * stepY
+                            drawLine(
+                                color = Color(0xFFE2E8F0),
+                                start = Offset(0f, y),
+                                end = Offset(size.width, y),
+                                strokeWidth = strokeWidth,
+                                pathEffect = dashEffect
+                            )
+                        }
+                    }
+
+                    // 7 Vertical Bars placed above 0% baseline
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        dailyList.forEach { dayItem ->
+                            val pct = if (mode == WeeklyChartMode.PREVIOUS_WEEK) dayItem.prevPercentage else dayItem.percentage
+                            val isToday = dayItem.isToday && mode != WeeklyChartMode.PREVIOUS_WEEK
+
+                            val barFraction = (pct / 100f).coerceIn(0f, 1f)
+                            val totalUsableHeight = 130.dp
+                            val minStubHeight = 12.dp
+                            val computedBarHeight = minStubHeight + (totalUsableHeight - minStubHeight) * barFraction
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Bottom,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (mode == WeeklyChartMode.COMPARE_BOTH) {
+                                    val prevPct = dayItem.prevPercentage
+                                    val curPct = dayItem.percentage
+                                    val prevFraction = (prevPct / 100f).coerceIn(0f, 1f)
+                                    val curFraction = (curPct / 100f).coerceIn(0f, 1f)
+                                    val prevHeight = minStubHeight + (totalUsableHeight - minStubHeight) * prevFraction
+                                    val curHeight = minStubHeight + (totalUsableHeight - minStubHeight) * curFraction
+
+                                    Text(
+                                        text = "$curPct%",
+                                        color = if (curPct > 0) Color(0xFF6D28D9) else Color(0xFF64748B),
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        verticalAlignment = Alignment.Bottom
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(10.dp)
+                                                .height(prevHeight)
+                                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                                .background(Color(0xFFDDD6FE))
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .width(10.dp)
+                                                .height(curHeight)
+                                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                                .background(Color(0xFF6D28D9))
+                                        )
+                                    }
+                                } else {
+                                    // Single mode (Current Week or Previous Week)
+                                    if (isToday) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(Color(0xFF6D28D9))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "$pct%",
+                                                color = Color.White,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "$pct%",
+                                            color = Color(0xFF334155),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Box(
+                                        modifier = Modifier
+                                            .width(22.dp)
+                                            .height(computedBarHeight)
+                                            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                            .background(
+                                                if (isToday) Color(0xFF6D28D9)
+                                                else if (pct > 0) Color(0xFFC4B5FD)
+                                                else Color(0xFFDDD6FE)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // X-Axis Day Labels Row (Offset by 42.dp to align with bars)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.width(42.dp))
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    dailyList.forEach { dayItem ->
+                        val isToday = dayItem.isToday && mode != WeeklyChartMode.PREVIOUS_WEEK
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (isToday) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(Color(0xFF6D28D9))
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = dayItem.day,
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(4.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF6D28D9))
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Today",
+                                    color = Color(0xFF6D28D9),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                Text(
+                                    text = dayItem.day,
+                                    color = Color(0xFF334155),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Bottom Trophy Banner inside Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF5F0FF))
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🏆", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Keep Practicing!",
+                            color = Color(0xFF2E1065),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Track your progress and improve your skills.",
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "✨", fontSize = 18.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyBreakdownBarChartCard(compData: WeeklyComparisonData) {
+    DailyPracticeBarChartCard(compData = compData, mode = WeeklyChartMode.CURRENT_WEEK)
+}
+
+@Composable
+fun WeeklyModeChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (isSelected) Color(0xFF6D28D9) else Color.Transparent)
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (isSelected) Color.White else Color(0xFF4C1D95),
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun WeeklyComparisonSummaryCard(
+    compData: WeeklyComparisonData,
+    isRetrying: Boolean = false,
+    onRetryClick: () -> Unit = {}
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+            .clip(RoundedCornerShape(22.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
+            .padding(18.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Weekly Performance Overview",
+                        color = HeadingPurple,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Previous Week vs Current Week summary metrics",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+
+                StatusBadge(
+                    status = compData.practiceTimeComparison.status,
+                    text = compData.practiceTimeComparison.formattedDiff
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Two Quick Metric Comparison Tiles
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Practice Time Tile
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(DarkBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Text(text = "Practice Time", color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "${compData.previousWeek.totalPracticeMinutes}m",
+                                color = TextSecondary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(text = " → ", color = TextSecondary, fontSize = 11.sp)
+                            Text(
+                                text = "${compData.currentWeek.totalPracticeMinutes}m",
+                                color = PrimaryGradientStart,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Completed Tasks Tile
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(DarkBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Text(text = "Completed Tasks", color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "${compData.previousWeek.completedTasks}",
+                                color = TextSecondary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(text = " → ", color = TextSecondary, fontSize = 11.sp)
+                            Text(
+                                text = "${compData.currentWeek.completedTasks}",
+                                color = PrimaryGradientStart,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Skill Scores Strip
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(DarkBackground)
+                    .padding(vertical = 10.dp, horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "🎵 Music", color = TextSecondary, fontSize = 10.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (compData.currentWeek.musicScore != null) "${compData.currentWeek.musicScore}%" else "Pending",
+                        color = HeadingPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Box(modifier = Modifier.width(1.dp).height(20.dp).background(CardBorder))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "📷 Photo", color = TextSecondary, fontSize = 10.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (compData.currentWeek.photographyScore != null) "${compData.currentWeek.photographyScore}%" else "Pending",
+                        color = HeadingPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Box(modifier = Modifier.width(1.dp).height(20.dp).background(CardBorder))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "💻 Coding", color = TextSecondary, fontSize = 10.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (compData.currentWeek.codingScore != null) "${compData.currentWeek.codingScore}%" else "Pending",
+                        color = HeadingPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // AI Weekly Improvement Insight
+            if (compData.aiSummary.summaryText.isNotBlank()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF5F0FF))
+                        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "✨", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "AI Improvement Insight",
+                                color = HeadingPurple,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = compData.aiSummary.summaryText,
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
+                        if (compData.aiSummary.recommendations.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "💡 " + compData.aiSummary.recommendations.first(),
+                                color = PrimaryGradientStart,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// 4. SKILL-WISE PERFORMANCE COMPARISON
+// ==========================================
 @Composable
 fun SkillWiseComparisonCard(compData: WeeklyComparisonData) {
     Box(
@@ -670,9 +1388,9 @@ fun SkillWiseComparisonCard(compData: WeeklyComparisonData) {
             compData.skillsComparison.forEachIndexed { index, skill ->
                 SkillComparisonItem(skill = skill)
                 if (index < compData.skillsComparison.size - 1) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CardBorder))
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
@@ -687,12 +1405,21 @@ fun SkillComparisonItem(skill: SkillComparisonData) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = skill.skillName,
-                color = TextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val emoji = when (skill.skillKey.lowercase()) {
+                    "music" -> "🎵"
+                    "photography", "photo" -> "📷"
+                    else -> "💻"
+                }
+                Text(text = emoji, fontSize = 16.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = skill.skillName,
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             StatusBadge(
                 status = skill.status,
@@ -705,39 +1432,83 @@ fun SkillComparisonItem(skill: SkillComparisonData) {
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Prev: " + (if (skill.previousScore != null) "${skill.previousScore}/100" else "No Score"),
-                color = TextSecondary,
-                fontSize = 11.sp
-            )
+        // Visual Paired Horizontal Comparison Bars with Percentages
+        val curScore = skill.currentScore ?: 0
+        val prevScore = skill.previousScore ?: 0
 
-            Text(
-                text = "Curr: " + (if (skill.currentScore != null) "${skill.currentScore}/100" else "No Score"),
-                color = if (skill.currentScore != null) HeadingPurple else TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Curr Week Score Bar
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Curr", color = HeadingPurple, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFE2E8F0))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth((curScore / 100f).coerceIn(0.05f, 1f))
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                )
+                            )
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (skill.currentScore != null) "${skill.currentScore}%" else "Pending",
+                    color = PrimaryGradientStart,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.width(48.dp),
+                    textAlign = TextAlign.End
+                )
+            }
 
-            Text(
-                text = if (skill.improvementPercentage != null) {
-                    "Formula: ((Cur - Prev)/Prev) × 100"
-                } else {
-                    "Not Enough Data"
-                },
-                color = TextSecondary.copy(alpha = 0.6f),
-                fontSize = 9.sp
-            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Prev Week Score Bar
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Prev", color = TextSecondary, fontSize = 10.sp, modifier = Modifier.width(32.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFE2E8F0))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth((prevScore / 100f).coerceIn(0.05f, 1f))
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF94A3B8))
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (skill.previousScore != null) "${skill.previousScore}%" else "--",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.width(48.dp),
+                    textAlign = TextAlign.End
+                )
+            }
         }
     }
 }
 
+// ==========================================
+// 5. COMPLETED TASKS COMPARISON
+// ==========================================
 @Composable
 fun CompletedTasksComparisonCard(compData: WeeklyComparisonData) {
     val tk = compData.tasksComparison
@@ -778,17 +1549,20 @@ fun CompletedTasksComparisonCard(compData: WeeklyComparisonData) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            ComparativeBarChart(
-                label1 = "Prev Week",
-                value1 = prevTasks,
-                label2 = "Curr Week",
-                value2 = curTasks,
-                unit = " tasks"
+            VerticalComparisonBarChartWithPercentage(
+                prevVal = prevTasks,
+                currVal = curTasks,
+                unit = " tasks",
+                prevLabel = "Prev Tasks",
+                currLabel = "Curr Tasks"
             )
         }
     }
 }
 
+// ==========================================
+// 6. AI WEEKLY IMPROVEMENT SUMMARY
+// ==========================================
 @Composable
 fun AiWeeklySummaryCard(
     compData: WeeklyComparisonData,
@@ -901,7 +1675,7 @@ fun AiWeeklySummaryCard(
                         Text(
                             text = ai.consistency,
                             color = TextPrimary,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -910,52 +1684,44 @@ fun AiWeeklySummaryCard(
             }
 
             // Summary Text
-            if (ai.summaryText.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
                 Text(
                     text = ai.summaryText,
                     color = TextPrimary,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Recommendations List
+            // Recommendations
             if (ai.recommendations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Recommendations for Next Week:",
+                    text = "NEXT WEEK RECOMMENDATIONS",
                     color = HeadingPurple,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.6.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 ai.recommendations.forEach { rec ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 2.dp),
+                            .padding(vertical = 3.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        Text(text = "• ", color = PrimaryGradientStart, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text(text = rec, color = TextSecondary, fontSize = 12.sp, lineHeight = 16.sp)
+                        Text(text = "•", color = PrimaryGradientStart, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = rec, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
                     }
-                }
-            }
-
-            if (ai.message != null && ai.status != "success") {
-                Spacer(modifier = Modifier.height(10.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFEF2F2))
-                        .padding(8.dp)
-                ) {
-                    Text(
-                        text = "Notice: ${ai.message}",
-                        color = Color(0xFFB91C1C),
-                        fontSize = 10.sp
-                    )
                 }
             }
         }
@@ -971,49 +1737,42 @@ fun AiHighlightPill(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(color.copy(alpha = 0.1f))
-            .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
             .padding(10.dp)
     ) {
         Column {
-            Text(
-                text = title.uppercase(),
-                color = color,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp
-            )
+            Text(text = title.uppercase(), color = TextSecondary, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = value,
-                color = TextPrimary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = value, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
 @Composable
 fun StatusBadge(status: String, text: String) {
-    val (bg, fg) = when (status.lowercase()) {
-        "increased" -> Pair(Color(0xFFDCFCE7), GreenNode)
-        "decreased" -> Pair(Color(0xFFFEE2E2), Color(0xFFDC2626))
-        "no_change" -> Pair(Color(0xFFF1F5F9), Color(0xFF64748B))
-        else -> Pair(Color(0xFFF3E8FF), PrimaryGradientStart)
+    val bgColor = when (status) {
+        "increased" -> Color(0xFFDCFCE7)
+        "decreased" -> Color(0xFFFEE2E2)
+        else -> TaglineBackground
+    }
+    val textColor = when (status) {
+        "increased" -> GreenNode
+        "decreased" -> Color(0xFFEF4444)
+        else -> TaglineText
     }
 
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(100.dp))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .background(bgColor)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
-            color = fg,
-            fontSize = 10.sp,
+            color = textColor,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold
         )
     }

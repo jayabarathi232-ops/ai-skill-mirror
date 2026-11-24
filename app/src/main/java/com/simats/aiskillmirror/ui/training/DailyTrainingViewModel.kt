@@ -37,7 +37,99 @@ class DailyTrainingViewModel : ViewModel() {
         loadTraining()
     }
 
-    fun loadTraining(subcategoryId: String? = null) {
+    fun loadTraining(subcategoryId: String? = null, mainSkill: String? = null) {
+        // Immediate optimistic skill switch if subcategoryId or mainSkill is provided
+        if (!subcategoryId.isNullOrBlank() || !mainSkill.isNullOrBlank()) {
+            val subLow = (subcategoryId ?: "").lowercase().trim()
+            val skillLow = (mainSkill ?: "").lowercase().trim()
+
+            val isCoding = skillLow.contains("cod") || skillLow.contains("prog") ||
+                    subLow.contains("cod") || subLow.contains("python") || subLow.contains("java") ||
+                    subLow.contains("script") || subLow.contains("c++") || subLow.contains("c_prog") ||
+                    subLow.contains("algo") || subLow.contains("php") || subLow.contains("html")
+
+            val isPhoto = skillLow.contains("photo") ||
+                    subLow.contains("photo") || subLow.contains("camera") ||
+                    subLow.contains("portrait") || subLow.contains("landscape") ||
+                    subLow.contains("nature") || subLow.contains("street") || subLow.contains("wildlife")
+
+            val isMusic = skillLow.contains("music") ||
+                    subLow.contains("guitar") || subLow.contains("piano") || subLow.contains("drum") ||
+                    subLow.contains("violin") || subLow.contains("flute") || subLow.contains("veena") ||
+                    subLow.contains("sing") || subLow.contains("vocal")
+
+            val inferredMain = when {
+                isCoding -> "coding"
+                isPhoto -> "photography"
+                isMusic -> "music"
+                else -> _uiState.value.activeMainSkill
+            }
+
+            val inferredName = when {
+                subLow == "python" -> "Python Programming"
+                subLow == "java" -> "Java"
+                subLow == "c_prog" -> "C Programming"
+                subLow == "cpp" -> "C++"
+                subLow == "javascript" -> "JavaScript"
+                subLow == "html_css" -> "HTML & CSS"
+                subLow == "php" -> "PHP"
+                subLow == "coding" -> "Coding & Algorithms"
+                subLow == "portrait_photo" -> "Portrait Photography"
+                subLow == "nature_photo" -> "Nature Photography"
+                subLow == "landscape_photo" -> "Landscape Photography"
+                subLow == "street_photo" -> "Street Photography"
+                subLow == "product_photo" -> "Product Photography"
+                subLow == "mobile_photo" -> "Mobile Photography"
+                subLow == "wildlife_photo" -> "Wildlife Photography"
+                subLow == "photography" -> "Photography"
+                subLow == "guitar" -> "Guitar"
+                subLow == "piano" -> "Piano / Keyboard"
+                subLow == "violin" -> "Violin"
+                subLow == "drums" -> "Drums"
+                subLow == "flute" -> "Flute"
+                subLow == "veena" -> "Veena"
+                subLow == "singing" -> "Singing / Vocal Training"
+                subLow.isNotBlank() -> subLow.replace("_", " ").split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+                else -> _uiState.value.activeSubcategoryName
+            }
+
+            val langToSet = if (isCoding) {
+                when {
+                    subLow.contains("python") -> "Python"
+                    subLow.contains("java") -> "Java"
+                    subLow.contains("cpp") -> "C++"
+                    subLow.contains("c_prog") -> "C"
+                    subLow.contains("script") -> "JavaScript"
+                    else -> _uiState.value.selectedLanguage
+                }
+            } else _uiState.value.selectedLanguage
+
+            val starterCode = if (isCoding) {
+                getStarterCodeForLanguage(langToSet, inferredName)
+            } else _uiState.value.codeEditorText
+
+            _uiState.value = _uiState.value.copy(
+                activeMainSkill = inferredMain,
+                activeSubcategoryName = inferredName,
+                upNextTitle = "Daily $inferredName Practice",
+                upNextCategory = "${inferredMain.replaceFirstChar { it.uppercase() }} · $inferredName",
+                capturedPhotoPath = null,
+                selectedImagePath = null,
+                showEvaluationModal = false,
+                showSessionCompletionDialog = false,
+                showVocalReviewDialog = false,
+                isEvaluatingArtifact = false,
+                evaluationError = null,
+                canRetryAnalysis = false,
+                codeMistake = null,
+                codingOutput = "",
+                codingError = "",
+                selectedLanguage = langToSet,
+                codeEditorText = starterCode,
+                codeSnippetInput = starterCode
+            )
+        }
+
         viewModelScope.launch {
             val result = ApiClient.fetchTraining(UserSession.userId, subcategoryId)
             if (result.isSuccess && result.data != null) {
@@ -77,6 +169,22 @@ class DailyTrainingViewModel : ViewModel() {
                 }
 
                 val sub = d.activeSubcategory
+                val finalMain = sub?.mainSkill ?: _uiState.value.activeMainSkill
+                val finalSubName = sub?.subcategoryName ?: _uiState.value.activeSubcategoryName
+
+                // Safeguard: Ensure received upNext category aligns with active skill
+                val isCodingActive = finalMain.lowercase().contains("cod") || finalSubName.lowercase().contains("python") || finalSubName.lowercase().contains("code")
+                val isPhotoActive = finalMain.lowercase().contains("photo") || finalSubName.lowercase().contains("photo")
+                val isMusicActive = finalMain.lowercase().contains("music")
+
+                val rawCat = d.upNextCategory.lowercase()
+                val isMismatched = (isCodingActive && (rawCat.contains("photo") || rawCat.contains("music"))) ||
+                        (isPhotoActive && (rawCat.contains("cod") || rawCat.contains("music"))) ||
+                        (isMusicActive && (rawCat.contains("cod") || rawCat.contains("photo")))
+
+                val cleanTitle = if (!isMismatched && d.upNextTitle.isNotBlank()) d.upNextTitle else "Daily $finalSubName Practice"
+                val cleanCategory = if (!isMismatched && d.upNextCategory.isNotBlank()) d.upNextCategory else "${finalMain.replaceFirstChar { it.uppercase() }} · $finalSubName"
+
                 _uiState.value = _uiState.value.copy(
                     headerDateText = d.headerDateText,
                     streakBadgeText = d.streakBadgeText,
@@ -86,13 +194,13 @@ class DailyTrainingViewModel : ViewModel() {
                     practiceProgressText = d.practiceProgressText,
                     completedPracticeItems = completed,
                     pendingPracticeItems = pending,
-                    upNextTitle = d.upNextTitle,
-                    upNextCategory = d.upNextCategory,
+                    upNextTitle = cleanTitle,
+                    upNextCategory = cleanCategory,
                     upNextMetaText = d.upNextMetaText,
                     upNextDescription = d.upNextDescription,
                     startButtonText = d.startButtonText,
-                    activeSubcategoryName = sub?.subcategoryName ?: _uiState.value.activeSubcategoryName,
-                    activeMainSkill = sub?.mainSkill ?: _uiState.value.activeMainSkill,
+                    activeSubcategoryName = finalSubName,
+                    activeMainSkill = finalMain,
                     activeProficiencyLevel = sub?.proficiencyLevel ?: _uiState.value.activeProficiencyLevel,
                     activeLearningGoal = sub?.learningGoal ?: _uiState.value.activeLearningGoal,
                     subcatXp = sub?.xpEarned ?: 0,
@@ -573,9 +681,10 @@ class DailyTrainingViewModel : ViewModel() {
 
         val file = File(audioPath)
         if (!file.exists() || file.length() < 400) {
+            val skillWord = if (current.isVocalSkill) "singing" else "${current.activeSubcategoryName.ifBlank { "instrument" }} practice"
             _uiState.value = current.copy(
                 vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
-                evaluationError = "Recording is empty or too short. Please record at least 3 seconds of singing.",
+                evaluationError = "Recording is empty or too short. Please record at least 3 seconds of $skillWord.",
                 canRetryAnalysis = false
             )
             return
@@ -667,7 +776,7 @@ class DailyTrainingViewModel : ViewModel() {
      */
     fun submitCodingPractice() {
         val current = _uiState.value
-        val code = current.codeSnippetInput.trim()
+        val code = current.codeSnippetInput.ifBlank { current.codeEditorText }.trim()
         if (code.isBlank() || code.length < 10) {
             _uiState.value = current.copy(
                 vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
@@ -687,6 +796,7 @@ class DailyTrainingViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isEvaluatingArtifact = true,
+                showEvaluationModal = true,
                 vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
                 evaluationError = null,
                 canRetryAnalysis = false
@@ -724,6 +834,7 @@ class DailyTrainingViewModel : ViewModel() {
                 if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        showEvaluationModal = true,
                         vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
                         lastSessionScoreResult = scoreRes,
                         isAnalysisComplete = true,
@@ -738,6 +849,7 @@ class DailyTrainingViewModel : ViewModel() {
                         ?: "Code performance score could not be calculated."
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        showEvaluationModal = true,
                         vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                         evaluationError = reason,
                         canRetryAnalysis = true,
@@ -748,6 +860,7 @@ class DailyTrainingViewModel : ViewModel() {
             } else {
                 _uiState.value = _uiState.value.copy(
                     isEvaluatingArtifact = false,
+                    showEvaluationModal = true,
                     vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                     evaluationError = result.message ?: "Failed to connect to AI evaluation backend. You can retry analysis with your code.",
                     canRetryAnalysis = true,
@@ -762,7 +875,7 @@ class DailyTrainingViewModel : ViewModel() {
      */
     fun submitImagePractice(isDrawing: Boolean) {
         val current = _uiState.value
-        val imagePath = current.selectedImagePath
+        val imagePath = current.capturedPhotoPath ?: current.selectedImagePath
         if (imagePath.isNullOrBlank()) {
             _uiState.value = current.copy(
                 vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
@@ -792,13 +905,15 @@ class DailyTrainingViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isEvaluatingArtifact = true,
+                showEvaluationModal = true,
                 vocalAnalysisState = VocalAnalysisState.ANALYSIS_PENDING,
                 evaluationError = null,
                 canRetryAnalysis = false
             )
 
+            val effectiveUserId = if (UserSession.userId > 0) UserSession.userId else 1
             val result = ApiClient.completeLesson(
-                userId = UserSession.userId,
+                userId = effectiveUserId,
                 lessonId = lessonId,
                 taskTitle = taskTitle,
                 durationSeconds = actualSeconds,
@@ -829,6 +944,7 @@ class DailyTrainingViewModel : ViewModel() {
                 if (scoreRes != null && scoreRes.scoreStatus == "available" && scoreRes.score != null) {
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        showEvaluationModal = true,
                         vocalAnalysisState = VocalAnalysisState.ANALYSIS_SUCCESS,
                         lastSessionScoreResult = scoreRes,
                         isAnalysisComplete = true,
@@ -843,6 +959,7 @@ class DailyTrainingViewModel : ViewModel() {
                         ?: "Visual performance score could not be calculated."
                     _uiState.value = _uiState.value.copy(
                         isEvaluatingArtifact = false,
+                        showEvaluationModal = true,
                         vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                         evaluationError = reason,
                         canRetryAnalysis = true,
@@ -853,6 +970,7 @@ class DailyTrainingViewModel : ViewModel() {
             } else {
                 _uiState.value = _uiState.value.copy(
                     isEvaluatingArtifact = false,
+                    showEvaluationModal = true,
                     vocalAnalysisState = VocalAnalysisState.ANALYSIS_FAILED,
                     evaluationError = result.message ?: "Failed to connect to AI vision evaluation backend. You can retry analysis with your image.",
                     canRetryAnalysis = true,
@@ -999,10 +1117,11 @@ class DailyTrainingViewModel : ViewModel() {
     fun dismissVocalReview() {
         val current = _uiState.value
         val score = current.lastSessionScoreResult?.score
+        val skillName = if (current.isVocalSkill) "Vocal" else current.activeSubcategoryName.ifBlank { "Instrument" }
         val celebration = if (score != null) {
-            "🎉 Vocal practice evaluated! Score: $score/100 · +35 XP earned!"
+            "🎉 $skillName practice evaluated! Score: $score/100 · +35 XP earned!"
         } else {
-            "🎉 Vocal practice recorded! +35 XP earned."
+            "🎉 $skillName practice recorded! +35 XP earned."
         }
 
         stopVoicePlayback()
@@ -1055,6 +1174,10 @@ class DailyTrainingViewModel : ViewModel() {
             codeSnippetInput = "",
             speechTranscriptInput = "",
             selectedImagePath = null,
+            capturedPhotoPath = null,
+            codeMistake = null,
+            codingOutput = "",
+            codingError = "",
             completionCelebration = celebration
         )
 
@@ -1088,6 +1211,10 @@ class DailyTrainingViewModel : ViewModel() {
             )
             return
         }
+        _uiState.value = _uiState.value.copy(
+            capturedPhotoPath = path,
+            selectedImagePath = path
+        )
         submitImagePractice(isDrawing = false)
     }
 
@@ -1199,7 +1326,8 @@ class DailyTrainingViewModel : ViewModel() {
             codingOutput = "",
             codingError = "",
             codeTestCases = emptyList(),
-            codeExplanation = ""
+            codeExplanation = "",
+            codeMistake = null
         )
     }
 
@@ -1207,7 +1335,9 @@ class DailyTrainingViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(
             codeEditorText = newCode,
             codeSnippetInput = newCode,
-            evaluationError = null
+            evaluationError = null,
+            codingError = "",
+            codeMistake = null
         )
     }
 
@@ -1221,9 +1351,11 @@ class DailyTrainingViewModel : ViewModel() {
             return
         }
 
+        val effectiveUserId = if (userId > 0) userId else (if (UserSession.userId > 0) UserSession.userId else 1)
+
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isCodeRunning = true, codingError = "", codingOutput = "")
-            val result = ApiClient.executeCode(userId, lang, code, task)
+            _uiState.value = _uiState.value.copy(isCodeRunning = true, codingError = "", codingOutput = "", codeMistake = null)
+            val result = ApiClient.executeCode(effectiveUserId, lang, code, task)
             _uiState.value = _uiState.value.copy(isCodeRunning = false)
             if (result.isSuccess && result.data != null) {
                 val d = result.data
@@ -1231,11 +1363,13 @@ class DailyTrainingViewModel : ViewModel() {
                     codingOutput = d.output,
                     codingError = d.error,
                     codeTestCases = d.testCases,
-                    codeExplanation = d.explanation
+                    codeExplanation = d.explanation,
+                    codeMistake = d.mistake
                 )
             } else {
                 _uiState.value = _uiState.value.copy(
-                    codingError = result.message ?: "Failed to execute code"
+                    codingError = result.message ?: "Failed to execute code",
+                    codeMistake = null
                 )
             }
         }

@@ -30,6 +30,8 @@ import com.simats.aiskillmirror.ui.coach.AiCoachViewModel
 import com.simats.aiskillmirror.ui.dashboard.DashboardScreen
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.DashboardViewModel
+import com.simats.aiskillmirror.ui.dashboard.PerformanceHistoryScreen
+import com.simats.aiskillmirror.ui.dashboard.PerformanceHistoryViewModel
 import com.simats.aiskillmirror.ui.login.LoginScreen
 import com.simats.aiskillmirror.ui.login.LoginViewModel
 import com.simats.aiskillmirror.ui.milestones.MilestonesScreen
@@ -98,7 +100,8 @@ enum class AppScreen {
     AI_COACH,
     SETTINGS,
     PERFORMANCE_UPLOAD,
-    SKILL_GAP_DETECTOR
+    SKILL_GAP_DETECTOR,
+    PERFORMANCE_HISTORY
 }
 
 class MainActivity : ComponentActivity() {
@@ -126,6 +129,7 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val performanceUploadViewModel: PerformanceUploadViewModel by viewModels()
     private val skillGapViewModel: SkillGapViewModel by viewModels()
+    private val performanceHistoryViewModel: PerformanceHistoryViewModel by viewModels()
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -210,10 +214,16 @@ class MainActivity : ComponentActivity() {
 
                     fun handleTabSelected(tab: DashboardTab) {
                         when (tab) {
-                            DashboardTab.HOME -> selectMainTab(AppScreen.DASHBOARD)
+                            DashboardTab.HOME -> {
+                                dashboardViewModel.loadDashboard()
+                                selectMainTab(AppScreen.DASHBOARD)
+                            }
                             DashboardTab.PROFILE -> selectMainTab(AppScreen.PROFILE)
                             DashboardTab.ASSESS -> selectMainTab(AppScreen.SKILL_SELECTION)
-                            DashboardTab.LEARN -> selectMainTab(AppScreen.ROADMAP)
+                            DashboardTab.LEARN -> {
+                                aiCoachViewModel.loadChat()
+                                selectMainTab(AppScreen.AI_COACH)
+                            }
                             DashboardTab.PROGRESS -> selectMainTab(AppScreen.WEEKLY_COMPARISON)
                         }
                     }
@@ -339,6 +349,24 @@ class MainActivity : ComponentActivity() {
                                         dailyTrainingViewModel.loadTraining()
                                         navigateTo(AppScreen.DAILY_TRAINING)
                                     },
+                                    onStartRecommendedPractice = { practice ->
+                                        val skillLower = practice.skill.lowercase()
+                                        val titleLower = practice.title.lowercase()
+                                        val (mainSkill, subcatId) = when {
+                                            skillLower.contains("music") || titleLower.contains("ear") || titleLower.contains("scale") || titleLower.contains("sing") || titleLower.contains("vocal") || titleLower.contains("guitar") -> {
+                                                Pair("music", "guitar")
+                                            }
+                                            skillLower.contains("photo") || titleLower.contains("framing") || titleLower.contains("thirds") || titleLower.contains("photo") -> {
+                                                Pair("photography", "portrait_photo")
+                                            }
+                                            skillLower.contains("cod") || skillLower.contains("prog") || titleLower.contains("programming") || titleLower.contains("code") || titleLower.contains("algorithm") -> {
+                                                Pair("coding", "python")
+                                            }
+                                            else -> Pair(skillLower, skillLower)
+                                        }
+                                        dailyTrainingViewModel.loadTraining(subcategoryId = subcatId, mainSkill = mainSkill)
+                                        navigateTo(AppScreen.DAILY_TRAINING)
+                                    },
                                     onOpenAiCoachClick = {
                                         navigateTo(AppScreen.AI_COACH)
                                     },
@@ -359,7 +387,7 @@ class MainActivity : ComponentActivity() {
                                         navigateTo(AppScreen.PERFORMANCE_UPLOAD)
                                     },
                                     onOpenPublicSpeakingClick = {
-                                        skillSelectionViewModel.selectCategory("speaking")
+                                        skillSelectionViewModel.selectCategory("music")
                                         navigateTo(AppScreen.SKILL_SELECTION)
                                     },
                                     onOpenSkillCategory = { catId ->
@@ -368,6 +396,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onWeeklyComparisonClick = {
                                         navigateTo(AppScreen.WEEKLY_COMPARISON)
+                                    },
+                                    onOpenPerformanceHistoryClick = {
+                                        performanceHistoryViewModel.loadHistory()
+                                        navigateTo(AppScreen.PERFORMANCE_HISTORY)
                                     }
                                 )
                             }
@@ -411,7 +443,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel = skillSelectionViewModel,
                                     onTabSelected = ::handleTabSelected,
                                     onStartTraining = { mainSkill, subcatId ->
-                                        dailyTrainingViewModel.loadTraining(subcatId)
+                                        dailyTrainingViewModel.loadTraining(subcategoryId = subcatId, mainSkill = mainSkill)
                                         navigateTo(AppScreen.DAILY_TRAINING)
                                     },
                                     onStartAssessmentClick = {
@@ -492,6 +524,7 @@ class MainActivity : ComponentActivity() {
                                     onTabSelected = ::handleTabSelected,
                                     onStartPracticeClick = {
                                         Toast.makeText(this@MainActivity, "Daily practice session recorded! +35 XP", Toast.LENGTH_SHORT).show()
+                                        dashboardViewModel.loadDashboard()
                                     },
                                     onSwitchSubcategoryClick = {
                                         navigateTo(AppScreen.SKILL_SELECTION)
@@ -500,6 +533,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Opening Calendar...", Toast.LENGTH_SHORT).show()
                                     },
                                     onBackClick = {
+                                        dashboardViewModel.loadDashboard()
                                         if (backStack.size > 1) {
                                             navigateBack()
                                         } else {
@@ -695,6 +729,18 @@ class MainActivity : ComponentActivity() {
                                             navigateBack()
                                         } else {
                                             finish()
+                                        }
+                                    }
+                                )
+                            }
+                            AppScreen.PERFORMANCE_HISTORY -> {
+                                PerformanceHistoryScreen(
+                                    viewModel = performanceHistoryViewModel,
+                                    onBackClick = {
+                                        if (backStack.size > 1) {
+                                            navigateBack()
+                                        } else {
+                                            navigateTo(AppScreen.DASHBOARD)
                                         }
                                     }
                                 )

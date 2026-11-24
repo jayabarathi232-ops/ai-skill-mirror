@@ -39,6 +39,11 @@ data class PerformanceUploadUiState(
     val isLoadingHistory: Boolean = false,
     val showHistorySheet: Boolean = false,
 
+    // Follow-up Video / Progression State
+    val previousVideoResult: PerformanceUploadItemDto? = null,
+    val isFollowUpMode: Boolean = false,
+    val followUpMistakesToFix: List<String> = emptyList(),
+
     // Live In-App Camera Viewfinder & Recording State
     val isLiveCameraOpen: Boolean = false,
     val liveCameraMode: LiveCameraMode = LiveCameraMode.PHOTO,

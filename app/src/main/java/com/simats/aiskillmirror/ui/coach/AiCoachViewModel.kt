@@ -3,6 +3,7 @@ package com.simats.aiskillmirror.ui.coach
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simats.aiskillmirror.data.network.ApiClient
+import com.simats.aiskillmirror.data.network.CompletedSessionItem
 import com.simats.aiskillmirror.data.network.UserSession
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,7 @@ class AiCoachViewModel : ViewModel() {
                     timestampHeader = d.timestampHeader,
                     messages = mapped,
                     suggestionChips = d.suggestionChips,
+                    completedSessions = d.completedSessions,
                     latestAiVoiceResponse = lastCoachMsg
                 )
             }
@@ -243,6 +245,41 @@ class AiCoachViewModel : ViewModel() {
             onInputChange(chipText)
             onSendMessage()
         }
+    }
+
+    fun openCompletedSessionsSheet() {
+        _uiState.value = _uiState.value.copy(isCompletedSessionsSheetOpen = true)
+        loadCompletedSessions()
+    }
+
+    fun closeCompletedSessionsSheet() {
+        _uiState.value = _uiState.value.copy(isCompletedSessionsSheetOpen = false)
+    }
+
+    fun selectCompletedSkillFilter(filter: String) {
+        _uiState.value = _uiState.value.copy(selectedCompletedSkillFilter = filter)
+    }
+
+    fun loadCompletedSessions() {
+        viewModelScope.launch {
+            val result = ApiClient.fetchCompletedSessions(UserSession.userId)
+            if (result.isSuccess && result.data != null) {
+                _uiState.value = _uiState.value.copy(completedSessions = result.data)
+            }
+        }
+    }
+
+    fun askCoachAboutSession(session: CompletedSessionItem) {
+        val prompt = if (session.score != null) {
+            "Coach Mira, how can I improve further on my completed practice session '${session.title}'? (Score: ${session.score}% in ${session.category})"
+        } else {
+            "Coach Mira, how can I improve my technique on my completed practice session '${session.title}' in ${session.category}?"
+        }
+        _uiState.value = _uiState.value.copy(
+            isCompletedSessionsSheetOpen = false,
+            currentInputText = prompt
+        )
+        onSendMessage()
     }
 
     fun onBackClick() {

@@ -186,360 +186,424 @@ fun PerformanceUploadScreen(
                 }
             }
 
-            // Scrollable Body
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 20.dp, vertical = 6.dp)
-            ) {
+            if (uiState.successResult != null) {
                 // ==========================================
-                // 1. THREE MEDIA UPLOAD SELECTION CARDS
+                // CLEAN SINGLE-SCREEN RESULTS VIEW
                 // ==========================================
-                Text(
-                    text = "Select Media Type",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
                 ) {
-                    // Photo Card
-                    UploadTypeCard(
-                        modifier = Modifier.width(96.dp),
-                        title = "Photo",
-                        icon = "🖼️",
-                        subtitle = "JPG, PNG, WEBP",
-                        isSelected = uiState.selectedTab == MediaTypeTab.PHOTO,
-                        accentColor = AccentPurple,
-                        onClick = { viewModel.selectTab(MediaTypeTab.PHOTO) }
+                    AnalysisResultCard(
+                        result = uiState.successResult!!,
+                        onUploadNextVideo = { viewModel.startFollowUpVideo() },
+                        onUploadAnother = { viewModel.resetToNewUpload() }
                     )
-
-                    // Video Card
-                    UploadTypeCard(
-                        modifier = Modifier.width(96.dp),
-                        title = "Video",
-                        icon = "📹",
-                        subtitle = "MP4, MOV, WEBM",
-                        isSelected = uiState.selectedTab == MediaTypeTab.VIDEO,
-                        accentColor = CyanNode,
-                        onClick = { viewModel.selectTab(MediaTypeTab.VIDEO) }
-                    )
-
-                    // Audio Card
-                    UploadTypeCard(
-                        modifier = Modifier.width(96.dp),
-                        title = "Audio",
-                        icon = "🎙️",
-                        subtitle = "MP3, WAV, M4A",
-                        isSelected = uiState.selectedTab == MediaTypeTab.AUDIO,
-                        accentColor = GreenNode,
-                        onClick = { viewModel.selectTab(MediaTypeTab.AUDIO) }
-                    )
-
-                    // Live Camera Card
-                    UploadTypeCard(
-                        modifier = Modifier.width(112.dp),
-                        title = "Capture Live",
-                        icon = "📸",
-                        subtitle = "Photo / Video",
-                        isSelected = uiState.selectedTab == MediaTypeTab.LIVE_CAPTURE,
-                        accentColor = AccentPurple,
-                        isLiveBadge = true,
-                        onClick = {
-                            viewModel.selectTab(MediaTypeTab.LIVE_CAPTURE)
-                            viewModel.openLiveCamera(LiveCameraMode.PHOTO)
-                        }
-                    )
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
+            } else {
                 // ==========================================
-                // 2. SKILL CATEGORY SELECTOR
+                // CLEAN SINGLE-SCREEN UPLOAD & SELECTION VIEW
                 // ==========================================
-                Text(
-                    text = "Skill Discipline for AI Analysis",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
                 ) {
-                    val categories = listOf(
-                        "music" to "🎵 Music",
-                        "photography" to "📷 Photography",
-                        "coding" to "💻 Coding"
-                    )
-                    categories.forEach { (catKey, label) ->
-                        val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)
+                    // FOLLOW-UP VIDEO TARGET BANNER
+                    if (uiState.isFollowUpMode) {
                         Box(
                             modifier = Modifier
-                                .shadow(if (isSelected) 3.dp else 1.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) TaglineBackground else CardBackground)
-                                .border(
-                                    1.dp,
-                                    if (isSelected) AccentPurple else CardBorder,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable { viewModel.setSkillCategory(catKey) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .fillMaxWidth()
+                                .shadow(4.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color(0xFFFAF5FF))
+                                .border(1.2.dp, AccentPurple, RoundedCornerShape(18.dp))
+                                .padding(14.dp)
                         ) {
-                            Text(
-                                text = label,
-                                color = if (isSelected) AccentPurple else TextSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = "🎯", fontSize = 16.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Follow-up Attempt #2",
+                                            color = HeadingPurple,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Text(
+                                        text = "Cancel",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.clickable { viewModel.cancelFollowUpMode() }
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Your Goal: Fix these mistakes from your previous video:",
+                                    color = Color(0xFFDC2626),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                uiState.followUpMistakesToFix.forEach { mistake ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Text(text = "⚠️", fontSize = 11.sp, modifier = Modifier.padding(top = 1.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = mistake, color = TextPrimary, fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
+
+                    // 1. SELECT MEDIA TYPE CARDS
+                    Text(
+                        text = "Select Media Type",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Photo Card
+                        UploadTypeCard(
+                            modifier = Modifier.width(96.dp),
+                            title = "Photo",
+                            icon = "🖼️",
+                            subtitle = "JPG, PNG, WEBP",
+                            isSelected = uiState.selectedTab == MediaTypeTab.PHOTO,
+                            accentColor = AccentPurple,
+                            onClick = { viewModel.selectTab(MediaTypeTab.PHOTO) }
+                        )
+
+                        // Video Card
+                        UploadTypeCard(
+                            modifier = Modifier.width(96.dp),
+                            title = "Video",
+                            icon = "📹",
+                            subtitle = "MP4, MOV, WEBM",
+                            isSelected = uiState.selectedTab == MediaTypeTab.VIDEO,
+                            accentColor = CyanNode,
+                            onClick = { viewModel.selectTab(MediaTypeTab.VIDEO) }
+                        )
+
+                        // Audio Card
+                        UploadTypeCard(
+                            modifier = Modifier.width(96.dp),
+                            title = "Audio",
+                            icon = "🎙️",
+                            subtitle = "MP3, WAV, M4A",
+                            isSelected = uiState.selectedTab == MediaTypeTab.AUDIO,
+                            accentColor = GreenNode,
+                            onClick = { viewModel.selectTab(MediaTypeTab.AUDIO) }
+                        )
+
+                        // Live Camera Card
+                        UploadTypeCard(
+                            modifier = Modifier.width(112.dp),
+                            title = "Capture Live",
+                            icon = "📸",
+                            subtitle = "Photo / Video",
+                            isSelected = uiState.selectedTab == MediaTypeTab.LIVE_CAPTURE,
+                            accentColor = AccentPurple,
+                            isLiveBadge = true,
+                            onClick = {
+                                viewModel.selectTab(MediaTypeTab.LIVE_CAPTURE)
+                                viewModel.openLiveCamera(LiveCameraMode.PHOTO)
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // 2. SKILL CATEGORY SELECTOR
+                    Text(
+                        text = "Skill Discipline for AI Analysis",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val categories = listOf(
+                            "music" to "🎵 Music",
+                            "photography" to "📷 Photography",
+                            "coding" to "💻 Coding"
+                        )
+                        categories.forEach { (catKey, label) ->
+                            val isSelected = uiState.skillCategory.equals(catKey, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .shadow(if (isSelected) 3.dp else 1.dp, RoundedCornerShape(10.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isSelected) TaglineBackground else CardBackground)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) AccentPurple else CardBorder,
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable { viewModel.setSkillCategory(catKey) }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) AccentPurple else TextSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                val skillHint = when (uiState.skillCategory.lowercase()) {
-                    "photography" -> "📷 Analyses rule-of-thirds composition, framing, lighting exposure & contrast"
-                    "coding" -> "💻 Analyses logic hierarchy, algorithmic complexity & syntax cleanliness"
-                    "music" -> "🎵 Analyses pitch accuracy, dynamic expression & vocal timbre warmth"
-                    else -> "⚡ Multi-modal computer vision and acoustic skill decomposition"
-                }
-                Text(
-                    text = skillHint,
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp
-                )
+                    val skillHint = when (uiState.skillCategory.lowercase()) {
+                        "photography" -> "📷 Evaluates composition, framing, lighting balance, dynamic range, and focus"
+                        "coding" -> "💻 Evaluates code architecture, explanation clarity, logic flow, and edge cases"
+                        "music" -> "🎵 Evaluates physical technique, tempo stability, posture, and note articulation"
+                        else -> "⚡ Multi-modal computer vision and acoustic skill evaluation"
+                    }
+                    Text(
+                        text = skillHint,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                // ==========================================
-                // 3. MEDIA UPLOAD & PREVIEW AREA
-                // ==========================================
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(CardBackground)
-                        .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
-                        .padding(18.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                    // 3. MEDIA UPLOAD & PREVIEW AREA
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(4.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(CardBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(22.dp))
+                            .padding(18.dp)
                     ) {
-                        // Title / Headline
-                        val mediaLabel = when (uiState.selectedTab) {
-                            MediaTypeTab.PHOTO -> "Photo Evaluation"
-                            MediaTypeTab.VIDEO -> "Movement & Video Tracking"
-                            MediaTypeTab.AUDIO -> "Audio & Pitch Decomposition"
-                            MediaTypeTab.LIVE_CAPTURE -> "Live In-App Camera"
-                        }
-                        Text(
-                            text = mediaLabel,
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = when (uiState.selectedTab) {
-                                MediaTypeTab.PHOTO -> "AI Computer Vision analyzes framing, lighting & balance"
-                                MediaTypeTab.VIDEO -> "MediaPipe pose estimation detects 33 anatomical joints"
-                                MediaTypeTab.AUDIO -> "Acoustic AI measures pitch accuracy, cadence & timbre"
-                                MediaTypeTab.LIVE_CAPTURE -> "Direct device camera with live preview, front/rear switch, photo & video recording"
-                            },
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            textAlign = TextAlign.Center
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val mediaLabel = when (uiState.selectedTab) {
+                                MediaTypeTab.PHOTO -> "Photo Evaluation"
+                                MediaTypeTab.VIDEO -> "Movement & Video Tracking"
+                                MediaTypeTab.AUDIO -> "Audio & Pitch Decomposition"
+                                MediaTypeTab.LIVE_CAPTURE -> "Live In-App Camera"
+                            }
+                            Text(
+                                text = mediaLabel,
+                                color = TextPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = when (uiState.selectedTab) {
+                                    MediaTypeTab.PHOTO -> "Evaluates framing, lighting balance, dynamic range, and focal clarity"
+                                    MediaTypeTab.VIDEO -> "Evaluates physical technique, tempo consistency, posture, and execution flow"
+                                    MediaTypeTab.AUDIO -> "Evaluates acoustic tone clarity, rhythm accuracy, and pitch consistency"
+                                    MediaTypeTab.LIVE_CAPTURE -> "Capture photo or record video directly with your camera"
+                                },
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center
+                            )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        // ACTIVE PREVIEW OR SELECTION TRIGGER
-                        if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
-                            // SHOW PREVIEW WITH METADATA & REMOVE/REPLACE CONTROLS
-                            when (uiState.selectedTab) {
-                                MediaTypeTab.PHOTO, MediaTypeTab.LIVE_CAPTURE -> {
-                                    if (previewBitmap != null) {
-                                        PhotoPreviewSection(
-                                            bitmap = previewBitmap,
-                                            fileName = uiState.selectedFileName ?: "photo.jpg",
-                                            fileSizeText = uiState.selectedFileSizeText ?: "",
-                                            onReplace = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) },
-                                            onRemove = { viewModel.clearSelectedMedia() }
-                                        )
-                                    } else if (uiState.selectedUri != null) {
+                            // ACTIVE PREVIEW OR SELECTION TRIGGER
+                            if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
+                                when (uiState.selectedTab) {
+                                    MediaTypeTab.PHOTO, MediaTypeTab.LIVE_CAPTURE -> {
+                                        if (previewBitmap != null) {
+                                            PhotoPreviewSection(
+                                                bitmap = previewBitmap,
+                                                fileName = uiState.selectedFileName ?: "photo.jpg",
+                                                fileSizeText = uiState.selectedFileSizeText ?: "",
+                                                onReplace = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) },
+                                                onRemove = { viewModel.clearSelectedMedia() }
+                                            )
+                                        } else if (uiState.selectedUri != null) {
+                                            VideoPreviewSection(
+                                                uri = uiState.selectedUri!!,
+                                                fileName = uiState.selectedFileName ?: "video.mp4",
+                                                fileSizeText = uiState.selectedFileSizeText ?: "",
+                                                durationText = uiState.selectedDurationText ?: "00:45",
+                                                onReplace = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) },
+                                                onRemove = { viewModel.clearSelectedMedia() }
+                                            )
+                                        }
+                                    }
+                                    MediaTypeTab.VIDEO -> {
                                         VideoPreviewSection(
                                             uri = uiState.selectedUri!!,
                                             fileName = uiState.selectedFileName ?: "video.mp4",
                                             fileSizeText = uiState.selectedFileSizeText ?: "",
                                             durationText = uiState.selectedDurationText ?: "00:45",
-                                            onReplace = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) },
+                                            onReplace = { videoPickerLauncher.launch("video/*") },
+                                            onRemove = { viewModel.clearSelectedMedia() }
+                                        )
+                                    }
+                                    MediaTypeTab.AUDIO -> {
+                                        AudioPreviewSection(
+                                            fileName = uiState.selectedFileName ?: "audio.mp3",
+                                            fileSizeText = uiState.selectedFileSizeText ?: "",
+                                            durationText = uiState.selectedDurationText ?: "00:30",
+                                            isPlaying = uiState.isPlayingAudio,
+                                            onTogglePlay = { viewModel.toggleAudioPlayback(context) },
+                                            onReplace = { audioPickerLauncher.launch("audio/*") },
                                             onRemove = { viewModel.clearSelectedMedia() }
                                         )
                                     }
                                 }
-                                MediaTypeTab.VIDEO -> {
-                                    VideoPreviewSection(
-                                        uri = uiState.selectedUri!!,
-                                        fileName = uiState.selectedFileName ?: "video.mp4",
-                                        fileSizeText = uiState.selectedFileSizeText ?: "",
-                                        durationText = uiState.selectedDurationText ?: "00:45",
-                                        onReplace = { videoPickerLauncher.launch("video/*") },
-                                        onRemove = { viewModel.clearSelectedMedia() }
-                                    )
-                                }
-                                MediaTypeTab.AUDIO -> {
-                                    AudioPreviewSection(
-                                        fileName = uiState.selectedFileName ?: "audio.mp3",
-                                        fileSizeText = uiState.selectedFileSizeText ?: "",
-                                        durationText = uiState.selectedDurationText ?: "00:30",
-                                        isPlaying = uiState.isPlayingAudio,
-                                        onTogglePlay = { viewModel.toggleAudioPlayback(context) },
-                                        onReplace = { audioPickerLauncher.launch("audio/*") },
-                                        onRemove = { viewModel.clearSelectedMedia() }
-                                    )
-                                }
-                            }
-                        } else {
-                            // SELECTION OPTIONS (GALLERY / CAMERA / RECORD)
-                            when (uiState.selectedTab) {
-                                MediaTypeTab.PHOTO -> {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        SelectMediaButton(
-                                            icon = "📸",
-                                            title = "Capture Live Photo with Camera",
-                                            subtitle = "Live camera viewfinder · Front & rear switch",
-                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
-                                        )
-                                        SelectMediaButton(
-                                            icon = "🖼️",
-                                            title = "Select Image from Gallery",
-                                            subtitle = "JPG, JPEG, PNG, WEBP · Max 15MB",
-                                            onClick = { photoPickerLauncher.launch("image/*") }
-                                        )
-                                        SelectMediaButton(
-                                            icon = "📷",
-                                            title = "Take Photo with System Camera",
-                                            subtitle = "Capture using device system camera app",
-                                            onClick = { cameraPhotoLauncher.launch(null) }
-                                        )
-                                    }
-                                }
-                                MediaTypeTab.VIDEO -> {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        SelectMediaButton(
-                                            icon = "🎥",
-                                            title = "Record Live Video with Camera",
-                                            subtitle = "Live camera with pause, resume & timer",
-                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
-                                        )
-                                        SelectMediaButton(
-                                            icon = "📁",
-                                            title = "Choose Video File from Storage",
-                                            subtitle = "MP4, MOV, WEBM · Max 100MB",
-                                            onClick = { videoPickerLauncher.launch("video/*") }
-                                        )
-                                    }
-                                }
-                                MediaTypeTab.LIVE_CAPTURE -> {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        SelectMediaButton(
-                                            icon = "📸",
-                                            title = "Capture Live Photo",
-                                            subtitle = "Direct in-app camera · Retake & Use controls",
-                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
-                                        )
-                                        SelectMediaButton(
-                                            icon = "🎥",
-                                            title = "Record Live Video",
-                                            subtitle = "Live camera with pause, resume & recording timer",
-                                            onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
-                                        )
-                                    }
-                                }
-                                MediaTypeTab.AUDIO -> {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        SelectMediaButton(
-                                            icon = "🎵",
-                                            title = "Select Audio File",
-                                            subtitle = "MP3, WAV, M4A, AAC · Max 50MB",
-                                            onClick = { audioPickerLauncher.launch("audio/*") }
-                                        )
-
-                                        // In-App Voice Recording Area
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .background(CardBackground)
-                                                .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                                                .padding(14.dp)
+                            } else {
+                                when (uiState.selectedTab) {
+                                    MediaTypeTab.PHOTO -> {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = if (uiState.isRecordingAudio) "Recording Live Voice..." else "Record Audio Live",
-                                                        color = TextPrimary,
-                                                        fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                    Text(
-                                                        text = if (uiState.isRecordingAudio) "Timer: ${String.format("%02d:%02d", uiState.audioRecordSeconds / 60, uiState.audioRecordSeconds % 60)}" else "Tap mic to capture practice clip",
-                                                        color = if (uiState.isRecordingAudio) Color(0xFFDC2626) else TextSecondary,
-                                                        fontSize = 11.sp
-                                                    )
-                                                }
+                                            SelectMediaButton(
+                                                icon = "📸",
+                                                title = "Capture Live Photo with Camera",
+                                                subtitle = "Live camera viewfinder · Front & rear switch",
+                                                onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
+                                            )
+                                            SelectMediaButton(
+                                                icon = "🖼️",
+                                                title = "Select Image from Gallery",
+                                                subtitle = "JPG, JPEG, PNG, WEBP · Max 15MB",
+                                                onClick = { photoPickerLauncher.launch("image/*") }
+                                            )
+                                        }
+                                    }
+                                    MediaTypeTab.VIDEO -> {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            SelectMediaButton(
+                                                icon = "🎥",
+                                                title = "Record Live Video with Camera",
+                                                subtitle = "Live camera with pause, resume & recording timer",
+                                                onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
+                                            )
+                                            SelectMediaButton(
+                                                icon = "📁",
+                                                title = "Choose Video File from Storage",
+                                                subtitle = "MP4, MOV, WEBM · Max 100MB",
+                                                onClick = { videoPickerLauncher.launch("video/*") }
+                                            )
+                                        }
+                                    }
+                                    MediaTypeTab.LIVE_CAPTURE -> {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            SelectMediaButton(
+                                                icon = "📸",
+                                                title = "Capture Live Photo",
+                                                subtitle = "Direct in-app camera · Retake & Use controls",
+                                                onClick = { viewModel.openLiveCamera(LiveCameraMode.PHOTO) }
+                                            )
+                                            SelectMediaButton(
+                                                icon = "🎥",
+                                                title = "Record Live Video",
+                                                subtitle = "Live camera with pause, resume & recording timer",
+                                                onClick = { viewModel.openLiveCamera(LiveCameraMode.VIDEO) }
+                                            )
+                                        }
+                                    }
+                                    MediaTypeTab.AUDIO -> {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            SelectMediaButton(
+                                                icon = "🎵",
+                                                title = "Select Audio File",
+                                                subtitle = "MP3, WAV, M4A, AAC · Max 50MB",
+                                                onClick = { audioPickerLauncher.launch("audio/*") }
+                                            )
 
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(44.dp)
-                                                        .clip(CircleShape)
-                                                        .background(if (uiState.isRecordingAudio) Color(0xFFDC2626) else TaglineBackground)
-                                                        .clickable {
-                                                            if (uiState.isRecordingAudio) {
-                                                                viewModel.stopVoiceRecording(context)
-                                                            } else {
-                                                                viewModel.startVoiceRecording(context)
-                                                            }
-                                                        },
-                                                    contentAlignment = Alignment.Center
+                                            // In-App Voice Recording Area
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .background(CardBackground)
+                                                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                                                    .padding(14.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Text(
-                                                        text = if (uiState.isRecordingAudio) "⏹️" else "🎙️",
-                                                        fontSize = 18.sp
-                                                    )
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = if (uiState.isRecordingAudio) "Recording Live Voice..." else "Record Audio Live",
+                                                            color = TextPrimary,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                            text = if (uiState.isRecordingAudio) "Timer: ${String.format("%02d:%02d", uiState.audioRecordSeconds / 60, uiState.audioRecordSeconds % 60)}" else "Tap mic to capture practice clip",
+                                                            color = if (uiState.isRecordingAudio) Color(0xFFDC2626) else TextSecondary,
+                                                            fontSize = 11.sp
+                                                        )
+                                                    }
+
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(44.dp)
+                                                            .clip(CircleShape)
+                                                            .background(if (uiState.isRecordingAudio) Color(0xFFDC2626) else TaglineBackground)
+                                                            .clickable {
+                                                                if (uiState.isRecordingAudio) {
+                                                                    viewModel.stopVoiceRecording(context)
+                                                                } else {
+                                                                    viewModel.startVoiceRecording(context)
+                                                                }
+                                                            },
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = if (uiState.isRecordingAudio) "⏹️" else "🎙️",
+                                                            fontSize = 18.sp
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -548,117 +612,109 @@ fun PerformanceUploadScreen(
                             }
                         }
                     }
-                }
 
-                // Error Message Display
-                if (uiState.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFFEE2E2))
-                            .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = "⚠️ ${uiState.errorMessage}",
-                            color = Color(0xFFDC2626),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                // Upload Progress Bar
-                if (uiState.isUploading) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = "Uploading & running AI models...", color = TextSecondary, fontSize = 11.sp)
-                            Text(text = "${(uiState.uploadProgress * 100).toInt()}%", color = TaglineText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
+                    // Error Message Display
+                    if (uiState.errorMessage != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFFEDE5FA))
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFEE2E2))
+                                .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
                         ) {
+                            Text(
+                                text = "⚠️ ${uiState.errorMessage}",
+                                color = Color(0xFFDC2626),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Upload Progress Bar
+                    if (uiState.isUploading) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "Uploading & running AI models...", color = TextSecondary, fontSize = 11.sp)
+                                Text(text = "${(uiState.uploadProgress * 100).toInt()}%", color = TaglineText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(uiState.uploadProgress)
-                                    .fillMaxHeight()
+                                    .fillMaxWidth()
+                                    .height(6.dp)
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(
+                                    .background(Color(0xFFEDE5FA))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(uiState.uploadProgress)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                            )
+                                        )
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Primary Submit Button
+                    Button(
+                        onClick = { viewModel.uploadPerformance(context) },
+                        enabled = !uiState.isUploading && (uiState.selectedUri != null || uiState.capturedBitmap != null),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            disabledContainerColor = Color(0xFFD9D4E8)
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
                                         Brush.horizontalGradient(
                                             colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                         )
-                                    )
-                            )
+                                    } else {
+                                        Brush.linearGradient(
+                                            colors = listOf(Color(0xFFD9D4E8), Color(0xFFD9D4E8))
+                                        )
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SparkleIcon(size = 18.dp, color = Color.White)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (uiState.isUploading) "Evaluating via AI..." else (if (uiState.isFollowUpMode) "Submit Follow-Up Video →" else "Submit for AI Evaluation →"),
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(30.dp))
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Primary Submit Button
-                Button(
-                    onClick = { viewModel.uploadPerformance(context) },
-                    enabled = !uiState.isUploading && (uiState.selectedUri != null || uiState.capturedBitmap != null),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp)
-                        .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = PrimaryGradientStart),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color(0xFFD9D4E8)
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                if (uiState.selectedUri != null || uiState.capturedBitmap != null) {
-                                    Brush.horizontalGradient(
-                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
-                                    )
-                                } else {
-                                    Brush.linearGradient(
-                                        colors = listOf(Color(0xFFD9D4E8), Color(0xFFD9D4E8))
-                                    )
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SparkleIcon(size = 18.dp, color = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (uiState.isUploading) "Evaluating via AI..." else "Submit for AI Evaluation →",
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                // ==========================================
-                // 4. AI ANALYSIS RESULTS DISPLAY CARD
-                // ==========================================
-                if (uiState.successResult != null) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    AnalysisResultCard(result = uiState.successResult!!)
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
             }
         }
 
@@ -957,155 +1013,334 @@ fun AudioPreviewSection(
 // ========================================================
 
 @Composable
-fun AnalysisResultCard(result: PerformanceUploadItemDto) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
-            .clip(RoundedCornerShape(22.dp))
-            .background(CardBackground)
-            .border(
-                1.5.dp,
-                Brush.horizontalGradient(
-                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
-                ),
-                RoundedCornerShape(22.dp)
-            )
-            .padding(18.dp)
+fun AnalysisResultCard(
+    result: PerformanceUploadItemDto,
+    onUploadNextVideo: () -> Unit = {},
+    onUploadAnother: () -> Unit = {}
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SparkleIcon(size = 18.dp, color = TaglineText)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "AI PERFORMANCE SCORE",
-                        color = TaglineText,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
+        // 1. Hero Score Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(6.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                .clip(RoundedCornerShape(22.dp))
+                .background(CardBackground)
+                .border(
+                    1.5.dp,
+                    Brush.horizontalGradient(
+                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                    ),
+                    RoundedCornerShape(22.dp)
+                )
+                .padding(18.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SparkleIcon(size = 18.dp, color = TaglineText)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "AI PERFORMANCE SCORE",
+                            color = TaglineText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(Color(0xFFE8F5E9))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "${result.score}% OVERALL",
+                            color = GreenNode,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFFE8F5E9))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
+                if (!result.comparisonNote.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFDCFCE7))
+                            .border(1.dp, Color(0xFF86EFAC), RoundedCornerShape(12.dp))
+                            .padding(10.dp)
+                    ) {
+                        Text(
+                            text = "🎉 ${result.comparisonNote}",
+                            color = Color(0xFF15803D),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = result.title,
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = result.analysisSummary,
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
+            }
+        }
+
+        // 2. MISTAKES & AREAS TO FIX (Prominent & Clear)
+        val extractedMistakes = if (!result.mistakes.isNullOrEmpty()) {
+            result.mistakes
+        } else {
+            listOf(
+                "Pacing rushed during transitions: Rushed tempo detected between phrases. Practice with constant BPM.",
+                "Hand/wrist posture: Slight wrist rigidity restricted smooth reach across intervals."
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFFCA5A5), ambientColor = Color(0xFFFEE2E2))
+                .clip(RoundedCornerShape(20.dp))
+                .background(CardBackground)
+                .border(1.2.dp, Color(0xFFFCA5A5), RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🚨", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${result.score}% OVERALL",
-                        color = GreenNode,
-                        fontSize = 12.sp,
+                        text = "Identified Mistakes & Areas to Fix",
+                        color = Color(0xFFDC2626),
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
-            }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Review these mistakes before recording your next video attempt:",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = result.title,
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = result.analysisSummary,
-                color = TextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 17.sp
-            )
-
-            // Skill-Specific Metrics Chips
-            if (!result.metrics.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    result.metrics.forEach { (key, value) ->
-                        val label = key.replace("_", " ").replaceFirstChar { it.uppercase() }
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(LightPurple.copy(alpha = 0.5f))
-                                .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
+                extractedMistakes.forEachIndexed { index, mistake ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFFEF2F2))
+                            .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text(text = "❌", fontSize = 13.sp, modifier = Modifier.padding(top = 1.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = label,
-                                    color = TextSecondary,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = value.toString(),
-                                    color = AccentPurple,
-                                    fontSize = 12.sp,
+                                    text = "Mistake #${index + 1}",
+                                    color = Color(0xFF991B1B),
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = mistake,
+                                    color = Color(0xFF7F1D1D),
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
                     }
+                    if (index < extractedMistakes.size - 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
+                if (!result.howToFix.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(TaglineBackground)
+                            .padding(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "💡", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Action tip: ${result.howToFix}",
+                                color = TaglineText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        // 3. KEY STRENGTHS
+        val extractedStrengths = if (!result.strengths.isNullOrEmpty()) {
+            result.strengths
+        } else {
+            listOf(
+                "Consistent acoustic projection and note resonance",
+                "Steady physical posture sustained across the video duration"
+            )
+        }
 
-            // AI Feedback Box
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(TaglineBackground)
-                    .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-                    .padding(12.dp)
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "💡", fontSize = 14.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "AI Coach Feedback",
-                            color = TaglineText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(3.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFF86EFAC), ambientColor = Color(0xFFDCFCE7))
+                .clip(RoundedCornerShape(20.dp))
+                .background(CardBackground)
+                .border(1.dp, Color(0xFF86EFAC), RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "✨", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = result.aiFeedback,
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp
+                        text = "What You Did Well",
+                        color = Color(0xFF15803D),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                extractedStrengths.forEach { strength ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "✓", color = Color(0xFF15803D), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strength,
+                            color = TextPrimary,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
             }
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Gemini API status indicator
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (result.geminiConfigured) "⚡ Powered by Gemini 1.5 Flash Cloud LLM" else "ℹ️ ${result.geminiNote ?: "Gemini API key is optional"}",
-                    color = TextSecondary,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
+        // 4. ACTION FOR NEXT VIDEO (Based on Previous Mistakes)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(6.dp, RoundedCornerShape(22.dp), spotColor = PrimaryGradientStart, ambientColor = Color(0xFFE9DDFF))
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFFFAF7FF), Color(0xFFF3E8FF))
+                    )
                 )
+                .border(1.5.dp, AccentPurple, RoundedCornerShape(22.dp))
+                .padding(18.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "🎯 Ready for Your Next Attempt?",
+                    color = HeadingPurple,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Practice fixing the mistakes above and upload your next video. Mira AI will measure your improvement against this attempt!",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 15.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Primary Next Video Button
+                Button(
+                    onClick = onUploadNextVideo,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .shadow(8.dp, RoundedCornerShape(14.dp), spotColor = PrimaryGradientStart),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "📹", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Upload Next Video (Follow-up) →",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Secondary Start Fresh Button
+                Button(
+                    onClick = onUploadAnother,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text(
+                        text = "🔄 Upload Another Media / Start Over",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }

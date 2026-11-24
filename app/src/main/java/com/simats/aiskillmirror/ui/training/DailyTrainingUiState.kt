@@ -1,5 +1,6 @@
 package com.simats.aiskillmirror.ui.training
 
+import com.simats.aiskillmirror.data.network.CodeMistakeInfo
 import com.simats.aiskillmirror.data.network.CodeTestCaseResult
 
 enum class SkillType {
@@ -160,6 +161,7 @@ data class DailyTrainingUiState(
     val isCodeRunning: Boolean = false,
     val codeTestCases: List<CodeTestCaseResult> = emptyList(),
     val codeExplanation: String = "",
+    val codeMistake: CodeMistakeInfo? = null,
 
     // 5. Public Speaking Practice
     val isRecordingSpeech: Boolean = false,
@@ -174,23 +176,58 @@ data class DailyTrainingUiState(
         get() {
             val skill = activeMainSkill.lowercase().trim()
             val sub = activeSubcategoryName.lowercase().trim()
+
+            // 1. Primary Priority: Check activeMainSkill and activeSubcategoryName directly
+            if (skill.contains("cod") || skill.contains("program") ||
+                sub.contains("cod") || sub.contains("python") || sub.contains("java") ||
+                sub.contains("script") || sub.contains("c++") || sub.contains("c_prog") ||
+                sub.contains("algo") || sub.contains("php") || sub.contains("html") ||
+                sub.contains("developer")
+            ) {
+                return SkillType.CODING
+            }
+
+            if (skill.contains("photo") || sub.contains("photo") ||
+                sub.contains("camera") || sub.contains("portrait") ||
+                sub.contains("landscape") || sub.contains("nature") ||
+                sub.contains("street") || sub.contains("product_photo") ||
+                sub.contains("mobile_photo") || sub.contains("wildlife")
+            ) {
+                return SkillType.PHOTOGRAPHY
+            }
+
+            if (skill.contains("music") ||
+                sub.contains("guitar") || sub.contains("piano") || sub.contains("drum") ||
+                sub.contains("violin") || sub.contains("flute") || sub.contains("veena") ||
+                sub.contains("sing") || sub.contains("vocal")
+            ) {
+                return SkillType.MUSIC
+            }
+
+            // 2. Secondary fallback only if activeMainSkill and activeSubcategoryName are ambiguous
             val cat = upNextCategory.lowercase().trim()
             val title = upNextTitle.lowercase().trim()
 
-            return when {
-                skill.contains("photo") || sub.contains("photo") || cat.contains("photo") || title.contains("photo") ||
-                sub.contains("camera") || sub.contains("portrait_photo") || sub.contains("landscape_photo") -> SkillType.PHOTOGRAPHY
-
-                skill.contains("cod") || sub.contains("cod") || cat.contains("cod") || title.contains("cod") ||
-                skill.contains("program") || sub.contains("program") || sub.contains("python") || sub.contains("java") ||
-                sub.contains("script") || sub.contains("c++") || sub.contains("c_prog") || sub.contains("algo") -> SkillType.CODING
-
-                else -> SkillType.MUSIC
+            if (cat.contains("cod") || cat.contains("program") ||
+                title.contains("cod") || title.contains("python") || title.contains("java") ||
+                title.contains("program") || title.contains("script") || title.contains("c++") ||
+                title.contains("c_prog") || title.contains("algo") || title.contains("developer")
+            ) {
+                return SkillType.CODING
             }
+
+            if (cat.contains("photo") || title.contains("photo") ||
+                cat.contains("camera") || title.contains("camera")
+            ) {
+                return SkillType.PHOTOGRAPHY
+            }
+
+            return SkillType.MUSIC
         }
 
     val isVocalSkill: Boolean
         get() {
+            if (detectedSkillType != SkillType.MUSIC) return false
             val skill = activeMainSkill.lowercase().trim()
             val sub = activeSubcategoryName.lowercase().trim()
             val title = upNextTitle.lowercase().trim()

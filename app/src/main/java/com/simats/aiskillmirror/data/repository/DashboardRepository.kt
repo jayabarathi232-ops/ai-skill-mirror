@@ -2,6 +2,8 @@ package com.simats.aiskillmirror.data.repository
 
 import com.simats.aiskillmirror.data.network.ApiClient
 import com.simats.aiskillmirror.data.network.DashboardData
+import com.simats.aiskillmirror.data.network.DashboardHistoryItemData
+import com.simats.aiskillmirror.data.network.DashboardSkillItemData
 import com.simats.aiskillmirror.data.network.NetworkResult
 import com.simats.aiskillmirror.data.network.UserSession
 import com.simats.aiskillmirror.network.PerformanceUploadItemDto
@@ -33,7 +35,32 @@ class DashboardRepository {
                     streakSubtitle = dto.streakSubtitle ?: "Your best week yet",
                     minutesSubtitle = dto.minutesSubtitle ?: "to your goal",
                     currentPlanTitle = dto.currentPlanTitle ?: "",
-                    profilePicture = ApiClient.resolveImageUrl(dto.profilePicture)
+                    profilePicture = ApiClient.resolveImageUrl(dto.profilePicture),
+                    aiCoachTitle = dto.aiCoachTitle.orEmpty(),
+                    aiCoachSubtitle = dto.aiCoachSubtitle.orEmpty(),
+                    mySkills = dto.mySkills.map {
+                        DashboardSkillItemData(
+                            id = it.id,
+                            name = it.name,
+                            category = it.category,
+                            score = it.score,
+                            level = it.level,
+                            iconEmoji = it.iconEmoji,
+                            accentColor = it.accentColor,
+                            progress = it.progress
+                        )
+                    },
+                    recentHistory = dto.recentHistory.map {
+                        DashboardHistoryItemData(
+                            id = it.id,
+                            skillName = it.skillName,
+                            activity = it.activity,
+                            score = it.score,
+                            dateText = it.dateText,
+                            iconEmoji = it.iconEmoji,
+                            feedback = it.feedback
+                        )
+                    }
                 )
                 if (data.profilePicture.isNotBlank()) {
                     UserSession.profilePictureUrl = data.profilePicture

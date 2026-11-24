@@ -170,7 +170,8 @@ interface ApiService {
         @Part("media_type") mediaType: RequestBody,
         @Part("skill_category") skillCategory: RequestBody,
         @Part("title") title: RequestBody,
-        @Part file: MultipartBody.Part
+        @Part file: MultipartBody.Part,
+        @Part("previous_upload_id") previousUploadId: RequestBody? = null
     ): Response<PerformanceUploadResponse>
 
     @GET("upload/performance_history_fetch.php")

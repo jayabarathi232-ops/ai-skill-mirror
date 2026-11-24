@@ -669,22 +669,53 @@ fun DailyTrainingScreen(
                     Spacer(modifier = Modifier.height(22.dp))
                 }
 
-                // Completed Practice History List
+                // Completed Practice History List (Clean & Compact "In Short" View)
+                var showAllCompleted by remember { mutableStateOf(false) }
+                val displayCompletedItems = if (showAllCompleted) {
+                    uiState.completedPracticeItems
+                } else {
+                    uiState.completedPracticeItems.take(2)
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Completed Sessions",
+                            color = HeadingPurple,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (uiState.completedPracticeItems.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color(0xFFE8F5E9))
+                                    .padding(horizontal = 7.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "${uiState.completedPracticeItems.size}",
+                                    color = GreenNode,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Direct shortcut to AI Coach completed sessions summary in short
                     Text(
-                        text = "Completed Sessions",
-                        color = HeadingPurple,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = uiState.practiceProgressText,
-                        color = TextSecondary,
-                        fontSize = 12.sp
+                        text = "View in AI Coach →",
+                        color = AccentPurple,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            onTabSelected(DashboardTab.LEARN)
+                        }
                     )
                 }
 
@@ -694,37 +725,56 @@ fun DailyTrainingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(CardBackground)
-                            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                            .padding(20.dp),
+                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+                            .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "🎯", fontSize = 24.sp)
+                            Text(text = "🎯", fontSize = 22.sp)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "No completed sessions yet",
                                 color = HeadingPurple,
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Start an active session below to begin your practice!",
                                 color = TextSecondary,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        uiState.completedPracticeItems.forEach { item ->
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        displayCompletedItems.forEach { item ->
                             CompletedPracticeCard(
                                 item = item,
                                 onViewDetail = { viewModel.openItemDetail(item) }
                             )
+                        }
+
+                        if (uiState.completedPracticeItems.size > 2) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(TaglineBackground)
+                                    .clickable { showAllCompleted = !showAllCompleted }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (showAllCompleted) "Show Less ↑" else "Show All (${uiState.completedPracticeItems.size}) in Short ↓",
+                                    color = TaglineText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -993,12 +1043,12 @@ fun CompletedPracticeCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
-            .clip(RoundedCornerShape(16.dp))
+            .shadow(1.dp, RoundedCornerShape(12.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+            .clip(RoundedCornerShape(12.dp))
             .background(CardBackground)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
             .clickable { isExpanded = !isExpanded }
-            .padding(14.dp)
+            .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
         Column {
             Row(
@@ -1012,29 +1062,33 @@ fun CompletedPracticeCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFFE8F5E9)),
                         contentAlignment = Alignment.Center
                     ) {
-                        CheckCircleIcon(size = 18.dp, color = GreenNode)
+                        CheckCircleIcon(size = 15.dp, color = GreenNode)
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = item.title,
                             color = HeadingPurple,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "${item.category} · ${item.durationText}",
                             color = TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -1048,12 +1102,12 @@ fun CompletedPracticeCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFFE8F5E9))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
                         ) {
                             Text(
                                 text = "${item.performanceScore} / 100",
                                 color = GreenNode,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1062,10 +1116,10 @@ fun CompletedPracticeCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFFEDE5FA))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Analysis Pending",
+                                text = "Pending",
                                 color = AccentPurple,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -1076,10 +1130,10 @@ fun CompletedPracticeCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFFFFEBEE))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Analysis Failed",
+                                text = "Failed",
                                 color = Color(0xFFD32F2F),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -1090,10 +1144,10 @@ fun CompletedPracticeCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFFFFF3E0))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Score Not Available",
+                                text = "Score N/A",
                                 color = Color(0xFFE65100),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -1105,7 +1159,7 @@ fun CompletedPracticeCard(
                     Text(
                         text = item.xpText,
                         color = HeadingPurple,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -1469,11 +1523,66 @@ fun DetailedPerformanceBreakdownDialog(
                                     val vocalClar = ((m["vocal_clarity"] ?: m["voice_clarity"]) as? Number)?.toInt() ?: ((thisScore * 0.98).toInt().coerceIn(50, 100))
                                     val rhythm = ((m["rhythm_and_timing"] ?: m["rhythm"]) as? Number)?.toInt() ?: ((thisScore * 0.94).toInt().coerceIn(50, 100))
                                     val consist = ((m["voice_consistency"] ?: m["consistency"]) as? Number)?.toInt() ?: ((thisScore * 0.96).toInt().coerceIn(50, 100))
-                                    VocalParameterBar(name = "Pitch Accuracy", score = pitchAcc, icon = "🎯")
-                                    VocalParameterBar(name = "Pitch Stability", score = pitchStab, icon = "〰️")
-                                    VocalParameterBar(name = "Vocal Clarity", score = vocalClar, icon = "💎")
-                                    VocalParameterBar(name = "Rhythm and Timing", score = rhythm, icon = "⏱️")
-                                    VocalParameterBar(name = "Voice Consistency", score = consist, icon = "📊")
+
+                                    val taskLow = item.title.lowercase()
+                                    val isDrums = taskLow.contains("drum")
+                                    val isGuitar = taskLow.contains("guitar")
+                                    val isPiano = taskLow.contains("piano") || taskLow.contains("keyboard")
+                                    val isViolin = taskLow.contains("violin")
+                                    val isFlute = taskLow.contains("flute")
+                                    val isVeena = taskLow.contains("veena")
+
+                                    val (pName, pIcon) = when {
+                                        isDrums -> "Beat Timing Precision" to "🥁"
+                                        isGuitar -> "Fret Intonation" to "🎸"
+                                        isPiano -> "Melodic Accuracy" to "🎹"
+                                        isViolin -> "Pitch Intonation" to "🎻"
+                                        isFlute -> "Pitch Centering" to "🪈"
+                                        isVeena -> "Swara Intonation" to "🪕"
+                                        else -> "Pitch Accuracy" to "🎯"
+                                    }
+                                    val (sName, sIcon) = when {
+                                        isDrums -> "Groove Stability" to "〰️"
+                                        isGuitar -> "Sustain Control" to "〰️"
+                                        isPiano -> "Note Sustain" to "〰️"
+                                        isViolin -> "Vibrato & Stability" to "〰️"
+                                        isFlute -> "Breath Support" to "〰️"
+                                        isVeena -> "Fret Sustain" to "〰️"
+                                        else -> "Pitch Stability" to "〰️"
+                                    }
+                                    val (cName, cIcon) = when {
+                                        isDrums -> "Transient Attack Clarity" to "⚡"
+                                        isGuitar -> "String Resonance" to "💎"
+                                        isPiano -> "Key Attack Clarity" to "💎"
+                                        isViolin -> "Bow Tone Clarity" to "💎"
+                                        isFlute -> "Tone Purity" to "💎"
+                                        isVeena -> "Meetu Tone Clarity" to "💎"
+                                        else -> "Tone & Resonance Clarity" to "💎"
+                                    }
+                                    val (rName, rIcon) = when {
+                                        isDrums -> "Rhythm & Tempo Precision" to "⏱️"
+                                        isGuitar -> "Strumming Rhythm & Timing" to "⏱️"
+                                        isPiano -> "Tempo Consistency" to "⏱️"
+                                        isViolin -> "Bowing Cadence" to "⏱️"
+                                        isFlute -> "Note Articulation" to "⏱️"
+                                        isVeena -> "Tala Rhythm Timing" to "⏱️"
+                                        else -> "Rhythm and Timing" to "⏱️"
+                                    }
+                                    val (vName, vIcon) = when {
+                                        isDrums -> "Dynamic Strike Velocity" to "📊"
+                                        isGuitar -> "Strum Dynamic Evenness" to "📊"
+                                        isPiano -> "Dynamic Touch Velocity" to "📊"
+                                        isViolin -> "Dynamic Bow Control" to "📊"
+                                        isFlute -> "Airflow Consistency" to "📊"
+                                        isVeena -> "Plucking Consistency" to "📊"
+                                        else -> "Dynamic Consistency" to "📊"
+                                    }
+
+                                    VocalParameterBar(name = pName, score = pitchAcc, icon = pIcon)
+                                    VocalParameterBar(name = sName, score = pitchStab, icon = sIcon)
+                                    VocalParameterBar(name = cName, score = vocalClar, icon = cIcon)
+                                    VocalParameterBar(name = rName, score = rhythm, icon = rIcon)
+                                    VocalParameterBar(name = vName, score = consist, icon = vIcon)
                                 }
                             }
                         }
@@ -1855,15 +1964,35 @@ fun SessionCompletionDialog(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             result.weaknesses.forEach { w ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp),
-                                    verticalAlignment = Alignment.Top
-                                ) {
-                                    Text(text = "•", color = Color(0xFFC2185B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(text = w, color = TextPrimary, fontSize = 12.sp, lineHeight = 16.sp)
+                                if (w.startsWith("❌")) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 3.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color(0xFFFEF2F2))
+                                            .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(8.dp))
+                                            .padding(8.dp)
+                                    ) {
+                                        Text(
+                                            text = w,
+                                            color = Color(0xFFB91C1C),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            lineHeight = 15.sp
+                                        )
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Text(text = "•", color = Color(0xFFC2185B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = w, color = TextPrimary, fontSize = 12.sp, lineHeight = 16.sp)
+                                    }
                                 }
                             }
                         }
@@ -2140,11 +2269,66 @@ fun PracticeEvaluationModal(
                                         val vocalClar = ((m["vocal_clarity"] ?: m["voice_clarity"]) as? Number)?.toInt() ?: ((s * 0.98).toInt().coerceIn(50, 100))
                                         val rhythm = ((m["rhythm_and_timing"] ?: m["rhythm"]) as? Number)?.toInt() ?: ((s * 0.94).toInt().coerceIn(50, 100))
                                         val consist = ((m["voice_consistency"] ?: m["consistency"]) as? Number)?.toInt() ?: ((s * 0.96).toInt().coerceIn(50, 100))
-                                        VocalParameterBar(name = "Pitch Accuracy", score = pitchAcc, icon = "🎯")
-                                        VocalParameterBar(name = "Pitch Stability", score = pitchStab, icon = "〰️")
-                                        VocalParameterBar(name = "Vocal Clarity", score = vocalClar, icon = "💎")
-                                        VocalParameterBar(name = "Rhythm and Timing", score = rhythm, icon = "⏱️")
-                                        VocalParameterBar(name = "Voice Consistency", score = consist, icon = "📊")
+
+                                        val subLow = uiState.activeSubcategoryName.lowercase()
+                                        val isDrums = subLow.contains("drum")
+                                        val isGuitar = subLow.contains("guitar")
+                                        val isPiano = subLow.contains("piano") || subLow.contains("keyboard")
+                                        val isViolin = subLow.contains("violin")
+                                        val isFlute = subLow.contains("flute")
+                                        val isVeena = subLow.contains("veena")
+
+                                        val (pName, pIcon) = when {
+                                            isDrums -> "Beat Timing Precision" to "🥁"
+                                            isGuitar -> "Fret Intonation" to "🎸"
+                                            isPiano -> "Melodic Accuracy" to "🎹"
+                                            isViolin -> "Pitch Intonation" to "🎻"
+                                            isFlute -> "Pitch Centering" to "🪈"
+                                            isVeena -> "Swara Intonation" to "🪕"
+                                            else -> "Pitch Accuracy" to "🎯"
+                                        }
+                                        val (sName, sIcon) = when {
+                                            isDrums -> "Groove Stability" to "〰️"
+                                            isGuitar -> "Sustain Control" to "〰️"
+                                            isPiano -> "Note Sustain" to "〰️"
+                                            isViolin -> "Vibrato & Stability" to "〰️"
+                                            isFlute -> "Breath Support" to "〰️"
+                                            isVeena -> "Fret Sustain" to "〰️"
+                                            else -> "Pitch Stability" to "〰️"
+                                        }
+                                        val (cName, cIcon) = when {
+                                            isDrums -> "Transient Attack Clarity" to "⚡"
+                                            isGuitar -> "String Resonance" to "💎"
+                                            isPiano -> "Key Attack Clarity" to "💎"
+                                            isViolin -> "Bow Tone Clarity" to "💎"
+                                            isFlute -> "Tone Purity" to "💎"
+                                            isVeena -> "Meetu Tone Clarity" to "💎"
+                                            else -> "Tone & Resonance Clarity" to "💎"
+                                        }
+                                        val (rName, rIcon) = when {
+                                            isDrums -> "Rhythm & Tempo Precision" to "⏱️"
+                                            isGuitar -> "Strumming Rhythm & Timing" to "⏱️"
+                                            isPiano -> "Tempo Consistency" to "⏱️"
+                                            isViolin -> "Bowing Cadence" to "⏱️"
+                                            isFlute -> "Note Articulation" to "⏱️"
+                                            isVeena -> "Tala Rhythm Timing" to "⏱️"
+                                            else -> "Rhythm and Timing" to "⏱️"
+                                        }
+                                        val (vName, vIcon) = when {
+                                            isDrums -> "Dynamic Strike Velocity" to "📊"
+                                            isGuitar -> "Strum Dynamic Evenness" to "📊"
+                                            isPiano -> "Dynamic Touch Velocity" to "📊"
+                                            isViolin -> "Dynamic Bow Control" to "📊"
+                                            isFlute -> "Airflow Consistency" to "📊"
+                                            isVeena -> "Plucking Consistency" to "📊"
+                                            else -> "Dynamic Consistency" to "📊"
+                                        }
+
+                                        VocalParameterBar(name = pName, score = pitchAcc, icon = pIcon)
+                                        VocalParameterBar(name = sName, score = pitchStab, icon = sIcon)
+                                        VocalParameterBar(name = cName, score = vocalClar, icon = cIcon)
+                                        VocalParameterBar(name = rName, score = rhythm, icon = rIcon)
+                                        VocalParameterBar(name = vName, score = consist, icon = vIcon)
                                     }
                                 }
                             }
@@ -2174,12 +2358,32 @@ fun PracticeEvaluationModal(
                                     Text(text = "Focus Areas for Improvement:", color = Color(0xFFD84315), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     Spacer(modifier = Modifier.height(4.dp))
                                     res.weaknesses.forEach { w ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Text("• ", color = Color(0xFFD84315), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                            Text(w, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
+                                        if (w.startsWith("❌")) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 3.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color(0xFFFEF2F2))
+                                                    .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(8.dp))
+                                                    .padding(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = w,
+                                                    color = Color(0xFFB91C1C),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    lineHeight = 15.sp
+                                                )
+                                            }
+                                        } else {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                                verticalAlignment = Alignment.Top
+                                            ) {
+                                                Text("• ", color = Color(0xFFD84315), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                Text(w, color = TextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
+                                            }
                                         }
                                     }
                                 }
@@ -2307,26 +2511,36 @@ fun PracticeEvaluationModal(
                             Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        // 1. Music (Singing / Voice)
+                        // 1. Music (Singing / Instruments)
                         if (isMusic) {
+                            val isVocal = uiState.isVocalSkill
+                            val instrName = uiState.activeSubcategoryName.ifBlank { "Instrument" }
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = "🎙️ Record Your Singing Voice",
+                                    text = if (isVocal) "🎙️ Record Your Singing Voice" else "🎙️ Record Your $instrName Practice",
                                     color = HeadingPurple,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Record your singing or vocal drill with the microphone. The AI acoustic analyzer calculates pitch accuracy, rhythm tempo, vowel pronunciation, and vocal clarity.",
+                                    text = if (isVocal) {
+                                        "Record your singing or vocal drill with the microphone. The AI acoustic analyzer calculates pitch accuracy, rhythm tempo, vowel pronunciation, and vocal clarity."
+                                    } else {
+                                        "Record your $instrName practice using the microphone. The AI acoustic analyzer calculates instrument rhythm, pitch/tempo stability, tone clarity, and timing."
+                                    },
                                     color = TextSecondary,
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "⚠️ Notice: Background music playback, instrumental audio, or silence will NOT be scored. Please sing clearly into the microphone.",
-                                    color = Color(0xFFD84315),
+                                    text = if (isVocal) {
+                                        "⚠️ Notice: Background music playback or silence will NOT be scored. Please sing clearly into the microphone."
+                                    } else {
+                                        "💡 Tip: Position your microphone close to your $instrName and play audibly for accurate AI rhythm, intonation, and tone evaluation."
+                                    },
+                                    color = if (isVocal) Color(0xFFD84315) else Color(0xFF2E7D32),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     lineHeight = 15.sp
@@ -3055,7 +3269,7 @@ fun VocalReviewDialog(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        text = "AI VOCAL PERFORMANCE SCORE",
+                                        text = if (uiState.isVocalSkill) "AI VOCAL PERFORMANCE SCORE" else "AI ${uiState.activeSubcategoryName.uppercase()} PERFORMANCE SCORE",
                                         color = AccentPurple,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
@@ -3081,11 +3295,13 @@ fun VocalReviewDialog(
                                         )
                                     }
                                     val sc = result.score
+                                    val isVocal = uiState.isVocalSkill
+                                    val subName = uiState.activeSubcategoryName
                                     val grade = when {
-                                        sc >= 90 -> "🏆 Exceptional Vocal Performance"
-                                        sc >= 80 -> "⭐ High Proficiency & Vocal Clarity"
+                                        sc >= 90 -> if (isVocal) "🏆 Exceptional Vocal Performance" else "🏆 Exceptional $subName Performance"
+                                        sc >= 80 -> if (isVocal) "⭐ High Proficiency & Vocal Clarity" else "⭐ High Proficiency & Dynamic Tone"
                                         sc >= 70 -> "🎯 Solid Intonation & Control"
-                                        else -> "📈 Growing Vocal Technique"
+                                        else -> "📈 Growing Technique & Pacing"
                                     }
                                     Text(
                                         text = grade,
@@ -3109,7 +3325,7 @@ fun VocalReviewDialog(
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Text(
-                                        text = "Vocal Parameter Breakdown",
+                                        text = if (uiState.isVocalSkill) "Vocal Parameter Breakdown" else "${uiState.activeSubcategoryName} Parameter Breakdown",
                                         color = HeadingPurple,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold
@@ -3122,11 +3338,65 @@ fun VocalReviewDialog(
                                     val rhythmVal = ((result.metrics["rhythm_and_timing"] ?: result.metrics["rhythm"]) as? Number)?.toInt() ?: 80
                                     val consistVal = ((result.metrics["voice_consistency"] ?: result.metrics["consistency"]) as? Number)?.toInt() ?: 82
 
-                                    VocalParameterBar(name = "Pitch Accuracy", score = pitchAcc, icon = "🎯")
-                                    VocalParameterBar(name = "Pitch Stability", score = pitchStab, icon = "〰️")
-                                    VocalParameterBar(name = "Vocal Clarity", score = vocalClar, icon = "💎")
-                                    VocalParameterBar(name = "Rhythm and Timing", score = rhythmVal, icon = "⏱️")
-                                    VocalParameterBar(name = "Voice Consistency", score = consistVal, icon = "📊")
+                                    val subLow = uiState.activeSubcategoryName.lowercase()
+                                    val isDrums = subLow.contains("drum")
+                                    val isGuitar = subLow.contains("guitar")
+                                    val isPiano = subLow.contains("piano") || subLow.contains("keyboard")
+                                    val isViolin = subLow.contains("violin")
+                                    val isFlute = subLow.contains("flute")
+                                    val isVeena = subLow.contains("veena")
+
+                                    val (pName, pIcon) = when {
+                                        isDrums -> "Beat Timing Precision" to "🥁"
+                                        isGuitar -> "Fret Intonation" to "🎸"
+                                        isPiano -> "Melodic Accuracy" to "🎹"
+                                        isViolin -> "Pitch Intonation" to "🎻"
+                                        isFlute -> "Pitch Centering" to "🪈"
+                                        isVeena -> "Swara Intonation" to "🪕"
+                                        else -> "Pitch Accuracy" to "🎯"
+                                    }
+                                    val (sName, sIcon) = when {
+                                        isDrums -> "Groove Stability" to "〰️"
+                                        isGuitar -> "Sustain Control" to "〰️"
+                                        isPiano -> "Note Sustain" to "〰️"
+                                        isViolin -> "Vibrato & Stability" to "〰️"
+                                        isFlute -> "Breath Support" to "〰️"
+                                        isVeena -> "Fret Sustain" to "〰️"
+                                        else -> "Pitch Stability" to "〰️"
+                                    }
+                                    val (cName, cIcon) = when {
+                                        isDrums -> "Transient Attack Clarity" to "⚡"
+                                        isGuitar -> "String Resonance" to "💎"
+                                        isPiano -> "Key Attack Clarity" to "💎"
+                                        isViolin -> "Bow Tone Clarity" to "💎"
+                                        isFlute -> "Tone Purity" to "💎"
+                                        isVeena -> "Meetu Tone Clarity" to "💎"
+                                        else -> "Tone & Resonance Clarity" to "💎"
+                                    }
+                                    val (rName, rIcon) = when {
+                                        isDrums -> "Rhythm & Tempo Precision" to "⏱️"
+                                        isGuitar -> "Strumming Rhythm & Timing" to "⏱️"
+                                        isPiano -> "Tempo Consistency" to "⏱️"
+                                        isViolin -> "Bowing Cadence" to "⏱️"
+                                        isFlute -> "Note Articulation" to "⏱️"
+                                        isVeena -> "Tala Rhythm Timing" to "⏱️"
+                                        else -> "Rhythm and Timing" to "⏱️"
+                                    }
+                                    val (vName, vIcon) = when {
+                                        isDrums -> "Dynamic Strike Velocity" to "📊"
+                                        isGuitar -> "Strum Dynamic Evenness" to "📊"
+                                        isPiano -> "Dynamic Touch Velocity" to "📊"
+                                        isViolin -> "Dynamic Bow Control" to "📊"
+                                        isFlute -> "Airflow Consistency" to "📊"
+                                        isVeena -> "Plucking Consistency" to "📊"
+                                        else -> "Dynamic Consistency" to "📊"
+                                    }
+
+                                    VocalParameterBar(name = pName, score = pitchAcc, icon = pIcon)
+                                    VocalParameterBar(name = sName, score = pitchStab, icon = sIcon)
+                                    VocalParameterBar(name = cName, score = vocalClar, icon = cIcon)
+                                    VocalParameterBar(name = rName, score = rhythmVal, icon = rIcon)
+                                    VocalParameterBar(name = vName, score = consistVal, icon = vIcon)
                                 }
                             }
 
@@ -3368,6 +3638,23 @@ fun PhotographyPracticeTool(
         }
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        }
+    }
+
+    val openCameraWithCheck = {
+        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (hasPerm) {
+            cameraLauncher.launch(null)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
@@ -3483,7 +3770,7 @@ fun PhotographyPracticeTool(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = { cameraLauncher.launch(null) },
+                        onClick = { openCameraWithCheck() },
                         modifier = Modifier.weight(1f).height(40.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = TaglineBackground),
                         shape = RoundedCornerShape(10.dp)
@@ -3535,7 +3822,7 @@ fun PhotographyPracticeTool(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = { cameraLauncher.launch(null) },
+                        onClick = { openCameraWithCheck() },
                         modifier = Modifier.weight(1f).height(44.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                         shape = RoundedCornerShape(12.dp)
@@ -3574,16 +3861,41 @@ fun PhotographyPracticeTool(
                 }
             }
 
+            if (uiState.evaluationError != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFFFEBEE))
+                        .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚠️", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = uiState.evaluationError,
+                            color = Color(0xFFC62828),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
             if (bitmap != null) {
                 Spacer(modifier = Modifier.height(14.dp))
+                val isSubmitting = uiState.isSubmittingEvaluation || uiState.isEvaluatingArtifact
                 Button(
                     onClick = { viewModel.submitCapturedPhoto() },
-                    enabled = !uiState.isSubmittingEvaluation,
+                    enabled = !isSubmitting,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (uiState.isSubmittingEvaluation) {
+                    if (isSubmitting) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Analyzing Composition & Lighting...", color = Color.White, fontSize = 12.sp)
@@ -3978,13 +4290,15 @@ fun CodingPracticeTool(
             ) {
                 Button(
                     onClick = { viewModel.runCode(UserSession.userId) },
-                    enabled = !uiState.isCodeRunning,
+                    enabled = !uiState.isCodeRunning && !uiState.isSubmittingEvaluation,
                     modifier = Modifier.weight(1f).height(44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEDE5FA)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (uiState.isCodeRunning) {
                         CircularProgressIndicator(color = AccentPurple, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Running...", color = AccentPurple, fontSize = 12.sp)
                     } else {
                         Text("▶ Run Code", color = AccentPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
@@ -3992,15 +4306,130 @@ fun CodingPracticeTool(
 
                 Button(
                     onClick = { viewModel.submitCodingPractice() },
-                    enabled = !uiState.isSubmittingEvaluation,
+                    enabled = !uiState.isSubmittingEvaluation && !uiState.isCodeRunning,
                     modifier = Modifier.weight(1f).height(44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (uiState.isSubmittingEvaluation) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Evaluating...", color = Color.White, fontSize = 12.sp)
                     } else {
                         Text("✓ Submit Code", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // DEDICATED CODE MISTAKE DIAGNOSTIC CARD
+            if (uiState.codeMistake != null && uiState.codeMistake.hasMistake) {
+                val m = uiState.codeMistake
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFEF2F2))
+                        .border(1.5.dp, Color(0xFFEF4444), RoundedCornerShape(14.dp))
+                        .padding(14.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f, fill = false),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("❌", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = m.mistakeTitle.ifBlank { "Coding Mistake Detected" },
+                                    color = Color(0xFFB91C1C),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            if (m.lineNumber > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFFFEE2E2))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "Line ${m.lineNumber}",
+                                        color = Color(0xFFB91C1C),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
+                        }
+
+                        if (m.faultyCode.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF1E293B))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = m.faultyCode,
+                                    color = Color(0xFFFCA5A5),
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        if (m.mistakeDescription.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = m.mistakeDescription,
+                                color = Color(0xFF374151),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+
+                        if (m.howToFix.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFECFDF5))
+                                    .border(1.dp, Color(0xFF10B981), RoundedCornerShape(10.dp))
+                                    .padding(10.dp)
+                            ) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("💡", fontSize = 13.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "How to Fix This Mistake:",
+                                            color = Color(0xFF047857),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = m.howToFix,
+                                        color = Color(0xFF065F46),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = 16.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4040,7 +4469,7 @@ fun CodingPracticeTool(
                             )
                         }
 
-                        if (uiState.codingError.isNotBlank()) {
+                        if (uiState.codingError.isNotBlank() && (uiState.codeMistake == null || !uiState.codeMistake.hasMistake)) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = uiState.codingError,
@@ -4050,28 +4479,56 @@ fun CodingPracticeTool(
                             )
                         }
 
-                        // Test Cases List
+                        // Test Cases List with Detailed Inputs & Expected/Actual values
                         if (uiState.codeTestCases.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            uiState.codeTestCases.forEach { tc ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = if (tc.passed) "✓ PASS" else "✕ FAIL",
-                                        color = if (tc.passed) Color(0xFF4ADE80) else Color(0xFFF87171),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "${tc.name}: expected ${tc.expected}, got ${tc.actual}",
-                                        color = Color(0xFFCBD5E1),
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace
-                                    )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                uiState.codeTestCases.forEach { tc ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (tc.passed) Color(0xFF132F21) else Color(0xFF331616))
+                                            .padding(8.dp)
+                                    ) {
+                                        Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = tc.name,
+                                                    color = if (tc.passed) Color(0xFF86EFAC) else Color(0xFFFCA5A5),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = FontFamily.Monospace
+                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(if (tc.passed) Color(0xFF15803D) else Color(0xFFDC2626))
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (tc.passed) "PASS" else "FAIL",
+                                                        color = Color.White,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+                                            if (tc.input.isNotBlank() || tc.expected.isNotBlank()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Input: ${tc.input}  |  Expected: ${tc.expected}  |  Got: ${tc.actual}",
+                                                    color = Color(0xFFCBD5E1),
+                                                    fontSize = 10.sp,
+                                                    fontFamily = FontFamily.Monospace
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

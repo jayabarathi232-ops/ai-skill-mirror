@@ -15,7 +15,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +49,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import com.simats.aiskillmirror.data.network.CompletedSessionItem
 import com.simats.aiskillmirror.ui.dashboard.BottomNavigationBar
 import com.simats.aiskillmirror.ui.dashboard.DashboardTab
 import com.simats.aiskillmirror.ui.dashboard.MicIcon
@@ -60,6 +65,7 @@ import com.simats.aiskillmirror.ui.recovery.BackArrowIcon
 import com.simats.aiskillmirror.ui.splash.MirrorLogoIcon
 import com.simats.aiskillmirror.ui.splash.SparkleIcon
 import com.simats.aiskillmirror.ui.theme.*
+import com.simats.aiskillmirror.ui.training.CheckCircleIcon
 import kotlin.math.sin
 
 @Composable
@@ -325,7 +331,94 @@ fun AiCoachScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Completed Sessions Quick Access Option Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(2.dp, RoundedCornerShape(14.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color(0xFFFBF9FE), Color(0xFFF3EDFC))
+                            )
+                        )
+                        .border(1.dp, Color(0xFFE5DAF8), RoundedCornerShape(14.dp))
+                        .clickable { viewModel.openCompletedSessionsSheet() }
+                        .padding(horizontal = 14.dp, vertical = 11.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFE8F5E9)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CheckCircleIcon(size = 18.dp, color = GreenNode)
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Completed Sessions",
+                                        color = HeadingPurple,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(100.dp))
+                                            .background(PrimaryGradientStart)
+                                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "${uiState.completedSessions.size}",
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Tap to view entire completed practice in short",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(TaglineBackground)
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "View All →",
+                                color = AccentPurple,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Timestamp Header
                 Text(
@@ -728,6 +821,341 @@ fun AiCoachScreen(
                     viewModel.clearConversation()
                 }
             )
+        }
+
+        // ==========================================
+        // COMPLETED SESSIONS SUMMARY SHEET (IN SHORT)
+        // ==========================================
+        if (uiState.isCompletedSessionsSheetOpen) {
+            CompletedSessionsSummarySheet(
+                completedSessions = uiState.completedSessions,
+                selectedFilter = uiState.selectedCompletedSkillFilter,
+                onSelectFilter = { viewModel.selectCompletedSkillFilter(it) },
+                onAskCoach = { session -> viewModel.askCoachAboutSession(session) },
+                onDismiss = { viewModel.closeCompletedSessionsSheet() }
+            )
+        }
+    }
+}
+
+/**
+ * Clean, compact bottom sheet displaying all completed sessions across the app "in short"
+ */
+@Composable
+fun CompletedSessionsSummarySheet(
+    completedSessions: List<CompletedSessionItem>,
+    selectedFilter: String,
+    onSelectFilter: (String) -> Unit,
+    onAskCoach: (CompletedSessionItem) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val filteredList = remember(completedSessions, selectedFilter) {
+        if (selectedFilter.equals("all", ignoreCase = true)) {
+            completedSessions
+        } else {
+            completedSessions.filter { it.skill.equals(selectedFilter, ignoreCase = true) }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(CardBackground)
+                    .clickable(enabled = false) {}
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Pull Indicator Bar
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(42.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(Color(0xFFD6C8F2))
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Header Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFE8F5E9)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CheckCircleIcon(size = 20.dp, color = GreenNode)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Completed Sessions",
+                                        color = HeadingPurple,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(100.dp))
+                                            .background(PrimaryGradientStart)
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "${completedSessions.size}",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "All completed practice across skills in short",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        // Close Icon Button
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(TaglineBackground)
+                                .clickable { onDismiss() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "✕",
+                                color = HeadingPurple,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Filter Chips: All, Coding, Photography, Music
+                    val filters = listOf(
+                        "all" to "All (${completedSessions.size})",
+                        "coding" to "Coding (${completedSessions.count { it.skill.equals("coding", ignoreCase = true) }})",
+                        "photography" to "Photography (${completedSessions.count { it.skill.equals("photography", ignoreCase = true) }})",
+                        "music" to "Music (${completedSessions.count { it.skill.equals("music", ignoreCase = true) }})"
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        filters.forEach { (key, label) ->
+                            val isSelected = selectedFilter.equals(key, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(
+                                        if (isSelected) Brush.horizontalGradient(listOf(PrimaryGradientStart, PrimaryGradientEnd))
+                                        else Brush.horizontalGradient(listOf(Color(0xFFF3EDFC), Color(0xFFF3EDFC)))
+                                    )
+                                    .clickable { onSelectFilter(key) }
+                                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) Color.White else HeadingPurple,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // List of Completed Sessions "in short"
+                    if (filteredList.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No completed sessions found for this category.",
+                                color = TextSecondary,
+                                fontSize = 13.sp
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            items(filteredList) { session ->
+                                CompletedSessionShortCard(
+                                    session = session,
+                                    onAskCoach = { onAskCoach(session) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Compact Single-Session Card for the Short Summary View
+ */
+@Composable
+fun CompletedSessionShortCard(
+    session: CompletedSessionItem,
+    onAskCoach: () -> Unit
+) {
+    val (skillBg, skillColor, skillEmoji) = when (session.skill.lowercase()) {
+        "coding" -> Triple(Color(0xFFE0F2F1), Color(0xFF00796B), "💻")
+        "photography" -> Triple(Color(0xFFFFF3E0), Color(0xFFE65100), "📷")
+        "music" -> Triple(Color(0xFFEDE7F6), Color(0xFF5E35B1), "🎵")
+        else -> Triple(Color(0xFFF3E5F5), Color(0xFF7B1FA2), "✨")
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(14.dp), spotColor = Color(0xFFD6C8F2), ambientColor = Color(0xFFE9DDFF))
+            .clip(RoundedCornerShape(14.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .padding(12.dp)
+    ) {
+        Column {
+            // Category Tag + Score Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(skillBg)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "$skillEmoji ${session.category}",
+                        color = skillColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (session.score != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(Color(0xFFE8F5E9))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${session.score}%",
+                            color = GreenNode,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(Color(0xFFFFF3E0))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "Score N/A",
+                            color = Color(0xFFE65100),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Title
+            Text(
+                text = session.title,
+                color = HeadingPurple,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Subtitle & Action Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${session.durationText} · ${session.xpText} · ${session.completedAt}",
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+
+                // "Ask Mira" button
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color(0xFFF3E5F5))
+                        .clickable { onAskCoach() }
+                        .padding(horizontal = 9.dp, vertical = 3.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SparkleIcon(size = 11.dp, color = AccentPurple)
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Ask Mira",
+                            color = AccentPurple,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }

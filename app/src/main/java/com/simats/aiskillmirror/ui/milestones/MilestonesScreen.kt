@@ -282,43 +282,6 @@ fun MilestonesScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Section: Achievement Shelf
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Your achievement shelf",
-                        color = HeadingPurple,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = uiState.earnedCountText,
-                        color = TaglineText,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Row of 3 Achievement Cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    uiState.achievements.forEach { item ->
-                        AchievementCard(
-                            item = item,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
                 // Section: Next Reward
                 Text(
                     text = "Next reward",

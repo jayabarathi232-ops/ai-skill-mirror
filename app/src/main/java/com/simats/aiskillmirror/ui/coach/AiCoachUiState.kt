@@ -1,5 +1,7 @@
 package com.simats.aiskillmirror.ui.coach
 
+import com.simats.aiskillmirror.data.network.CompletedSessionItem
+
 data class ChatMessage(
     val id: String,
     val text: String,
@@ -24,6 +26,10 @@ data class AiCoachUiState(
     val isTyping: Boolean = false,
     val errorMessage: String? = null,
     val lastFailedMessage: String? = null,
+    // Completed Sessions State
+    val completedSessions: List<CompletedSessionItem> = emptyList(),
+    val isCompletedSessionsSheetOpen: Boolean = false,
+    val selectedCompletedSkillFilter: String = "all",
     // Voice Chat State
     val isVoiceModeActive: Boolean = false,
     val voiceState: VoiceCoachState = VoiceCoachState.IDLE,

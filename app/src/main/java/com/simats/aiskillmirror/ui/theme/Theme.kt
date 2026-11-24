@@ -49,6 +49,7 @@ fun AISkillsMirrorTheme(
     CompositionLocalProvider(LocalAppColors provides colors) {
         MaterialTheme(
             colorScheme = colorScheme,
+            typography = Typography,
             content = content
         )
     }

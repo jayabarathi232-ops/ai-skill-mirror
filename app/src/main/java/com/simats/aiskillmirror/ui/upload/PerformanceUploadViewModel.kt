@@ -547,7 +547,8 @@ class PerformanceUploadViewModel(
                     skillCategory = _uiState.value.skillCategory,
                     title = title,
                     file = tempFile,
-                    mimeType = mime
+                    mimeType = mime,
+                    previousUploadId = _uiState.value.previousVideoResult?.id
                 )
 
                 _uiState.value = _uiState.value.copy(uploadProgress = 1.0f, isUploading = false)
@@ -573,6 +574,51 @@ class PerformanceUploadViewModel(
                 )
             }
         }
+    }
+
+    fun startFollowUpVideo() {
+        val current = _uiState.value.successResult ?: return
+        val mistakesList = current.mistakes?.filter { it.isNotBlank() }?.ifEmpty { null }
+            ?: listOf(
+                "Pacing rushed on transitions: Focus on keeping a steady tempo.",
+                "Hand/wrist stiffness: Relax fingers and keep posture flexible."
+            )
+        _uiState.value = _uiState.value.copy(
+            previousVideoResult = current,
+            isFollowUpMode = true,
+            followUpMistakesToFix = mistakesList,
+            selectedTab = MediaTypeTab.VIDEO,
+            selectedUri = null,
+            capturedBitmap = null,
+            selectedFileName = null,
+            selectedFileSizeBytes = 0,
+            selectedFileSizeText = null,
+            selectedDurationText = null,
+            selectedDurationSeconds = null,
+            successResult = null,
+            errorMessage = null,
+            performanceTitle = "Follow-up Attempt #${(current.id % 10) + 1} - ${current.skillCategory.replaceFirstChar { it.uppercase() }}"
+        )
+    }
+
+    fun cancelFollowUpMode() {
+        _uiState.value = _uiState.value.copy(
+            isFollowUpMode = false,
+            previousVideoResult = null,
+            followUpMistakesToFix = emptyList()
+        )
+    }
+
+    fun resetToNewUpload() {
+        clearSelectedMedia()
+        _uiState.value = _uiState.value.copy(
+            isFollowUpMode = false,
+            previousVideoResult = null,
+            followUpMistakesToFix = emptyList(),
+            successResult = null,
+            errorMessage = null,
+            performanceTitle = ""
+        )
     }
 
     fun loadHistory() {

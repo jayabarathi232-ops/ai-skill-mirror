@@ -103,7 +103,32 @@ data class DashboardDto(
     @SerializedName("currentLessonProgress") val currentLessonProgress: Double = 0.0,
     @SerializedName("completedLessonsCount") val completedLessonsCount: Int = 0,
     @SerializedName("totalLessonsCount") val totalLessonsCount: Int = 0,
-    @SerializedName("remainingLessonsCount") val remainingLessonsCount: Int = 0
+    @SerializedName("remainingLessonsCount") val remainingLessonsCount: Int = 0,
+    @SerializedName("aiCoachTitle") val aiCoachTitle: String? = null,
+    @SerializedName("aiCoachSubtitle") val aiCoachSubtitle: String? = null,
+    @SerializedName("mySkills") val mySkills: List<DashboardSkillDto> = emptyList(),
+    @SerializedName("recentHistory") val recentHistory: List<DashboardHistoryDto> = emptyList()
+)
+
+data class DashboardSkillDto(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val name: String = "",
+    @SerializedName("category") val category: String = "",
+    @SerializedName("score") val score: Int = 0,
+    @SerializedName("level") val level: String = "",
+    @SerializedName("iconEmoji") val iconEmoji: String = "",
+    @SerializedName("accentColor") val accentColor: Long = 0,
+    @SerializedName("progress") val progress: Float = 0f
+)
+
+data class DashboardHistoryDto(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("skillName") val skillName: String = "",
+    @SerializedName("activity") val activity: String = "",
+    @SerializedName("score") val score: Int = 0,
+    @SerializedName("dateText") val dateText: String = "",
+    @SerializedName("iconEmoji") val iconEmoji: String = "",
+    @SerializedName("feedback") val feedback: String = ""
 )
 
 data class DashboardResponse(
@@ -490,6 +515,11 @@ data class PerformanceUploadItemDto(
     @SerializedName("score") val score: Int,
     @SerializedName("analysis_summary") val analysisSummary: String,
     @SerializedName("ai_feedback") val aiFeedback: String,
+    @SerializedName("mistakes") val mistakes: List<String>? = null,
+    @SerializedName("strengths") val strengths: List<String>? = null,
+    @SerializedName("how_to_fix") val howToFix: String? = null,
+    @SerializedName("previous_upload_id") val previousUploadId: Int? = null,
+    @SerializedName("comparison_note") val comparisonNote: String? = null,
     @SerializedName("gemini_configured") val geminiConfigured: Boolean = false,
     @SerializedName("gemini_note") val geminiNote: String? = null,
     @SerializedName("metrics") val metrics: Map<String, Any>? = null,

@@ -31,10 +31,24 @@ class SkillSelectionViewModel : ViewModel() {
             val subcatResult = ApiClient.fetchUserSubcategories(UserSession.userId)
             if (subcatResult.isSuccess && subcatResult.data != null) {
                 val (active, list) = subcatResult.data
+                val currSkill = _uiState.value.selectedSkillId.lowercase()
+                val matched = list.filter { sub ->
+                    val m = sub.mainSkill.lowercase()
+                    when {
+                        currSkill.contains("music") -> m.contains("music") || m in listOf("guitar", "singing", "piano", "violin", "drums", "flute", "veena")
+                        currSkill.contains("photo") -> m.contains("photo")
+                        currSkill.contains("cod") || currSkill.contains("prog") -> m.contains("cod") || m.contains("prog")
+                        else -> m == currSkill
+                    }
+                }.let { subList ->
+                    subList.firstOrNull { it.isActive }
+                        ?: subList.maxByOrNull { it.lessonsCompleted * 100 + it.xpEarned }
+                        ?: subList.firstOrNull()
+                } ?: active
+
                 _uiState.value = _uiState.value.copy(
-                    activeSavedSubcategory = active,
-                    savedSubcategories = list,
-                    selectedSkillId = active?.mainSkill?.ifBlank { "music" } ?: _uiState.value.selectedSkillId
+                    activeSavedSubcategory = matched,
+                    savedSubcategories = list
                 )
             }
 
@@ -54,9 +68,43 @@ class SkillSelectionViewModel : ViewModel() {
     }
 
     fun selectCategory(categoryId: String) {
+        val catId = categoryId.lowercase()
+        // Find if user has a saved subcategory matching this category
+        val matchedSub = _uiState.value.savedSubcategories.filter { sub ->
+            val mSkill = sub.mainSkill.lowercase()
+            when {
+                catId.contains("music") -> mSkill.contains("music") || mSkill in listOf("guitar", "singing", "piano", "violin", "drums", "flute", "veena")
+                catId.contains("photo") -> mSkill.contains("photo")
+                catId.contains("cod") || catId.contains("prog") -> mSkill.contains("cod") || mSkill.contains("prog")
+                else -> mSkill == catId
+            }
+        }.let { list ->
+            list.firstOrNull { it.isActive }
+                ?: list.maxByOrNull { it.lessonsCompleted * 100 + it.xpEarned }
+                ?: list.firstOrNull()
+        }
+
+        val categoryObj = _uiState.value.skills.firstOrNull { it.id.equals(categoryId, ignoreCase = true) }
+        val fallback = if (matchedSub == null && categoryObj != null && categoryObj.subcategories.isNotEmpty()) {
+            val firstSub = categoryObj.subcategories.first()
+            com.simats.aiskillmirror.data.network.SubcategoryItemData(
+                id = 0,
+                mainSkill = categoryObj.id,
+                subcategoryId = firstSub.id,
+                subcategoryName = firstSub.name,
+                proficiencyLevel = "Beginner",
+                learningGoal = "Master Core Fundamentals",
+                isActive = true,
+                xpEarned = 0,
+                lessonsCompleted = 0,
+                practiceMinutes = 0
+            )
+        } else null
+
         _uiState.value = _uiState.value.copy(
             selectedSkillId = categoryId,
             selectedSubcategory = null,
+            activeSavedSubcategory = matchedSub ?: fallback ?: _uiState.value.activeSavedSubcategory,
             isSubcategoryDialogOpen = false
         )
     }

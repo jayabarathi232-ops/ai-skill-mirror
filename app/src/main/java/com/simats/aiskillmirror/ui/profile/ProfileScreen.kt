@@ -248,11 +248,8 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 2. DEDICATED WEEKLY COMPARISON SECTION (Replaced old Weekly Progress)
-                ProfileWeeklyComparisonCard(
-                    compData = uiState.weeklyComparison,
-                    onViewFullComparisonClick = onWeeklyComparisonClick
-                )
+                // 2. DEDICATED WEEKLY PROGRESS SECTION
+                WeeklyProgressCard(weeklyProgress = uiState.weeklyProgress)
 
                 Spacer(modifier = Modifier.height(20.dp))
 

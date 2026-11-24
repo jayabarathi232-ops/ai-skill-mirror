@@ -63,12 +63,14 @@ fun DashboardScreen(
     onViewSkillMirrorClick: () -> Unit = {},
     onViewPlanClick: () -> Unit = {},
     onContinueTrainingClick: () -> Unit = {},
+    onStartRecommendedPractice: (RecommendedPracticeItem) -> Unit = {},
     onOpenAiCoachClick: () -> Unit = {},
     onOpenSkillGapDetectorClick: () -> Unit = {},
     onUploadPerformanceClick: (String) -> Unit = {},
     onOpenPublicSpeakingClick: () -> Unit = {},
     onOpenSkillCategory: (String) -> Unit = {},
-    onWeeklyComparisonClick: () -> Unit = {}
+    onWeeklyComparisonClick: () -> Unit = {},
+    onOpenPerformanceHistoryClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -377,7 +379,11 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
                         Text(
                             text = "My Skills",
                             color = AccentPurple,
@@ -385,7 +391,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Real-time AI assessment across 4 core domains",
+                            text = "Real-time AI assessment across 3 core domains",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
@@ -396,13 +402,15 @@ fun DashboardScreen(
                             .background(TaglineBackground)
                             .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
                             .clickable { onTabSelected(DashboardTab.ASSESS) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
                     ) {
                         Text(
                             text = "Assess All",
                             color = TaglineText,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -711,29 +719,153 @@ fun DashboardScreen(
                 // ==========================================
                 // 6. RECENT PERFORMANCE HISTORY (WHITE CARDS)
                 // ==========================================
+                // ==========================================
+                // 6. RECENT PERFORMANCE HISTORY (WITH SEPARATE SCREEN GATEWAY)
+                // ==========================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Recent Performance History",
-                        color = AccentPurple,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Last 7 days",
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
+                        Text(
+                            text = "Recent Performance History",
+                            color = AccentPurple,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Verified practice drills & AI assessments",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(TaglineBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                            .clickable { onOpenPerformanceHistoryClick() }
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = "History →",
+                            color = TaglineText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    uiState.recentHistory.forEach { item ->
-                        PerformanceHistoryCard(item = item)
+                // Performance History Gateway Card
+                val latestSession = uiState.recentHistory.firstOrNull()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                        .clickable { onOpenPerformanceHistoryClick() }
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(TaglineBackground),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = latestSession?.iconEmoji ?: "📜", fontSize = 22.sp)
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = latestSession?.skillName ?: "Practice History",
+                                        color = HeadingPurple,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (latestSession != null) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color(0xFFDCFCE7))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "${latestSession.score}%",
+                                                color = GreenNode,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = latestSession?.activity ?: "View all your past evaluations",
+                                    color = TextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        if (latestSession != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = latestSession.feedback,
+                                color = GreenNode,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Full History CTA Button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                    )
+                                )
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "📜 Open Performance History Screen →",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -747,7 +879,11 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp)
+                    ) {
                         Text(
                             text = com.simats.aiskillmirror.ui.localization.LanguageManager.t("weekly_comparison"),
                             color = AccentPurple,
@@ -760,13 +896,23 @@ fun DashboardScreen(
                             fontSize = 12.sp
                         )
                     }
-                    Text(
-                        text = "Compare →",
-                        color = PrimaryGradientStart,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { onWeeklyComparisonClick() }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(TaglineBackground)
+                            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                            .clickable { onWeeklyComparisonClick() }
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = "Compare →",
+                            color = TaglineText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -850,7 +996,7 @@ fun DashboardScreen(
                             practice = practice,
                             onStartClick = {
                                 Toast.makeText(context, "Starting ${practice.title}...", Toast.LENGTH_SHORT).show()
-                                onContinueTrainingClick()
+                                onStartRecommendedPractice(practice)
                             }
                         )
                     }
@@ -886,7 +1032,7 @@ fun MySkillCard(
 
     Box(
         modifier = Modifier
-            .width(165.dp)
+            .width(175.dp)
             .shadow(3.dp, RoundedCornerShape(20.dp), ambientColor = Color(0xFFD6C8F2), spotColor = Color(0xFFD6C8F2))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
@@ -974,13 +1120,17 @@ fun MySkillCard(
                     text = skill.level,
                     color = TaglineText,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "Assess →",
                     color = AccentPurple,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
@@ -1118,7 +1268,9 @@ fun PerformanceHistoryCard(item: PerformanceHistoryItem) {
                     text = item.feedback,
                     color = GreenNode,
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 

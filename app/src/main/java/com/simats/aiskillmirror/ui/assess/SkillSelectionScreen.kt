@@ -56,6 +56,53 @@ fun SkillSelectionScreen(
         ?: uiState.skills.firstOrNull()
         ?: defaultSkillCategoriesCatalog().first()
 
+    val activeSubForCategory = run {
+        val catLower = currentCategory.id.lowercase()
+        // 1. Check uiState.activeSavedSubcategory
+        val currActive = uiState.activeSavedSubcategory
+        if (currActive != null) {
+            val m = currActive.mainSkill.lowercase()
+            val matches = when {
+                catLower.contains("music") -> m.contains("music") || m in listOf("guitar", "singing", "piano", "violin", "drums", "flute", "veena")
+                catLower.contains("photo") -> m.contains("photo")
+                catLower.contains("cod") || catLower.contains("prog") -> m.contains("cod") || m.contains("prog")
+                else -> m == catLower
+            }
+            if (matches) return@run currActive
+        }
+
+        // 2. Check savedSubcategories
+        val savedMatch = uiState.savedSubcategories.filter { sub ->
+            val m = sub.mainSkill.lowercase()
+            when {
+                catLower.contains("music") -> m.contains("music") || m in listOf("guitar", "singing", "piano", "violin", "drums", "flute", "veena")
+                catLower.contains("photo") -> m.contains("photo")
+                catLower.contains("cod") || catLower.contains("prog") -> m.contains("cod") || m.contains("prog")
+                else -> m == catLower
+            }
+        }.let { list ->
+            list.firstOrNull { it.isActive }
+                ?: list.maxByOrNull { it.lessonsCompleted * 100 + it.xpEarned }
+                ?: list.firstOrNull()
+        }
+        if (savedMatch != null) return@run savedMatch
+
+        // 3. Fallback: first subcategory of selected category
+        val firstSub = currentCategory.subcategories.firstOrNull()
+        com.simats.aiskillmirror.data.network.SubcategoryItemData(
+            id = 0,
+            mainSkill = currentCategory.id,
+            subcategoryId = firstSub?.id ?: currentCategory.id,
+            subcategoryName = firstSub?.name ?: currentCategory.name,
+            proficiencyLevel = "Beginner",
+            learningGoal = "Master Core Fundamentals",
+            isActive = true,
+            xpEarned = 0,
+            lessonsCompleted = 0,
+            practiceMinutes = 0
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -118,16 +165,14 @@ fun SkillSelectionScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Active Training Path Card (if user has active subcategory)
-                uiState.activeSavedSubcategory?.let { activeSub ->
-                    ActiveTrainingPathCard(
-                        activeSub = activeSub,
-                        onContinue = {
-                            onStartTraining(activeSub.mainSkill, activeSub.subcategoryId)
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
+                // Active Training Path Card (dynamically shows the selected category's training path!)
+                ActiveTrainingPathCard(
+                    activeSub = activeSubForCategory,
+                    onContinue = {
+                        onStartTraining(activeSubForCategory.mainSkill, activeSubForCategory.subcategoryId)
+                    }
+                )
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Tagline & Headline
                 Text(
@@ -226,12 +271,16 @@ fun SkillSelectionScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     currentCategory.subcategories.forEach { subcategory ->
-                        val isActive = uiState.activeSavedSubcategory?.subcategoryId == subcategory.id
+                        val isActive = activeSubForCategory.subcategoryId == subcategory.id
                         SubcategoryCard(
                             subcategory = subcategory,
                             isActive = isActive,
                             onSelect = {
-                                viewModel.openSubcategoryOnboarding(subcategory)
+                                if (isActive) {
+                                    onStartTraining(subcategory.mainSkillId, subcategory.id)
+                                } else {
+                                    viewModel.openSubcategoryOnboarding(subcategory)
+                                }
                             }
                         )
                     }
@@ -405,33 +454,51 @@ fun ActiveTrainingPathCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = "⚡ +${activeSub.xpEarned} XP",
                         color = HeadingPurple,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
                     Text(
                         text = "📚 ${activeSub.lessonsCompleted} Lessons",
                         color = HeadingPurple,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
                     Text(
                         text = "⏱️ ${activeSub.practiceMinutes} min",
                         color = HeadingPurple,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
                 }
 
-                Text(
-                    text = "Continue Daily Training →",
-                    color = AccentPurple,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AccentPurple.copy(alpha = 0.12f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Continue →",
+                        color = AccentPurple,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
         }
     }

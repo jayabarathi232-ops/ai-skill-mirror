@@ -148,6 +148,20 @@ data class AiWeeklySummaryData(
     val message: String? = null
 )
 
+data class DailyComparisonDayData(
+    val day: String = "Mon",
+    val dayFull: String = "Monday",
+    val date: String = "",
+    val formattedDate: String = "",
+    val minutes: Int = 0,
+    val tasks: Int = 0,
+    val prevMinutes: Int = 0,
+    val percentage: Int = 0,
+    val prevPercentage: Int = 0,
+    val goalPercentage: Int = 0,
+    val isToday: Boolean = false
+)
+
 data class WeeklyComparisonData(
     val userId: Int = 1,
     val weekOffset: Int = 0,
@@ -162,8 +176,34 @@ data class WeeklyComparisonData(
     val currentWeek: WeekMetricsData = WeekMetricsData(),
     val practiceTimeComparison: TimeComparisonData = TimeComparisonData(),
     val tasksComparison: TasksComparisonData = TasksComparisonData(),
+    val dailyBreakdown: List<DailyComparisonDayData> = emptyList(),
     val skillsComparison: List<SkillComparisonData> = emptyList(),
     val aiSummary: AiWeeklySummaryData = AiWeeklySummaryData()
+)
+
+data class PracticeHistoryItemDto(
+    val id: String = "",
+    val skillName: String = "",
+    val skillGroup: String = "coding",
+    val subcategory: String = "",
+    val activity: String = "",
+    val score: Int = 0,
+    val durationMinutes: Int = 1,
+    val xpAwarded: Int = 35,
+    val dateText: String = "Today",
+    val fullDate: String = "",
+    val iconEmoji: String = "💻",
+    val feedback: String = "",
+    val strengths: List<String> = emptyList(),
+    val weaknesses: List<String> = emptyList()
+)
+
+data class PracticeHistoryDataDto(
+    val totalSessions: Int = 0,
+    val totalMinutes: Int = 0,
+    val averageScore: Int = 0,
+    val countsBySkill: Map<String, Int> = emptyMap(),
+    val items: List<PracticeHistoryItemDto> = emptyList()
 )
 
 data class ProfileBadgeItem(
@@ -196,12 +236,23 @@ data class ProfileData(
     val lockedBadges: List<ProfileBadgeItem> = emptyList()
 )
 
+data class CodeMistakeInfo(
+    val hasMistake: Boolean = false,
+    val errorType: String = "",
+    val lineNumber: Int = 0,
+    val faultyCode: String = "",
+    val mistakeTitle: String = "",
+    val mistakeDescription: String = "",
+    val howToFix: String = ""
+)
+
 data class CodeTestCaseResult(
     val name: String,
     val passed: Boolean,
     val input: String,
     val expected: String,
-    val actual: String
+    val actual: String,
+    val errorMessage: String = ""
 )
 
 data class CodeExecutionResult(
@@ -212,7 +263,29 @@ data class CodeExecutionResult(
     val testCases: List<CodeTestCaseResult>,
     val allTestsPassed: Boolean,
     val executionTimeMs: Int,
-    val explanation: String
+    val explanation: String,
+    val mistake: CodeMistakeInfo? = null
+)
+
+data class DashboardSkillItemData(
+    val id: String,
+    val name: String,
+    val category: String,
+    val score: Int,
+    val level: String,
+    val iconEmoji: String,
+    val accentColor: Long,
+    val progress: Float
+)
+
+data class DashboardHistoryItemData(
+    val id: String,
+    val skillName: String,
+    val activity: String,
+    val score: Int,
+    val dateText: String,
+    val iconEmoji: String,
+    val feedback: String
 )
 
 data class DashboardData(
@@ -234,7 +307,11 @@ data class DashboardData(
     val streakSubtitle: String = "Your best week yet",
     val minutesSubtitle: String = "to your goal",
     val currentPlanTitle: String = "",
-    val profilePicture: String = ""
+    val profilePicture: String = "",
+    val aiCoachTitle: String = "",
+    val aiCoachSubtitle: String = "",
+    val mySkills: List<DashboardSkillItemData> = emptyList(),
+    val recentHistory: List<DashboardHistoryItemData> = emptyList()
 )
 
 data class SkillItemData(
@@ -619,13 +696,27 @@ data class ChatMessageData(
     val timestamp: String
 )
 
+data class CompletedSessionItem(
+    val id: String = "",
+    val title: String = "",
+    val skill: String = "general",
+    val category: String = "",
+    val score: Int? = null,
+    val scoreStatus: String = "not_available",
+    val scoreReason: String? = null,
+    val xpText: String = "+35 XP",
+    val durationText: String = "10 min",
+    val completedAt: String = "Today"
+)
+
 data class CoachChatData(
     val coachName: String,
     val statusText: String,
     val bannerNoticeText: String,
     val timestampHeader: String,
     val messages: List<ChatMessageData>,
-    val suggestionChips: List<String>
+    val suggestionChips: List<String>,
+    val completedSessions: List<CompletedSessionItem> = emptyList()
 )
 
 data class UserSettingsData(
@@ -1202,6 +1293,45 @@ object ApiClient {
                     ?: d.optString("profilePicture", "")
                 val resolvedProfilePic = resolveImageUrl(rawProfilePic)
 
+                val mySkillsList = mutableListOf<DashboardSkillItemData>()
+                val mySkillsArr = d.optJSONArray("mySkills")
+                if (mySkillsArr != null) {
+                    for (i in 0 until mySkillsArr.length()) {
+                        val obj = mySkillsArr.getJSONObject(i)
+                        mySkillsList.add(
+                            DashboardSkillItemData(
+                                id = obj.optString("id", ""),
+                                name = obj.optString("name", ""),
+                                category = obj.optString("category", ""),
+                                score = obj.optInt("score", 0),
+                                level = obj.optString("level", "Beginner"),
+                                iconEmoji = obj.optString("iconEmoji", "🎯"),
+                                accentColor = obj.optLong("accentColor", 0xFF6366F1),
+                                progress = obj.optDouble("progress", 0.0).toFloat()
+                            )
+                        )
+                    }
+                }
+
+                val recentHistList = mutableListOf<DashboardHistoryItemData>()
+                val histArr = d.optJSONArray("recentHistory")
+                if (histArr != null) {
+                    for (i in 0 until histArr.length()) {
+                        val obj = histArr.getJSONObject(i)
+                        recentHistList.add(
+                            DashboardHistoryItemData(
+                                id = obj.optString("id", ""),
+                                skillName = obj.optString("skillName", ""),
+                                activity = obj.optString("activity", ""),
+                                score = obj.optInt("score", 0),
+                                dateText = obj.optString("dateText", ""),
+                                iconEmoji = obj.optString("iconEmoji", "🎯"),
+                                feedback = obj.optString("feedback", "")
+                            )
+                        )
+                    }
+                }
+
                 val data = DashboardData(
                     userName = d.optString("userName", "Learner"),
                     skillScore = d.optInt("skillScore", 78),
@@ -1221,7 +1351,11 @@ object ApiClient {
                     streakSubtitle = d.optString("streakSubtitle", "Your best week yet"),
                     minutesSubtitle = d.optString("minutesSubtitle", "to your goal"),
                     currentPlanTitle = d.optString("currentPlanTitle", ""),
-                    profilePicture = resolvedProfilePic
+                    profilePicture = resolvedProfilePic,
+                    aiCoachTitle = d.optString("aiCoachTitle", ""),
+                    aiCoachSubtitle = d.optString("aiCoachSubtitle", ""),
+                    mySkills = mySkillsList,
+                    recentHistory = recentHistList
                 )
                 NetworkResult(true, message, data)
             } else {
@@ -1923,6 +2057,19 @@ object ApiClient {
                         }
                     }
                 }
+                val mistakeObj = json.optJSONObject("mistake")
+                val mistake = if (mistakeObj != null && mistakeObj.optBoolean("has_mistake", false)) {
+                    CodeMistakeInfo(
+                        hasMistake = true,
+                        errorType = mistakeObj.optString("error_type", ""),
+                        lineNumber = mistakeObj.optInt("line_number", 0),
+                        faultyCode = mistakeObj.optString("faulty_code", ""),
+                        mistakeTitle = mistakeObj.optString("mistake_title", ""),
+                        mistakeDescription = mistakeObj.optString("mistake_description", ""),
+                        howToFix = mistakeObj.optString("how_to_fix", "")
+                    )
+                } else null
+
                 val res = CodeExecutionResult(
                     language = json.optString("language", language),
                     output = json.optString("output", ""),
@@ -1931,7 +2078,8 @@ object ApiClient {
                     testCases = tcList,
                     allTestsPassed = json.optBoolean("all_tests_passed", false),
                     executionTimeMs = json.optInt("execution_time_ms", 0),
-                    explanation = json.optString("explanation", "")
+                    explanation = json.optString("explanation", ""),
+                    mistake = mistake
                 )
                 NetworkResult(true, "Code executed", res)
             } else {
@@ -2296,17 +2444,73 @@ object ApiClient {
                 if (chipsArr != null) {
                     for (i in 0 until chipsArr.length()) chips.add(chipsArr.getString(i))
                 }
+                val compArr = d.optJSONArray("completedSessions") ?: JSONArray()
+                val completedSessions = mutableListOf<CompletedSessionItem>()
+                for (i in 0 until compArr.length()) {
+                    val c = compArr.getJSONObject(i)
+                    val sc = if (c.isNull("score")) null else c.optInt("score")
+                    completedSessions.add(
+                        CompletedSessionItem(
+                            id = c.optString("id"),
+                            title = c.optString("title"),
+                            skill = c.optString("skill", "general"),
+                            category = c.optString("category"),
+                            score = sc,
+                            scoreStatus = c.optString("scoreStatus", "not_available"),
+                            scoreReason = if (c.isNull("scoreReason")) null else c.optString("scoreReason"),
+                            xpText = c.optString("xpText", "+35 XP"),
+                            durationText = c.optString("durationText", "10 min"),
+                            completedAt = c.optString("completedAt", "Today")
+                        )
+                    )
+                }
                 val data = CoachChatData(
                     coachName = d.optString("coachName"),
                     statusText = d.optString("statusText"),
                     bannerNoticeText = d.optString("bannerNoticeText"),
                     timestampHeader = d.optString("timestampHeader"),
                     messages = msgs,
-                    suggestionChips = chips
+                    suggestionChips = chips,
+                    completedSessions = completedSessions
                 )
                 NetworkResult(true, "Coach chat fetched", data)
             } else {
                 NetworkResult(false, json.optString("message"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchCompletedSessions(userId: Int, skill: String = ""): NetworkResult<List<CompletedSessionItem>> = withContext(Dispatchers.IO) {
+        try {
+            val query = if (skill.isNotBlank()) "coach/completed_sessions_fetch.php?user_id=$userId&skill=$skill" else "coach/completed_sessions_fetch.php?user_id=$userId"
+            val (code, text) = getJson(query)
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val arr = json.optJSONArray("data") ?: JSONArray()
+                val list = mutableListOf<CompletedSessionItem>()
+                for (i in 0 until arr.length()) {
+                    val it = arr.getJSONObject(i)
+                    val sc = if (it.isNull("score")) null else it.optInt("score")
+                    list.add(
+                        CompletedSessionItem(
+                            id = it.optString("id"),
+                            title = it.optString("title"),
+                            skill = it.optString("skill", "general"),
+                            category = it.optString("category"),
+                            score = sc,
+                            scoreStatus = it.optString("scoreStatus", "not_available"),
+                            scoreReason = if (it.isNull("scoreReason")) null else it.optString("scoreReason"),
+                            xpText = it.optString("xpText", "+35 XP"),
+                            durationText = it.optString("durationText", "10 min"),
+                            completedAt = it.optString("completedAt", "Today")
+                        )
+                    )
+                }
+                NetworkResult(true, "Completed sessions fetched", list)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch completed sessions"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")
@@ -2599,6 +2803,29 @@ object ApiClient {
                     )
                 } else AiWeeklySummaryData()
 
+                val daysArr = json.optJSONArray("daily_breakdown")
+                val dailyList = mutableListOf<DailyComparisonDayData>()
+                if (daysArr != null) {
+                    for (dIdx in 0 until daysArr.length()) {
+                        val d = daysArr.optJSONObject(dIdx) ?: continue
+                        dailyList.add(
+                            DailyComparisonDayData(
+                                day = d.optString("day", "Mon"),
+                                dayFull = d.optString("day_full", "Monday"),
+                                date = d.optString("date", ""),
+                                formattedDate = d.optString("formatted_date", ""),
+                                minutes = d.optInt("minutes", 0),
+                                tasks = d.optInt("tasks", 0),
+                                prevMinutes = d.optInt("prev_minutes", 0),
+                                percentage = d.optInt("percentage", 0),
+                                prevPercentage = d.optInt("prev_percentage", 0),
+                                goalPercentage = d.optInt("goal_percentage", 0),
+                                isToday = d.optBoolean("is_today", false)
+                            )
+                        )
+                    }
+                }
+
                 val data = WeeklyComparisonData(
                     userId = json.optInt("user_id", userId),
                     weekOffset = json.optInt("week_offset", weekOffset),
@@ -2613,12 +2840,85 @@ object ApiClient {
                     currentWeek = curMetrics,
                     practiceTimeComparison = timeComp,
                     tasksComparison = tasksComp,
+                    dailyBreakdown = dailyList,
                     skillsComparison = skillsList,
                     aiSummary = aiSummary
                 )
                 NetworkResult(true, "Weekly comparison fetched", data)
             } else {
                 NetworkResult(false, json.optString("message", "Failed to fetch weekly comparison"))
+            }
+        } catch (e: Exception) {
+            NetworkResult(false, "Network error: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchPracticeHistory(
+        userId: Int,
+        skill: String = "all"
+    ): NetworkResult<PracticeHistoryDataDto> = withContext(Dispatchers.IO) {
+        try {
+            val (code, text) = getJson("dashboard/practice_history_fetch.php?user_id=$userId&skill=$skill")
+            val json = if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+            if (code == 200 && json.optString("status") == "success") {
+                val dataObj = json.optJSONObject("data") ?: JSONObject()
+                val itemsArr = dataObj.optJSONArray("items")
+                val itemsList = mutableListOf<PracticeHistoryItemDto>()
+                if (itemsArr != null) {
+                    for (i in 0 until itemsArr.length()) {
+                        val itm = itemsArr.optJSONObject(i) ?: continue
+                        val stArr = itm.optJSONArray("strengths")
+                        val stList = mutableListOf<String>()
+                        if (stArr != null) {
+                            for (s in 0 until stArr.length()) stList.add(stArr.optString(s))
+                        }
+                        val wkArr = itm.optJSONArray("weaknesses")
+                        val wkList = mutableListOf<String>()
+                        if (wkArr != null) {
+                            for (w in 0 until wkArr.length()) wkList.add(wkArr.optString(w))
+                        }
+
+                        itemsList.add(
+                            PracticeHistoryItemDto(
+                                id = itm.optString("id", ""),
+                                skillName = itm.optString("skillName", "Practice"),
+                                skillGroup = itm.optString("skillGroup", "coding"),
+                                subcategory = itm.optString("subcategory", ""),
+                                activity = itm.optString("activity", ""),
+                                score = itm.optInt("score", 0),
+                                durationMinutes = itm.optInt("durationMinutes", 1),
+                                xpAwarded = itm.optInt("xpAwarded", 35),
+                                dateText = itm.optString("dateText", "Today"),
+                                fullDate = itm.optString("fullDate", ""),
+                                iconEmoji = itm.optString("iconEmoji", "🎯"),
+                                feedback = itm.optString("feedback", ""),
+                                strengths = stList,
+                                weaknesses = wkList
+                            )
+                        )
+                    }
+                }
+
+                val countsObj = dataObj.optJSONObject("countsBySkill")
+                val countsMap = mutableMapOf<String, Int>()
+                if (countsObj != null) {
+                    val keys = countsObj.keys()
+                    while (keys.hasNext()) {
+                        val k = keys.next()
+                        countsMap[k] = countsObj.optInt(k, 0)
+                    }
+                }
+
+                val historyData = PracticeHistoryDataDto(
+                    totalSessions = dataObj.optInt("totalSessions", itemsList.size),
+                    totalMinutes = dataObj.optInt("totalMinutes", 0),
+                    averageScore = dataObj.optInt("averageScore", 0),
+                    countsBySkill = countsMap,
+                    items = itemsList
+                )
+                NetworkResult(true, "Practice history fetched", historyData)
+            } else {
+                NetworkResult(false, json.optString("message", "Failed to fetch practice history"))
             }
         } catch (e: Exception) {
             NetworkResult(false, "Network error: ${e.localizedMessage}")

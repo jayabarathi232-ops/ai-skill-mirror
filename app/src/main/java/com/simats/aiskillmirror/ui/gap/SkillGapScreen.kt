@@ -80,7 +80,10 @@ fun SkillGapScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -120,20 +123,24 @@ fun SkillGapScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 // Switch Skill Button
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(LightPurple)
                         .clickable { onSwitchSkillClick() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "All Skills",
                         color = HeadingPurple,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -1018,19 +1025,35 @@ fun MissingTopicsCard(
                     fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Unattempted topics from your syllabus roadmap. Practice each topic in the Roadmap to clear your skill gaps.",
+                color = TextSecondary,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             missingTopics.forEach { topic ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 3.dp),
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onOpenRoadmapClick() }
+                        .padding(vertical = 5.dp, horizontal = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("⭕ ", fontSize = 10.sp)
-                    Column {
-                        Text(topic.topic, color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        Text(topic.reason, color = TextSecondary, fontSize = 9.sp)
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("⭕ ", fontSize = 11.sp)
+                        Column {
+                            Text(topic.topic, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text(topic.reason, color = TextSecondary, fontSize = 9.sp)
+                        }
                     }
+                    Text("Practice →", color = AccentPurple, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))

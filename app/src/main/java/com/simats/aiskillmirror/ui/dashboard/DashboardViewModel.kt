@@ -37,14 +37,44 @@ class DashboardViewModel(
             val result = dashboardRepository.getDashboard(UserSession.userId)
             if (result.isSuccess && result.data != null) {
                 val d = result.data
+
+                val mySkillsList = if (d.mySkills.isNotEmpty()) {
+                    d.mySkills.map { sk ->
+                        SkillItem(
+                            id = sk.id,
+                            name = sk.name,
+                            category = sk.category,
+                            score = sk.score,
+                            level = sk.level,
+                            iconEmoji = sk.iconEmoji,
+                            accentColor = sk.accentColor,
+                            progress = sk.progress
+                        )
+                    }
+                } else _uiState.value.mySkills
+
+                val historyList = if (d.recentHistory.isNotEmpty()) {
+                    d.recentHistory.map { h ->
+                        PerformanceHistoryItem(
+                            id = h.id,
+                            skillName = h.skillName,
+                            activity = h.activity,
+                            score = h.score,
+                            dateText = h.dateText,
+                            iconEmoji = h.iconEmoji,
+                            feedback = h.feedback
+                        )
+                    }
+                } else _uiState.value.recentHistory
+
                 _uiState.value = _uiState.value.copy(
                     userName = if (d.userName.isNotBlank()) d.userName else _uiState.value.userName,
                     skillScore = if (d.skillScore > 0) d.skillScore else _uiState.value.skillScore,
                     monthlyPtsGain = if (d.monthlyPtsGain > 0) d.monthlyPtsGain else _uiState.value.monthlyPtsGain,
-                    currentStreakDays = if (d.currentStreakDays > 0) d.currentStreakDays else _uiState.value.currentStreakDays,
-                    minutesToday = if (d.minutesToday > 0) d.minutesToday else _uiState.value.minutesToday,
-                    goalMinutesToday = if (d.goalMinutesToday > 0) d.goalMinutesToday else _uiState.value.goalMinutesToday,
-                    assessedSkillsCount = if (d.assessedSkillsCount > 0) d.assessedSkillsCount else 5,
+                    currentStreakDays = d.currentStreakDays,
+                    minutesToday = d.minutesToday,
+                    goalMinutesToday = if (d.goalMinutesToday > 0) d.goalMinutesToday else 20,
+                    assessedSkillsCount = if (d.assessedSkillsCount > 0) d.assessedSkillsCount else 3,
                     learnerStatus = if (d.learnerStatus.isNotBlank()) d.learnerStatus else _uiState.value.learnerStatus,
                     currentLessonTitle = if (d.currentLessonTitle.isNotBlank()) d.currentLessonTitle else _uiState.value.currentLessonTitle,
                     currentLessonCategory = if (d.currentLessonCategory.isNotBlank()) d.currentLessonCategory else _uiState.value.currentLessonCategory,
@@ -55,8 +85,12 @@ class DashboardViewModel(
                     streakSubtitle = if (d.streakSubtitle.isNotBlank()) d.streakSubtitle else _uiState.value.streakSubtitle,
                     minutesSubtitle = if (d.minutesSubtitle.isNotBlank()) d.minutesSubtitle else _uiState.value.minutesSubtitle,
                     currentPlanTitle = if (d.currentPlanTitle.isNotBlank()) d.currentPlanTitle else _uiState.value.currentPlanTitle,
+                    aiCoachTitle = if (d.aiCoachTitle.isNotBlank()) d.aiCoachTitle else _uiState.value.aiCoachTitle,
+                    aiCoachSubtitle = if (d.aiCoachSubtitle.isNotBlank()) d.aiCoachSubtitle else _uiState.value.aiCoachSubtitle,
                     profilePicture = if (d.profilePicture.isNotBlank()) d.profilePicture else UserSession.profilePictureUrl,
-                    unreadNotificationsCount = unreadCount
+                    unreadNotificationsCount = unreadCount,
+                    mySkills = mySkillsList,
+                    recentHistory = historyList
                 )
             } else {
                 _uiState.value = _uiState.value.copy(
